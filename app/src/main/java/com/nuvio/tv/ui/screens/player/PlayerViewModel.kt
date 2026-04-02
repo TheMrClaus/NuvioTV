@@ -10,6 +10,8 @@ import com.nuvio.tv.core.torrent.TorrentService
 import com.nuvio.tv.core.torrent.TorrentSettings
 import com.nuvio.tv.data.local.PlayerSettingsDataStore
 import com.nuvio.tv.data.local.StreamLinkCacheDataStore
+import com.nuvio.tv.data.repository.EmbyMediaService
+import com.nuvio.tv.data.repository.EmbySessionService
 import com.nuvio.tv.data.repository.ParentalGuideRepository
 import com.nuvio.tv.data.repository.SkipIntroRepository
 import com.nuvio.tv.data.repository.TraktEpisodeMappingService
@@ -49,6 +51,8 @@ class PlayerViewModel @Inject constructor(
     private val tmdbService: TmdbService,
     private val tmdbMetadataService: TmdbMetadataService,
     private val tmdbSettingsDataStore: TmdbSettingsDataStore,
+    private val embyMediaService: EmbyMediaService,
+    private val embySessionService: EmbySessionService,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -74,6 +78,8 @@ class PlayerViewModel @Inject constructor(
         tmdbService = tmdbService,
         tmdbMetadataService = tmdbMetadataService,
         tmdbSettingsDataStore = tmdbSettingsDataStore,
+        embyMediaService = embyMediaService,
+        embySessionService = embySessionService,
         savedStateHandle = savedStateHandle,
         scope = viewModelScope
     )
