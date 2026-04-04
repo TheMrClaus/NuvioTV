@@ -338,6 +338,7 @@ class PlayerRuntimeController(
     internal var currentEmbyItemId: String? = null
     internal var currentEmbyMediaSourceId: String? = null
     internal var embyProgressJob: Job? = null
+    internal var embyInitJob: Job? = null
     internal val streamCacheKey: String?
         get() {
             val type = contentType?.lowercase()
