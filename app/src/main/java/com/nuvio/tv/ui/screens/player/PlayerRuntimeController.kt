@@ -184,6 +184,7 @@ class PlayerRuntimeController(
     internal var isReleasingPlayer: Boolean = false
 
     internal var progressJob: Job? = null
+    internal var embySessionProgressJob: Job? = null
     internal var hideControlsJob: Job? = null
     internal var hideSeekOverlayJob: Job? = null
     internal var watchProgressSaveJob: Job? = null

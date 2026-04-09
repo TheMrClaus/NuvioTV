@@ -22,6 +22,7 @@ internal fun PlayerRuntimeController.releasePlayer(flushPlaybackState: Boolean) 
         e.printStackTrace()
     }
     progressJob?.cancel()
+    embySessionProgressJob?.cancel()
     hideControlsJob?.cancel()
     watchProgressSaveJob?.cancel()
     seekProgressSyncJob?.cancel()
