@@ -12,6 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "EmbySessionService"
+private const val PROGRESS_INTERVAL_MS = 10_000L  // Report every 10 seconds
 
 @Singleton
 class EmbySessionService @Inject constructor(
@@ -23,7 +24,6 @@ class EmbySessionService @Inject constructor(
     private var currentPlaySessionId: String? = null
     private var hasReportedStart: Boolean = false
     private var lastProgressReportMs: Long = 0L
-    private val progressIntervalMs = 10_000L  // Report every 10 seconds
 
     /**
      * Report playback start to Emby.
@@ -70,7 +70,7 @@ class EmbySessionService @Inject constructor(
         if (!hasReportedStart) return
 
         val now = System.currentTimeMillis()
-        if (now - lastProgressReportMs < progressIntervalMs) return
+        if (now - lastProgressReportMs < PROGRESS_INTERVAL_MS) return
 
         try {
             val response = embyApi.reportPlaybackProgress(

@@ -158,7 +158,7 @@ fun EmbySettingsContent(
                             if (uiState.testResult != null) {
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Text(
-                                    text = uiState.testResult!!,
+                                    text = uiState.testResult.orEmpty(),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = if (uiState.isTestSuccess) NuvioColors.Primary else NuvioColors.Error
                                 )
