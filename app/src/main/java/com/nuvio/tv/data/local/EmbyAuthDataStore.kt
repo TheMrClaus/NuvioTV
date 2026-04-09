@@ -57,9 +57,8 @@ class EmbyAuthDataStore @Inject constructor(
             preferences[serverUrlKey] = serverUrl.trimEnd('/')
             preferences[apiKeyKey] = apiKey
             preferences[userIdKey] = userId
-            preferences[deviceIdKey] = deviceId
-                ?: preferences[deviceIdKey]
-                ?: UUID.randomUUID().toString()
+            val finalDeviceId = deviceId ?: preferences[deviceIdKey] ?: UUID.randomUUID().toString()
+            preferences[deviceIdKey] = finalDeviceId
         }
     }
 

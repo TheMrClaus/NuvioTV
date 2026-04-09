@@ -68,7 +68,7 @@ class EmbySettingsViewModel @Inject constructor(
                 embyAuthDataStore.saveCredentials(
                     serverUrl = tempServerUrl,
                     apiKey = state.apiKey,
-                    userId = "temp" // Placeholder until we get real userId
+                    userId = "TEMP_LOOKUP_USER" // Placeholder until real userId is obtained from server
                 )
 
                 // Test connection by getting system info
