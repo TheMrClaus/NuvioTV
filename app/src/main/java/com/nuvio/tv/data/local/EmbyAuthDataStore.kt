@@ -51,6 +51,11 @@ class EmbyAuthDataStore @Inject constructor(
         )
     }
 
+    /**
+     * Provides synchronous access to the latest auth state, kept up-to-date by the
+     * coroutine started in [init] that collects [state]. Reading this field never
+     * blocks or suspends, making it safe to use from OkHttp interceptors.
+     */
     @Volatile
     var cachedState: EmbyAuthState = EmbyAuthState()
         private set
