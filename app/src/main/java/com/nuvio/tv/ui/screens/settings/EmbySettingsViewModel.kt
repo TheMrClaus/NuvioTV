@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.nuvio.tv.data.local.EmbyAuthDataStore
 import com.nuvio.tv.data.local.EmbyAuthState
 import com.nuvio.tv.data.remote.api.EmbyApi
+import com.nuvio.tv.data.repository.EmbyMediaService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,7 +26,8 @@ data class EmbySettingsUiState(
 @HiltViewModel
 class EmbySettingsViewModel @Inject constructor(
     private val embyAuthDataStore: EmbyAuthDataStore,
-    private val embyApi: EmbyApi
+    private val embyApi: EmbyApi,
+    private val embyMediaService: EmbyMediaService
 ) : ViewModel() {
 
     val authState: StateFlow<EmbyAuthState> = embyAuthDataStore.state
@@ -125,6 +127,7 @@ class EmbySettingsViewModel @Inject constructor(
     fun disconnect() {
         viewModelScope.launch {
             embyAuthDataStore.clearCredentials()
+            embyMediaService.clearMetadata()
             _uiState.value = EmbySettingsUiState()
         }
     }
