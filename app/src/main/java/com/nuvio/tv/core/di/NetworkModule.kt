@@ -409,7 +409,8 @@ object NetworkModule {
                 }
             }
 
-            val authHeader = "MediaBrowser Client=\"NuvioTV\", Device=\"Android TV\", DeviceId=\"${state.deviceId.orEmpty()}\", Version=\"1.0.0\", Token=\"${state.apiKey.orEmpty()}\""
+            val embyVersion = BuildConfig.VERSION_NAME.ifBlank { "1.0.0" }
+            val authHeader = "MediaBrowser Client=\"NuvioTV\", Device=\"Android TV\", DeviceId=\"${state.deviceId.orEmpty()}\", Version=\"$embyVersion\", Token=\"${state.apiKey.orEmpty()}\""
             request = request.newBuilder()
                 .header("X-Emby-Authorization", authHeader)
                 .build()
