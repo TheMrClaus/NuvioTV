@@ -4,7 +4,6 @@ import android.util.Log
 import com.nuvio.tv.data.local.EmbyAuthDataStore
 import com.nuvio.tv.data.remote.api.EmbyApi
 import com.nuvio.tv.data.remote.dto.emby.EmbyItemDto
-import kotlinx.coroutines.flow.first
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,7 +65,7 @@ class EmbyMediaService @Inject constructor(
     ): Pair<String, String>? {
         if (contentId.isNullOrBlank()) return null
 
-        val authState = embyAuthDataStore.state.first()
+        val authState = embyAuthDataStore.cachedState
         if (!authState.isConnected) return null
 
         val serverUrl = authState.serverUrl!!.trimEnd('/')

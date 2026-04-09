@@ -6,7 +6,6 @@ import com.nuvio.tv.data.remote.api.EmbyApi
 import com.nuvio.tv.data.remote.dto.emby.EmbyPlaybackProgressDto
 import com.nuvio.tv.data.remote.dto.emby.EmbyPlaybackStartDto
 import com.nuvio.tv.data.remote.dto.emby.EmbyPlaybackStopDto
-import kotlinx.coroutines.flow.first
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -130,8 +129,8 @@ class EmbySessionService @Inject constructor(
         lastProgressReportMs = 0L
     }
 
-    private suspend fun isConnected(): Boolean {
-        return embyAuthDataStore.state.first().isConnected
+    private fun isConnected(): Boolean {
+        return embyAuthDataStore.cachedState.isConnected
     }
 
     /**
