@@ -83,11 +83,15 @@ class StreamRepositoryImpl @Inject constructor(
                 val totalJobs = streamAddons.size + (if (tmdbId != null) 1 else 0)
                 var completedJobs = 0
 
+                // For series/tv, ensure the video ID includes :{season}:{episode} so addons
+                // (e.g. Emby) receive a proper Stremio episode ID rather than a bare series ID.
+                val addonVideoId = resolveAddonSeriesVideoId(videoId, type, season, episode)
+
                 // Launch addon jobs
                 streamAddons.forEach { addon ->
                     launch {
                         try {
-                            val streamsResult = getStreamsFromAddon(addon.baseUrl, type, videoId)
+                            val streamsResult = getStreamsFromAddon(addon.baseUrl, type, addonVideoId)
                             when (streamsResult) {
                                 is NetworkResult.Success -> {
                                     if (streamsResult.data.isNotEmpty()) {
@@ -398,6 +402,36 @@ class StreamRepositoryImpl @Inject constructor(
         } else {
             context.getString(R.string.error_stream_tried_issues, triedAddons, id, type, issueSummary)
         }
+    }
+
+    /**
+     * Ensures the video ID used for a series/tv stream request includes the episode's
+     * season and episode numbers in the Stremio format ({id}:{season}:{episode}).
+     *
+     * Some addons (e.g. Emby) may supply episode [Video.id] values that are the bare
+     * series ID (e.g. "tt1234567") rather than the episode-specific ID
+     * ("tt1234567:1:5"). When that happens the addon receives a stream request
+     * without episode info and serves the wrong episode. This function appends
+     * ":{season}:{episode}" to the video ID when the ID does not already end with
+     * that pattern, so every Stremio addon always receives a fully qualified episode
+     * identifier.
+     */
+    private fun resolveAddonSeriesVideoId(
+        videoId: String,
+        type: String,
+        season: Int?,
+        episode: Int?
+    ): String {
+        if (type !in listOf("series", "tv") || season == null || episode == null) {
+            return videoId
+        }
+        // Already ends with :{season}:{episode} – nothing to add.
+        if (videoId.endsWith(":$season:$episode")) return videoId
+        // Already has some season:episode-style numeric suffix (different values);
+        // trust what the addon provided.
+        if (videoId.matches(Regex(".*:\\d+:\\d+$"))) return videoId
+        // Append season and episode to form the standard Stremio series video ID.
+        return "$videoId:$season:$episode"
     }
 
     private fun encodePathSegment(value: String): String {
