@@ -74,7 +74,8 @@ class EmbyMediaService @Inject constructor(
         val userId = authState.userId!!
 
         try {
-            // Parse contentId to get IMDb/TMDB IDs
+            // Parse contentId to get IMDb/TMDB IDs.
+            // parseContentIds() and ParsedContentIds are defined in TraktIdUtils.kt (same package).
             val parsedIds = parseContentIds(contentId)
             val providerIdFilters = buildProviderIdFilter(parsedIds)
             if (providerIdFilters.isBlank()) {
