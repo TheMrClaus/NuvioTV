@@ -64,6 +64,7 @@ class EmbySettingsViewModel @Inject constructor(
                 // Build a one-off OkHttp client with credentials injected directly into the
                 // interceptor, so we never write partial or placeholder credentials to the
                 // shared DataStore (which would briefly flip isConnected to true).
+                val testDeviceId = java.util.UUID.randomUUID().toString()
                 val testClient = okHttpClient.newBuilder()
                     .addInterceptor { chain ->
                         val originalUrl = chain.request().url.toString()
@@ -72,7 +73,7 @@ class EmbySettingsViewModel @Inject constructor(
                         } else {
                             originalUrl
                         }
-                        val authHeader = "MediaBrowser Client=\"NuvioTV\", Device=\"Android TV\", DeviceId=\"\", Version=\"1.0.0\", Token=\"$apiKey\""
+                        val authHeader = "MediaBrowser Client=\"NuvioTV\", Device=\"Android TV\", DeviceId=\"$testDeviceId\", Version=\"1.0.0\", Token=\"$apiKey\""
                         val request = chain.request().newBuilder()
                             .url(url)
                             .header("X-Emby-Authorization", authHeader)
