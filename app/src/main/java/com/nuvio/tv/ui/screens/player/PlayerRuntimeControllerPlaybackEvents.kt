@@ -267,6 +267,7 @@ internal fun PlayerRuntimeController.emitScrobbleStart() {
     if (hasRequestedScrobbleStartForCurrentItem) return
 
     hasRequestedScrobbleStartForCurrentItem = true
+    initEmbyItemIdAndStartSession()
     val requestGeneration = ++scrobbleStartRequestGeneration
     scope.launch {
         val progressPercent = currentPlaybackProgressPercent()
@@ -329,6 +330,7 @@ internal fun PlayerRuntimeController.emitStopScrobbleForCurrentProgress() {
 
 internal fun PlayerRuntimeController.flushPlaybackSnapshotForSwitchOrExit() {
     emitStopScrobbleForCurrentProgress()
+    stopEmbySession()
     saveWatchProgress()
 }
 
