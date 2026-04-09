@@ -7,8 +7,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,6 +35,8 @@ data class EmbyAuthState(
 class EmbyAuthDataStore @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     private val serverUrlKey = stringPreferencesKey("server_url")
     private val apiKeyKey = stringPreferencesKey("api_key")
     private val userIdKey = stringPreferencesKey("user_id")
@@ -43,6 +49,16 @@ class EmbyAuthDataStore @Inject constructor(
             userId = preferences[userIdKey],
             deviceId = preferences[deviceIdKey]
         )
+    }
+
+    @Volatile
+    var cachedState: EmbyAuthState = EmbyAuthState()
+        private set
+
+    init {
+        scope.launch {
+            state.collect { cachedState = it }
+        }
     }
 
     val isConnected: Flow<Boolean> = state.map { it.isConnected }

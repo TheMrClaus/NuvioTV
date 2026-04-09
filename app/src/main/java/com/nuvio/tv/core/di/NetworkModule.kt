@@ -32,8 +32,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import com.nuvio.tv.core.network.IPv4FirstDns
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -395,7 +393,7 @@ object NetworkModule {
         moshi: Moshi
     ): OkHttpClient = OkHttpClient.Builder()
         .addInterceptor { chain ->
-            val state = runBlocking { embyAuthDataStore.state.first() }
+            val state = embyAuthDataStore.cachedState
             var request = chain.request()
 
             val serverUrl = state.serverUrl?.trimEnd('/')
