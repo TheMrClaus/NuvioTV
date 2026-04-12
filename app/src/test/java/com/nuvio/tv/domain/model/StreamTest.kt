@@ -1,14 +1,13 @@
 package com.nuvio.tv.domain.model
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StreamTest {
 
     @Test
-    fun `getStreamUrls keeps primary url first and appends distinct sources`() {
+    fun `getStreamUrl returns primary url even when sources are present`() {
         val stream = Stream(
             name = null,
             title = null,
@@ -29,18 +28,11 @@ class StreamTest {
             addonLogo = null
         )
 
-        assertEquals(
-            listOf(
-                "https://example.com/primary.m3u8",
-                "https://example.com/fallback1.m3u8",
-                "https://example.com/fallback2.m3u8"
-            ),
-            stream.getStreamUrls()
-        )
+        assertEquals("https://example.com/primary.m3u8", stream.getStreamUrl())
     }
 
     @Test
-    fun `sources-only stream is not treated as external`() {
+    fun `external url is used when direct url is missing`() {
         val stream = Stream(
             name = null,
             title = null,
@@ -56,8 +48,8 @@ class StreamTest {
             addonLogo = null
         )
 
-        assertEquals("https://example.com/fallback1.m3u8", stream.getStreamUrl())
-        assertFalse(stream.isExternal())
+        assertEquals("https://example.com/browser", stream.getStreamUrl())
+        assertTrue(stream.isExternal())
     }
 
     @Test
