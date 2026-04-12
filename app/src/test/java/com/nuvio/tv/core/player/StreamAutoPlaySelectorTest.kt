@@ -11,6 +11,21 @@ import org.junit.Test
 class StreamAutoPlaySelectorTest {
 
     @Test
+    fun `orderAddonStreams keeps Emby first before addons and plugins`() {
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            streams = listOf(
+                addonStreams("PluginX"),
+                addonStreams("AddonB"),
+                addonStreams("Emby"),
+                addonStreams("AddonA")
+            ),
+            installedOrder = listOf("AddonA", "AddonB")
+        )
+
+        assertEquals(listOf("Emby", "AddonA", "AddonB", "PluginX"), ordered.map { it.addonName })
+    }
+
+    @Test
     fun `bingeGroup-first selects matching stream before first stream mode`() {
         val first = stream(
             addonName = "AddonA",
@@ -200,4 +215,16 @@ class StreamAutoPlaySelectorTest {
         addonName = addonName,
         addonLogo = null
     )
+
+    private fun addonStreams(addonName: String): com.nuvio.tv.domain.model.AddonStreams =
+        com.nuvio.tv.domain.model.AddonStreams(
+            addonName = addonName,
+            addonLogo = null,
+            streams = listOf(
+                stream(
+                    addonName = addonName,
+                    url = "https://example.com/${addonName.lowercase()}.m3u8"
+                )
+            )
+        )
 }
