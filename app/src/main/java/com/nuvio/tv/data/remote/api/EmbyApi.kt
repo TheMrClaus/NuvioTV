@@ -24,7 +24,8 @@ interface EmbyApi {
     @GET("Shows/{seriesId}/Episodes")
     suspend fun getEpisodes(
         @Path("seriesId") seriesId: String,
-        @Query("SeasonNumber") season: Int,
+        @Query("Season") season: Int,
+        @Query("IncludeItemTypes") includeItemTypes: String = "Episode",
         @Query("Fields") fields: String = "RunTimeTicks,MediaSources"
     ): Response<EmbyItemsResponseDto>
 

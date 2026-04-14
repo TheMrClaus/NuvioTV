@@ -106,19 +106,26 @@ class EmbyMediaService @Inject constructor(
             }
 
             // For episodes, resolve the specific episode
-            val targetItem: EmbyItemDto = if (isEpisode && season != null && episode != null) {
+            val targetItem: EmbyItemDto = if (isEpisode) {
+                val requestedSeason = requireNotNull(season)
+                val requestedEpisode = requireNotNull(episode)
                 val episodeResponse = embyApi.getEpisodes(
                     seriesId = matchedItem.id,
-                    season = season
+                    season = requestedSeason
                 )
                 if (!episodeResponse.isSuccessful) {
-                    Log.w(TAG, "Emby episode lookup failed for series ${matchedItem.id} S${season}E${episode}: ${episodeResponse.code()} ${episodeResponse.message()}")
+                    Log.w(TAG, "Emby episode lookup failed for series ${matchedItem.id} S${requestedSeason}E${requestedEpisode}: ${episodeResponse.code()} ${episodeResponse.message()}")
                     return null
                 }
                 val episodes = episodeResponse.body()?.items ?: emptyList()
-                val ep = episodes.firstOrNull { it.indexNumber == episode }
+                val seasonEpisodes = episodes.filter { candidate ->
+                    val matchesType = candidate.type?.equals("Episode", ignoreCase = true) != false
+                    val matchesSeason = candidate.parentIndexNumber?.let { it == requestedSeason } != false
+                    matchesType && matchesSeason
+                }
+                val ep = seasonEpisodes.firstOrNull { it.indexNumber == requestedEpisode }
                 if (ep == null) {
-                    Log.d(TAG, "Episode S${season}E${episode} not found in Emby for series ${matchedItem.id} (got ${episodes.size} episodes, indices: ${episodes.mapNotNull { it.indexNumber }})")
+                    Log.d(TAG, "Episode S${requestedSeason}E${requestedEpisode} not found in Emby for series ${matchedItem.id} (got ${episodes.size} episodes, filtered=${seasonEpisodes.size}, season/index pairs: ${episodes.map { "${it.parentIndexNumber}:${it.indexNumber}" }})")
                     return null
                 }
                 ep
