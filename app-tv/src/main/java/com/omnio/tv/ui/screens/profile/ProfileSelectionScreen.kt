@@ -175,6 +175,7 @@ fun ProfileSelectionScreen(
     val isSaving by viewModel.isSaving.collectAsState()
     val profilePinEnabled by viewModel.profilePinEnabled.collectAsState()
     val isPinOperationInProgress by viewModel.isPinOperationInProgress.collectAsState()
+    val provisionMessage by viewModel.provisionMessage.collectAsState()
     val avatarImageUrlsById = remember(avatarCatalog) {
         avatarCatalog.associate { it.id to it.imageUrl }
     }
@@ -461,6 +462,21 @@ fun ProfileSelectionScreen(
             if (pinActionMessage != null) {
                 delay(2600)
                 pinActionMessage = null
+            }
+        }
+
+        // Surface AIOMetadata provisioning failures from create/edit flows so
+        // the user knows the kid-tuned config wasn't actually minted (otherwise
+        // the AIOMetadata settings screen for that profile shows no URL/QR).
+        LaunchedEffect(provisionMessage) {
+            val current = provisionMessage
+            if (current is ProvisionMessage.Failure) {
+                pinActionMessage = context.getString(
+                    R.string.aio_metadata_provision_failed,
+                    current.profileName,
+                    current.reason ?: context.getString(R.string.aio_metadata_provision_unknown_reason)
+                )
+                viewModel.consumeProvisionMessage()
             }
         }
 

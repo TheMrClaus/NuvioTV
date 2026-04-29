@@ -42,6 +42,8 @@ class AioMetadataSettingsViewModel @Inject constructor(
         val settings: Map<String, Any?> = emptyMap(),
         val isPrimaryProfileBlocked: Boolean = false,
         val hasConfig: Boolean = false,
+        val canProvisionFromMain: Boolean = false,
+        val isProvisioning: Boolean = false,
         val errorMessage: String? = null,
         val statusMessage: String? = null,
     ) {
@@ -76,6 +78,8 @@ class AioMetadataSettingsViewModel @Inject constructor(
             .onEach { settings ->
                 val profile = profileManager.activeProfile
                 val primaryBlocked = profile?.usesPrimaryAddons == true
+                val isMain = profile?.isPrimary == true
+                val canProvision = !isMain && !primaryBlocked && settings.aioUuid.isBlank()
                 val cached = repository.cachedConfig()
                 _uiState.update {
                     it.copy(
@@ -84,6 +88,7 @@ class AioMetadataSettingsViewModel @Inject constructor(
                         manifestUrl = settings.manifestUrl,
                         isPrimaryProfileBlocked = primaryBlocked,
                         hasConfig = settings.aioUuid.isNotBlank(),
+                        canProvisionFromMain = canProvision,
                         providers = cached?.toNuvioProviderStates() ?: it.providers,
                         apiKeys = cached?.apiKeys ?: it.apiKeys,
                         catalogs = cached?.catalogs ?: it.catalogs,
@@ -96,6 +101,51 @@ class AioMetadataSettingsViewModel @Inject constructor(
 
     fun onRefreshClick() {
         viewModelScope.launch { refresh() }
+    }
+
+    /**
+     * Manual retry for [AioMetadataRepository.provisionFromMain] on the active
+     * profile. Triggered from the settings screen when create/edit fired but
+     * provisioning silently failed (e.g. Main hadn't set up AIOMetadata yet).
+     */
+    fun onProvisionFromMainClick() {
+        val current = _uiState.value
+        if (current.isProvisioning || !current.canProvisionFromMain) return
+
+        val profile = profileManager.activeProfile ?: return
+        if (profile.isPrimary) return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isProvisioning = true, errorMessage = null, statusMessage = null)
+            }
+            val result = repository.provisionFromMain(
+                targetProfileId = profile.id,
+                kidsMaxAgeRating = if (profile.isKids) profile.maxAgeRating else null,
+            )
+            result
+                .onSuccess {
+                    // Pull the freshly minted config so the UI populates the
+                    // URL + QR section without waiting for the next observer
+                    // tick.
+                    refresh()
+                    _uiState.update {
+                        it.copy(
+                            isProvisioning = false,
+                            statusMessage = appContext.getString(R.string.aio_metadata_provision_success)
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update {
+                        it.copy(
+                            isProvisioning = false,
+                            errorMessage = error.message
+                                ?: appContext.getString(R.string.aio_metadata_provision_unknown_reason)
+                        )
+                    }
+                }
+        }
     }
 
     private suspend fun refresh() {
