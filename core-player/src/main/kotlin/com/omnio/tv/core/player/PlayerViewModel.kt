@@ -8,6 +8,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.omnio.tv.domain.plugin.PluginManager
 import com.omnio.tv.data.local.PlayerSettingsDataStore
 import com.omnio.tv.data.local.StreamLinkCacheDataStore
+import com.omnio.tv.data.local.SubtitleStyleSettings
 import com.omnio.tv.data.repository.ParentalGuideRepository
 import com.omnio.tv.data.repository.SkipIntroRepository
 import com.omnio.tv.data.repository.EmbySessionService
@@ -19,7 +20,10 @@ import com.omnio.tv.domain.repository.StreamRepository
 import com.omnio.tv.domain.repository.WatchProgressRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
@@ -71,6 +75,14 @@ class PlayerViewModel @Inject constructor(
 
     val exoPlayer: ExoPlayer?
         get() = controller.exoPlayer
+
+    val subtitleStyle: StateFlow<SubtitleStyleSettings> = playerSettingsDataStore.playerSettings
+        .map { it.subtitleStyle }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = SubtitleStyleSettings()
+        )
 
     fun getCurrentStreamUrl(): String = controller.getCurrentStreamUrl()
 

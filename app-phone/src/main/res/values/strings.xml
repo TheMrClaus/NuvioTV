@@ -78,6 +78,19 @@
     <string name="player_defaults_original">Original audio</string>
     <string name="player_defaults_forced">Forced subtitles only</string>
 
+    <string name="player_defaults_subtitle_appearance_section">Subtitle appearance</string>
+    <string name="player_defaults_subtitle_size">Text size</string>
+    <string name="player_defaults_subtitle_size_value">%1$d%%</string>
+    <string name="player_defaults_subtitle_outline">Outline</string>
+    <string name="player_defaults_subtitle_outline_subtitle">Adds a dark border around subtitle text for readability</string>
+
+    <string name="settings_section_about">About</string>
+    <string name="settings_about_privacy">Privacy policy</string>
+    <string name="settings_about_privacy_subtitle">View how your data is handled</string>
+    <string name="settings_about_open_source">Source code</string>
+    <string name="settings_about_open_source_subtitle">Open the project on GitHub</string>
+    <string name="settings_about_link_error">No browser available to open this link.</string>
+
     <string name="language_screen_title">Display language</string>
     <string name="language_system_default">System default</string>
     <string name="language_restart_hint">Restarting to apply language…</string>

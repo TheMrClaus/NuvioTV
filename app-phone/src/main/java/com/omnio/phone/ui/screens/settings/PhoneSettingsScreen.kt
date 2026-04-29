@@ -15,11 +15,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import android.content.Intent
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,14 +41,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.omnio.phone.R
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.launch
+
+private const val PRIVACY_POLICY_URL = "https://tapframe.github.io/NuvioStreaming/#privacy-policy"
+private const val OPEN_SOURCE_URL = "https://github.com/TheMrClaus/OmnioTV"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,15 +64,31 @@ fun PhoneSettingsScreen(
     onPlayerDefaults: () -> Unit,
     onLanguage: () -> Unit,
     onManageAddons: () -> Unit,
+    onOpenLibrary: () -> Unit,
+    onOpenHome: () -> Unit,
     viewModel: PhoneSettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val linkErrorMessage = stringResource(R.string.settings_about_link_error)
 
     LaunchedEffect(state.message) {
         val msg = state.message ?: return@LaunchedEffect
         snackbarHostState.showSnackbar(msg)
         viewModel.clearMessage()
+    }
+
+    val openExternalUrl: (String) -> Unit = { url ->
+        val opened = runCatching {
+            val intent = CustomTabsIntent.Builder().build()
+            intent.intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            intent.launchUrl(context, Uri.parse(url))
+        }.isSuccess
+        if (!opened) {
+            coroutineScope.launch { snackbarHostState.showSnackbar(linkErrorMessage) }
+        }
     }
 
     Scaffold(
@@ -95,6 +122,9 @@ fun PhoneSettingsScreen(
             AccountConnectedStatsStrip(
                 stats = state.connectedStats,
                 isLoading = state.isStatsLoading,
+                onAddonsClick = onManageAddons,
+                onLibraryClick = onOpenLibrary,
+                onProgressClick = onOpenHome,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 12.dp)
@@ -142,11 +172,23 @@ fun PhoneSettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
-            SectionHeader(text = "About")
+            SectionHeader(text = stringResource(R.string.settings_section_about))
             AboutRow(
                 versionName = state.versionName,
                 versionCode = state.versionCode,
                 isDebugBuild = state.isDebugBuild
+            )
+            ActionRow(
+                icon = Icons.Filled.PrivacyTip,
+                title = stringResource(R.string.settings_about_privacy),
+                subtitle = stringResource(R.string.settings_about_privacy_subtitle),
+                onClick = { openExternalUrl(PRIVACY_POLICY_URL) }
+            )
+            ActionRow(
+                icon = Icons.Filled.Code,
+                title = stringResource(R.string.settings_about_open_source),
+                subtitle = stringResource(R.string.settings_about_open_source_subtitle),
+                onClick = { openExternalUrl(OPEN_SOURCE_URL) }
             )
 
             Spacer(Modifier.height(24.dp))
@@ -270,6 +312,9 @@ private fun ActionRow(
 private fun AccountConnectedStatsStrip(
     stats: AccountConnectedStats?,
     isLoading: Boolean,
+    onAddonsClick: () -> Unit,
+    onLibraryClick: () -> Unit,
+    onProgressClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val values = if (isLoading || stats == null) {
@@ -288,6 +333,13 @@ private fun AccountConnectedStatsStrip(
         stringResource(R.string.settings_account_stat_library),
         stringResource(R.string.settings_account_stat_progress)
     )
+    // Plugins index intentionally has no destination yet — phone has no plugin manager screen.
+    val onClicks: List<(() -> Unit)?> = listOf(
+        onAddonsClick,
+        null,
+        onLibraryClick,
+        onProgressClick
+    )
     val borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
 
     Row(
@@ -298,6 +350,7 @@ private fun AccountConnectedStatsStrip(
             AccountStatItem(
                 value = values[index],
                 label = labels[index],
+                onClick = onClicks[index],
                 modifier = Modifier.weight(1f)
             )
             if (index != values.lastIndex) {
@@ -316,10 +369,13 @@ private fun AccountConnectedStatsStrip(
 private fun AccountStatItem(
     value: String,
     label: String,
+    onClick: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier,
+        modifier = modifier
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(

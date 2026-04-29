@@ -44,6 +44,7 @@ fun PhonePlayerScreen(
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val subtitleStyle by viewModel.subtitleStyle.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val activity = context as? Activity
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -196,6 +197,28 @@ fun PhonePlayerScreen(
             update = { view ->
                 view.player = exoPlayer
                 view.resizeMode = uiState.resizeMode
+                view.subtitleView?.apply {
+                    val baseFontSize = 20f
+                    val scaledFontSize = baseFontSize * (subtitleStyle.size / 100f)
+                    setFixedTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, scaledFontSize)
+                    setApplyEmbeddedFontSizes(false)
+                    val edgeType = if (subtitleStyle.outlineEnabled) {
+                        androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_OUTLINE
+                    } else {
+                        androidx.media3.ui.CaptionStyleCompat.EDGE_TYPE_NONE
+                    }
+                    setStyle(
+                        androidx.media3.ui.CaptionStyleCompat(
+                            subtitleStyle.textColor,
+                            subtitleStyle.backgroundColor,
+                            android.graphics.Color.TRANSPARENT,
+                            edgeType,
+                            subtitleStyle.outlineColor,
+                            android.graphics.Typeface.DEFAULT
+                        )
+                    )
+                    setApplyEmbeddedStyles(false)
+                }
             }
         )
 

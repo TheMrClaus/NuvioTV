@@ -24,6 +24,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -94,6 +96,18 @@ fun PhonePlayerDefaultsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
 
+            SectionHeader(text = stringResource(R.string.player_defaults_subtitle_appearance_section))
+            SubtitleSizeRow(
+                size = state.subtitleSize,
+                onSizeChange = viewModel::setSubtitleSize
+            )
+            SubtitleOutlineRow(
+                enabled = state.subtitleOutlineEnabled,
+                onEnabledChange = viewModel::setSubtitleOutlineEnabled
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+
             SectionHeader(text = stringResource(R.string.player_defaults_audio_section))
             ValueRow(
                 title = stringResource(R.string.player_defaults_audio_primary),
@@ -146,6 +160,74 @@ private fun SectionHeader(text: String) {
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)
     )
+}
+
+@Composable
+private fun SubtitleSizeRow(
+    size: Int,
+    onSizeChange: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 14.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = stringResource(R.string.player_defaults_subtitle_size),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = stringResource(R.string.player_defaults_subtitle_size_value, size),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Slider(
+            value = size.toFloat(),
+            onValueChange = { onSizeChange(it.toInt()) },
+            valueRange = 50f..200f,
+            steps = ((200 - 50) / 10) - 1
+        )
+    }
+}
+
+@Composable
+private fun SubtitleOutlineRow(
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onEnabledChange(!enabled) }
+            .padding(horizontal = 20.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.player_defaults_subtitle_outline),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = stringResource(R.string.player_defaults_subtitle_outline_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(Modifier.height(0.dp))
+        Switch(
+            checked = enabled,
+            onCheckedChange = onEnabledChange
+        )
+    }
 }
 
 @Composable
