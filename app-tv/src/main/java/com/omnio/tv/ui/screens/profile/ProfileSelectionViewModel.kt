@@ -27,6 +27,10 @@ enum class ProfileAddonInitMode {
     FRESH
 }
 
+sealed class ProvisionMessage {
+    data class Failure(val profileName: String, val reason: String?) : ProvisionMessage()
+}
+
 @HiltViewModel
 class ProfileSelectionViewModel @Inject constructor(
     private val profileManager: ProfileManager,
@@ -57,6 +61,14 @@ class ProfileSelectionViewModel @Inject constructor(
 
     private val _isPinOperationInProgress = MutableStateFlow(false)
     val isPinOperationInProgress: StateFlow<Boolean> = _isPinOperationInProgress.asStateFlow()
+
+    /**
+     * Surfaces the result of fire-and-forget AIOMetadata provisioning that
+     * happens during create/update. Null when there is nothing to show.
+     * The screen consumes one-shot via [consumeProvisionMessage].
+     */
+    private val _provisionMessage = MutableStateFlow<ProvisionMessage?>(null)
+    val provisionMessage: StateFlow<ProvisionMessage?> = _provisionMessage.asStateFlow()
 
     init {
         loadAvatarCatalog()
@@ -135,7 +147,12 @@ class ProfileSelectionViewModel @Inject constructor(
                     aioMetadataRepository.provisionFromMain(
                         targetProfileId = newId,
                         kidsMaxAgeRating = if (isKids) maxAgeRating else null,
-                    )
+                    ).onFailure { error ->
+                        _provisionMessage.value = ProvisionMessage.Failure(
+                            profileName = name,
+                            reason = error.message
+                        )
+                    }
                 }
                 profileSyncService.pushToRemote()
                 refreshProfilePinStates()
@@ -176,7 +193,12 @@ class ProfileSelectionViewModel @Inject constructor(
                 aioMetadataRepository.provisionFromMain(
                     targetProfileId = profile.id,
                     kidsMaxAgeRating = if (profile.isKids) profile.maxAgeRating else null,
-                )
+                ).onFailure { error ->
+                    _provisionMessage.value = ProvisionMessage.Failure(
+                        profileName = profile.name,
+                        reason = error.message
+                    )
+                }
             }
             profileSyncService.pushToRemote()
             refreshProfilePinStates()
@@ -233,6 +255,10 @@ class ProfileSelectionViewModel @Inject constructor(
             _isPinOperationInProgress.value = false
             onComplete(success)
         }
+    }
+
+    fun consumeProvisionMessage() {
+        _provisionMessage.value = null
     }
 
     fun verifyProfilePin(profileId: Int, pin: String, onComplete: (Result<SupabaseProfilePinVerifyResult>) -> Unit) {

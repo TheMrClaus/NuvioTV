@@ -81,7 +81,24 @@ fun AioMetadataSettingsContent(
             ErrorBanner(message = message, onDismiss = { viewModel.consumeError() })
         }
 
-        val showKeysRequiredBanner = !uiState.canEnable && !uiState.isPrimaryProfileBlocked
+        uiState.statusMessage?.let { message ->
+            StatusBanner(message = message, onDismiss = { viewModel.consumeStatus() })
+        }
+
+        // For non-Main profiles whose initial provisionFromMain failed (or was
+        // never run), the URL/QR section would otherwise stay hidden. Surface
+        // an explicit empty state with a manual retry so the user isn't stuck
+        // on a screen that looks broken.
+        if (uiState.canProvisionFromMain && !uiState.hasConfig && !uiState.isPrimaryProfileBlocked) {
+            ProvisionFromMainBanner(
+                isProvisioning = uiState.isProvisioning,
+                onProvision = { viewModel.onProvisionFromMainClick() }
+            )
+        }
+
+        val showKeysRequiredBanner = !uiState.canEnable &&
+            !uiState.isPrimaryProfileBlocked &&
+            !uiState.canProvisionFromMain
         if (showKeysRequiredBanner) {
             KeysRequiredBanner()
         }
@@ -294,6 +311,67 @@ private fun KeysRequiredBanner() {
             .fillMaxWidth()
             .padding(horizontal = 18.dp, vertical = 6.dp)
     )
+}
+
+@Composable
+private fun ProvisionFromMainBanner(
+    isProvisioning: Boolean,
+    onProvision: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.aio_metadata_no_config_banner),
+            style = MaterialTheme.typography.bodyMedium,
+            color = OmnioColors.TextSecondary
+        )
+        Button(
+            onClick = onProvision,
+            enabled = !isProvisioning,
+            colors = ButtonDefaults.colors(
+                containerColor = OmnioColors.BackgroundElevated,
+                contentColor = OmnioColors.TextPrimary
+            )
+        ) {
+            Text(
+                text = if (isProvisioning) {
+                    stringResource(R.string.aio_metadata_provision_in_progress)
+                } else {
+                    stringResource(R.string.aio_metadata_provision_action)
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusBanner(message: String, onDismiss: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 18.dp, vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = OmnioColors.TextSecondary,
+            modifier = Modifier.weight(1f)
+        )
+        Button(
+            onClick = onDismiss,
+            colors = ButtonDefaults.colors(
+                containerColor = OmnioColors.BackgroundElevated,
+                contentColor = OmnioColors.TextPrimary
+            )
+        ) {
+            Text(stringResource(R.string.action_cancel))
+        }
+    }
 }
 
 @Composable

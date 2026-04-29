@@ -632,6 +632,12 @@
     <string name="aio_metadata_keys_required_short">TMDB + TVDB keys required</string>
     <string name="aio_metadata_enable_blocked_no_keys">Enter TMDB and TVDB API keys first.</string>
     <string name="aio_metadata_rotate_success">Token rotated.</string>
+    <string name="aio_metadata_no_config_banner">AIOMetadata isn\'t set up for this profile yet. Provision a kid-tuned config from your Main profile to get the configure URL and QR code.</string>
+    <string name="aio_metadata_provision_action">Provision from Main</string>
+    <string name="aio_metadata_provision_in_progress">Provisioning…</string>
+    <string name="aio_metadata_provision_success">AIOMetadata provisioned. Configure URL is below.</string>
+    <string name="aio_metadata_provision_failed">AIOMetadata couldn\'t be set up for %1$s: %2$s</string>
+    <string name="aio_metadata_provision_unknown_reason">unknown error — check connection and retry.</string>
     <string name="aio_metadata_save">Save</string>
     <string name="aio_metadata_clear">Clear</string>
     <string name="aio_metadata_cancel">Cancel</string>
