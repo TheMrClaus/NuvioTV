@@ -37,6 +37,14 @@ val phoneKeyAliasValue = releaseValue("OMNIO_PHONE_RELEASE_KEY_ALIAS", "omniopho
 val phoneKeyPasswordValue = releaseValue("OMNIO_PHONE_RELEASE_KEY_PASSWORD")
 val phoneStorePasswordValue = releaseValue("OMNIO_PHONE_RELEASE_STORE_PASSWORD")
 
+// AAB builds and APK-level ABI splits are mutually exclusive once R8 is on
+// (https://issuetracker.google.com/402800800). Disable splits when a bundle or
+// publish task is requested; keep them on for assemble/install (sideload APKs).
+val isBundleOrPublishInvocation = gradle.startParameter.taskNames.any { task ->
+    val lower = task.lowercase()
+    lower.contains("bundle") || lower.contains("publish")
+}
+
 android {
     namespace = "com.omnio.phone"
     compileSdk = 36
@@ -93,10 +101,10 @@ android {
 
     splits {
         abi {
-            isEnable = true
+            isEnable = !isBundleOrPublishInvocation
             reset()
             include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
+            isUniversalApk = !isBundleOrPublishInvocation
         }
     }
 
@@ -161,11 +169,16 @@ val playServiceAccountFile = releaseOptional("OMNIO_PHONE_PLAY_SERVICE_ACCOUNT_J
     ?.let(::file)
     ?: rootProject.file("play-service-account-phone.json")
 
+val playTrackValue = releaseValue("OMNIO_PHONE_PLAY_TRACK", "internal")
+val playReleaseStatusValue = releaseValue("OMNIO_PHONE_PLAY_RELEASE_STATUS", "DRAFT")
+    .uppercase()
+    .let { com.github.triplet.gradle.androidpublisher.ReleaseStatus.valueOf(it) }
+
 play {
     serviceAccountCredentials.set(playServiceAccountFile)
-    track.set("internal")
+    track.set(playTrackValue)
+    releaseStatus.set(playReleaseStatusValue)
     defaultToAppBundles.set(true)
-    releaseStatus.set(com.github.triplet.gradle.androidpublisher.ReleaseStatus.DRAFT)
     // Keep the plugin from failing the build on configuration when creds are absent;
     // the publish tasks will still error out, which is the correct behavior.
     enabled.set(playServiceAccountFile.exists())

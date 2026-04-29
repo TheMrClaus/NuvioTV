@@ -1,0 +1,130 @@
+name: Phone Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Play Console track to upload to"
+        required: true
+        default: internal
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+      release_status:
+        description: "Release status when uploading (Play Edits API enum)"
+        required: true
+        default: DRAFT
+        type: choice
+        options:
+          - DRAFT
+          - IN_PROGRESS
+          - HALTED
+          - COMPLETED
+      dry_run:
+        description: "Build and sign the AAB but skip the actual upload"
+        required: true
+        default: true
+        type: boolean
+      upload_listing:
+        description: "Also upload listing metadata (titles, descriptions, graphics)"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: phone-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  phone-release:
+    runs-on: ubuntu-latest
+    env:
+      # Shared BuildConfig env vars consumed by :core-platform / :core-data via the
+      # shared modules. Phone reads only what it needs at runtime — TV-only secrets
+      # (Trakt, GitHub updater) are intentionally absent.
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      AVATAR_PUBLIC_BASE_URL: ${{ secrets.AVATAR_PUBLIC_BASE_URL }}
+      TV_LOGIN_WEB_BASE_URL: ${{ secrets.TV_LOGIN_WEB_BASE_URL }}
+      TRAKT_REDIRECT_URI: ${{ secrets.TRAKT_REDIRECT_URI }}
+      AIOMETADATA_BASE_URL: ${{ secrets.AIOMETADATA_BASE_URL }}
+      PARENTAL_GUIDE_API_URL: ${{ secrets.PARENTAL_GUIDE_API_URL }}
+      INTRODB_API_URL: ${{ secrets.INTRODB_API_URL }}
+      TRAILER_API_URL: ${{ secrets.TRAILER_API_URL }}
+      IMDB_RATINGS_API_BASE_URL: ${{ secrets.IMDB_RATINGS_API_BASE_URL }}
+      IMDB_TAPFRAME_API_BASE_URL: ${{ secrets.IMDB_TAPFRAME_API_BASE_URL }}
+      DONATIONS_BASE_URL: ${{ secrets.DONATIONS_BASE_URL }}
+      DONATIONS_DONATE_URL: ${{ secrets.DONATIONS_DONATE_URL }}
+      # Phone Play Publisher routing (read by app-phone/build.gradle.kts)
+      OMNIO_PHONE_PLAY_TRACK: ${{ inputs.track }}
+      OMNIO_PHONE_PLAY_RELEASE_STATUS: ${{ inputs.release_status }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Prepare phone signing
+        env:
+          PHONE_KEYSTORE_BASE64: ${{ secrets.OMNIO_PHONE_RELEASE_KEYSTORE_BASE64 }}
+          PHONE_KEY_ALIAS: ${{ secrets.OMNIO_PHONE_RELEASE_KEY_ALIAS }}
+          PHONE_KEY_PASSWORD: ${{ secrets.OMNIO_PHONE_RELEASE_KEY_PASSWORD }}
+          PHONE_STORE_PASSWORD: ${{ secrets.OMNIO_PHONE_RELEASE_STORE_PASSWORD }}
+        run: |
+          if [ -z "$PHONE_KEYSTORE_BASE64" ]; then
+            echo "Missing OMNIO_PHONE_RELEASE_KEYSTORE_BASE64 secret." >&2
+            echo "Generate the keystore locally and stash it base64-encoded as a repo secret." >&2
+            exit 1
+          fi
+          echo "$PHONE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/omnio-phone.jks"
+          {
+            echo "OMNIO_PHONE_RELEASE_STORE_FILE=$RUNNER_TEMP/omnio-phone.jks"
+            echo "OMNIO_PHONE_RELEASE_KEY_ALIAS=$PHONE_KEY_ALIAS"
+            echo "OMNIO_PHONE_RELEASE_KEY_PASSWORD=$PHONE_KEY_PASSWORD"
+            echo "OMNIO_PHONE_RELEASE_STORE_PASSWORD=$PHONE_STORE_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare Play service account
+        if: ${{ inputs.dry_run == false }}
+        env:
+          PLAY_SA_BASE64: ${{ secrets.OMNIO_PHONE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 }}
+        run: |
+          if [ -z "$PLAY_SA_BASE64" ]; then
+            echo "Missing OMNIO_PHONE_PLAY_SERVICE_ACCOUNT_JSON_BASE64 secret." >&2
+            echo "Generate the JSON in Google Cloud, base64-encode it, store as a repo secret." >&2
+            exit 1
+          fi
+          echo "$PLAY_SA_BASE64" | base64 --decode > "$RUNNER_TEMP/play-service-account-phone.json"
+          echo "OMNIO_PHONE_PLAY_SERVICE_ACCOUNT_JSON=$RUNNER_TEMP/play-service-account-phone.json" >> "$GITHUB_ENV"
+
+      - name: Build signed AAB
+        run: ./gradlew :app-phone:bundleRelease --stacktrace
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: omnio-phone-release-aab
+          path: app-phone/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+      - name: Publish AAB to Play Console
+        if: ${{ inputs.dry_run == false }}
+        run: ./gradlew :app-phone:publishBundle --stacktrace
+
+      - name: Publish listing metadata
+        if: ${{ inputs.dry_run == false && inputs.upload_listing == true }}
+        run: ./gradlew :app-phone:publishListing --stacktrace
