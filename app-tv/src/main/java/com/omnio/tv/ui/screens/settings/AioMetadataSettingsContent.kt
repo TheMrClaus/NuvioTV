@@ -66,6 +66,7 @@ fun AioMetadataSettingsContent(
     val context = LocalContext.current
 
     var keyDialogProvider by remember { mutableStateOf<AioMetadataProvider?>(null) }
+    var showResetConfirm by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SettingsDetailHeader(
@@ -192,6 +193,17 @@ fun AioMetadataSettingsContent(
                     }
                 }
 
+                if (uiState.canResetFromMain) {
+                    item(key = "aio_reset_from_main") {
+                        SettingsActionRow(
+                            title = stringResource(R.string.aio_metadata_reset_title),
+                            subtitle = stringResource(R.string.aio_metadata_reset_subtitle),
+                            enabled = !uiState.isProvisioning,
+                            onClick = { showResetConfirm = true }
+                        )
+                    }
+                }
+
                 val trailingProviders = if (showRequiredFirst) optionalProviders else AioMetadataSettingsViewModel.KNOWN_PROVIDERS
                 items(
                     items = trailingProviders,
@@ -227,6 +239,16 @@ fun AioMetadataSettingsContent(
                 keyDialogProvider = null
             },
             onDismiss = { keyDialogProvider = null }
+        )
+    }
+
+    if (showResetConfirm) {
+        AioResetConfirmDialog(
+            onConfirm = {
+                showResetConfirm = false
+                viewModel.onResetFromMainClick()
+            },
+            onDismiss = { showResetConfirm = false }
         )
     }
 }
@@ -396,6 +418,41 @@ private fun ErrorBanner(message: String, onDismiss: () -> Unit) {
             )
         ) {
             Text(stringResource(R.string.action_cancel))
+        }
+    }
+}
+
+@Composable
+private fun AioResetConfirmDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    OmnioDialog(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.aio_metadata_reset_confirm_title),
+        subtitle = stringResource(R.string.aio_metadata_reset_confirm_message),
+        width = 560.dp,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.colors(
+                    containerColor = OmnioColors.BackgroundElevated,
+                    contentColor = OmnioColors.TextPrimary
+                )
+            ) {
+                Text(stringResource(R.string.action_cancel))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.colors(
+                    containerColor = OmnioColors.BackgroundCard,
+                    contentColor = OmnioColors.TextPrimary
+                )
+            ) {
+                Text(stringResource(R.string.aio_metadata_reset_confirm_action))
+            }
         }
     }
 }

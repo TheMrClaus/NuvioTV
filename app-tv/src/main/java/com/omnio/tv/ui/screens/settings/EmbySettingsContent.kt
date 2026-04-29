@@ -95,12 +95,28 @@ fun EmbySettingsContent(
                         )
                     }
                 } else {
+                    if (uiState.canCopyFromMain) {
+                        item(key = "emby_copy_from_main") {
+                            SettingsActionRow(
+                                title = stringResource(R.string.settings_emby_copy_from_main_title),
+                                subtitle = stringResource(R.string.settings_emby_copy_from_main_subtitle),
+                                enabled = !uiState.isCopyingFromMain,
+                                onClick = { viewModel.copyFromMain() },
+                                modifier = if (initialFocusRequester != null) {
+                                    Modifier.focusRequester(initialFocusRequester)
+                                } else {
+                                    Modifier
+                                }
+                            )
+                        }
+                    }
+
                     item(key = "emby_server_url") {
                         SettingsActionRow(
                             title = stringResource(R.string.settings_emby_server_url),
                             subtitle = uiState.serverUrl.ifBlank { stringResource(R.string.mdblist_not_set) },
                             onClick = { showServerDialog = true },
-                            modifier = if (initialFocusRequester != null) {
+                            modifier = if (initialFocusRequester != null && !uiState.canCopyFromMain) {
                                 Modifier.focusRequester(initialFocusRequester)
                             } else {
                                 Modifier
