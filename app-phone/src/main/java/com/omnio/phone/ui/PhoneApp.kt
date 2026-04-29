@@ -241,6 +241,19 @@ private fun SignedInNav() {
                     },
                     onManageAddons = {
                         navController.navigate(PhoneRoutes.ADDONS) {
+                            popUpTo(PhoneRoutes.PROFILES) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenLibrary = {
+                        navController.navigate(PhoneRoutes.LIBRARY) {
+                            popUpTo(PhoneRoutes.PROFILES) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenHome = {
+                        navController.navigate(PhoneRoutes.HOME) {
+                            popUpTo(PhoneRoutes.PROFILES) { inclusive = false }
                             launchSingleTop = true
                         }
                     }

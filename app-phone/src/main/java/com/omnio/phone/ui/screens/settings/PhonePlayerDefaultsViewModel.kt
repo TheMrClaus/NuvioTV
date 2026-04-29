@@ -20,7 +20,9 @@ data class PlayerDefaultsUiState(
     val preferredSubtitleLanguage: String = "en",
     val secondarySubtitleLanguage: String? = null,
     val preferredAudioLanguage: String = AudioLanguageOption.DEVICE,
-    val secondaryAudioLanguage: String? = null
+    val secondaryAudioLanguage: String? = null,
+    val subtitleSize: Int = 120,
+    val subtitleOutlineEnabled: Boolean = true
 )
 
 @HiltViewModel
@@ -54,11 +56,21 @@ class PhonePlayerDefaultsViewModel @Inject constructor(
         viewModelScope.launch { playerSettingsDataStore.setSecondaryPreferredAudioLanguage(code) }
     }
 
+    fun setSubtitleSize(size: Int) {
+        viewModelScope.launch { playerSettingsDataStore.setSubtitleSize(size) }
+    }
+
+    fun setSubtitleOutlineEnabled(enabled: Boolean) {
+        viewModelScope.launch { playerSettingsDataStore.setSubtitleOutlineEnabled(enabled) }
+    }
+
     private fun PlayerSettings.toUiState() = PlayerDefaultsUiState(
         preferredSubtitleLanguage = subtitleStyle.preferredLanguage,
         secondarySubtitleLanguage = subtitleStyle.secondaryPreferredLanguage,
         preferredAudioLanguage = preferredAudioLanguage,
-        secondaryAudioLanguage = secondaryPreferredAudioLanguage
+        secondaryAudioLanguage = secondaryPreferredAudioLanguage,
+        subtitleSize = subtitleStyle.size,
+        subtitleOutlineEnabled = subtitleStyle.outlineEnabled
     )
 
     companion object {
