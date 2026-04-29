@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Omnio</string>
+    <string name="catalog_see_all_empty_title">Görsel öğe bulunamadı</string>
+    <string name="catalog_see_all_from">Kaynak: %1$s</string>
+    <string name="library_sort_added_asc">İlk Eklenenler</string>
+    <string name="library_sort_added_desc">En Son Eklenenler</string>
+    <string name="library_sort_title_asc">A\'dan Z\'ye İsim</string>
+    <string name="library_sort_title_desc">Z\'den A\'ya İsim</string>
+    <string name="library_sort_trakt_order">Trakt Sıralaması</string>
+    <string name="search_placeholder">Film ve dizi ara</string>
+    <string name="search_start_subtitle">En az 2 karakter girin</string>
+    <string name="search_start_title">Aramaya Başlayın</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Omnio</string>
+    <string name="catalog_see_all_empty_title">No hay elementos disponibles</string>
+    <string name="catalog_see_all_from">de %1$s</string>
+    <string name="library_sort_added_asc">Añadido ↑</string>
+    <string name="library_sort_added_desc">Añadido ↓</string>
+    <string name="library_sort_title_asc">Título A-Z</string>
+    <string name="library_sort_title_desc">Título Z-A</string>
+    <string name="library_sort_trakt_order">Orden de Trakt</string>
+    <string name="search_placeholder">Buscar películas y series</string>
+    <string name="search_start_subtitle">Introduce al menos 2 caracteres</string>
+    <string name="search_start_title">Empezar a buscar</string>
+</resources>

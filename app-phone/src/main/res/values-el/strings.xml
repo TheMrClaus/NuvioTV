@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Omnio</string>
+    <string name="catalog_see_all_empty_title">Δεν υπάρχουν διαθέσιμα στοιχεία</string>
+    <string name="catalog_see_all_from">από %1$s</string>
+    <string name="library_sort_added_asc">Προστέθηκε ↑</string>
+    <string name="library_sort_added_desc">Προστέθηκε ↓</string>
+    <string name="library_sort_title_asc">Τίτλος Α-Ω</string>
+    <string name="library_sort_title_desc">Τίτλος Ω-Α</string>
+    <string name="library_sort_trakt_order">Σειρά Trakt</string>
+    <string name="search_placeholder">Αναζήτηση ταινιών &amp; σειρών</string>
+    <string name="search_start_subtitle">Εισάγετε τουλάχιστον 2 χαρακτήρες</string>
+    <string name="search_start_title">Ξεκινήστε την αναζήτηση</string>
+</resources>

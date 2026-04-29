@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Omnio</string>
+    <string name="catalog_see_all_empty_title">Ingen elementer tilgjengelig</string>
+    <string name="catalog_see_all_from">fra %1$s</string>
+    <string name="library_sort_added_asc">Lagt til ↑</string>
+    <string name="library_sort_added_desc">Lagt til ↓</string>
+    <string name="library_sort_title_asc">Tittel A-Å</string>
+    <string name="library_sort_title_desc">Tittel Å-A</string>
+    <string name="library_sort_trakt_order">Trakt-rekkefølge</string>
+    <string name="search_placeholder">Søk i filmer &amp; serier</string>
+    <string name="search_start_subtitle">Skriv inn minst 2 tegn</string>
+    <string name="search_start_title">Start søk</string>
+</resources>
