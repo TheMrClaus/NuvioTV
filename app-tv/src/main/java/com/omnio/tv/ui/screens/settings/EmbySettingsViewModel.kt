@@ -8,12 +8,17 @@ import com.omnio.tv.data.local.EmbyCredentialsDataStore
 import com.omnio.tv.data.remote.api.EmbyApi
 import com.omnio.tv.data.remote.dto.emby.EmbyAuthByNameRequestDto
 import com.omnio.tv.data.repository.EmbyMediaService
+import com.omnio.tv.domain.profile.ProfileManager
 import com.squareup.moshi.Moshi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
@@ -30,13 +35,16 @@ data class EmbySettingsUiState(
     val password: String = "",
     val isTesting: Boolean = false,
     val testResult: String? = null,
-    val isTestSuccess: Boolean = false
+    val isTestSuccess: Boolean = false,
+    val canCopyFromMain: Boolean = false,
+    val isCopyingFromMain: Boolean = false
 )
 
 @HiltViewModel
 class EmbySettingsViewModel @Inject constructor(
     private val embyCredentialsDataStore: EmbyCredentialsDataStore,
     private val embyMediaService: EmbyMediaService,
+    private val profileManager: ProfileManager,
     private val okHttpClient: OkHttpClient,
     private val moshi: Moshi
 ) : ViewModel() {
@@ -46,6 +54,28 @@ class EmbySettingsViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(EmbySettingsUiState())
     val uiState: StateFlow<EmbySettingsUiState> = _uiState.asStateFlow()
+
+    init {
+        // Re-evaluate "Copy from Main" eligibility whenever the active profile
+        // or its Emby state changes. Eligibility = active profile is non-Main,
+        // active profile has no creds yet, and Main has creds we can copy.
+        combine(
+            credentials,
+            profileManager.activeProfileId,
+        ) { activeCreds, activeId ->
+            val isMain = activeId == 1
+            val activeConfigured = activeCreds.isConfigured
+            if (isMain || activeConfigured) {
+                false
+            } else {
+                embyCredentialsDataStore.credentialsForProfile(1) != null
+            }
+        }
+            .onEach { eligible ->
+                _uiState.value = _uiState.value.copy(canCopyFromMain = eligible)
+            }
+            .launchIn(viewModelScope)
+    }
 
     fun updateServerUrl(url: String) {
         _uiState.value = _uiState.value.copy(serverUrl = url, testResult = null)
@@ -134,6 +164,28 @@ class EmbySettingsViewModel @Inject constructor(
                     isTestSuccess = false
                 )
             }
+        }
+    }
+
+    fun copyFromMain() {
+        val current = _uiState.value
+        if (current.isCopyingFromMain || !current.canCopyFromMain) return
+        if (profileManager.activeProfileId.value == 1) return
+
+        viewModelScope.launch {
+            _uiState.value = current.copy(isCopyingFromMain = true, testResult = null)
+            val copied = runCatching {
+                embyCredentialsDataStore.copyFromProfile(sourceProfileId = 1)
+            }.getOrElse { false }
+            _uiState.value = _uiState.value.copy(
+                isCopyingFromMain = false,
+                testResult = if (copied) {
+                    "Emby credentials copied from Main."
+                } else {
+                    "Main profile has no Emby credentials to copy."
+                },
+                isTestSuccess = copied
+            )
         }
     }
 

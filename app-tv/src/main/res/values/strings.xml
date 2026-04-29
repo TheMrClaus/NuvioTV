@@ -267,6 +267,8 @@
     <string name="settings_emby_connected">Connected</string>
     <string name="settings_emby_disconnect">Disconnect Emby</string>
     <string name="settings_emby_disconnect_subtitle">Remove saved server credentials for this profile</string>
+    <string name="settings_emby_copy_from_main_title">Copy Emby from Main profile</string>
+    <string name="settings_emby_copy_from_main_subtitle">Reuse your Main profile\'s Emby server, login, and access token on this profile. A fresh device ID is minted so each profile shows up separately in Emby sessions.</string>
     <string name="settings_emby_server_url">Server URL</string>
     <string name="settings_emby_server_url_hint">Set your Emby server URL (for example: https://emby.local:8096)</string>
     <string name="settings_emby_server_url_placeholder">https://emby.local:8096</string>
@@ -638,6 +640,12 @@
     <string name="aio_metadata_provision_success">AIOMetadata provisioned. Configure URL is below.</string>
     <string name="aio_metadata_provision_failed">AIOMetadata couldn\'t be set up for %1$s: %2$s</string>
     <string name="aio_metadata_provision_unknown_reason">unknown error — check connection and retry.</string>
+    <string name="aio_metadata_reset_title">Reset AIOMetadata config</string>
+    <string name="aio_metadata_reset_subtitle">Wipe this profile\'s current AIO config and mint a fresh one from Main. Use this if the configure URL won\'t load.</string>
+    <string name="aio_metadata_reset_confirm_title">Reset AIOMetadata config?</string>
+    <string name="aio_metadata_reset_confirm_message">A fresh UUID will be minted from Main\'s settings. The current configure URL stops working immediately and any other Stremio clients using it will need to reinstall the new manifest.</string>
+    <string name="aio_metadata_reset_confirm_action">Reset</string>
+    <string name="aio_metadata_reset_success">AIOMetadata reset complete. New URL is below.</string>
     <string name="aio_metadata_save">Save</string>
     <string name="aio_metadata_clear">Clear</string>
     <string name="aio_metadata_cancel">Cancel</string>

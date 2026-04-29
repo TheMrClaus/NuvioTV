@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -116,6 +117,38 @@ class EmbyCredentialsDataStore @Inject constructor(
             prefs[userIdKey] = normalizedUserId
         }
         cachedCredentials = cachedCredentials.copy(userId = normalizedUserId)
+    }
+
+    /**
+     * Reads credentials for [profileId] without changing the active profile.
+     * Returns null if the profile has no Emby credentials configured.
+     */
+    suspend fun credentialsForProfile(profileId: Int): EmbyCredentials? {
+        val prefs = factory.get(profileId, FEATURE).data.first()
+        val creds = EmbyCredentials(
+            serverUrl = prefs[serverUrlKey]?.trimEnd('/') ?: "",
+            apiKey = prefs[apiKeyKey] ?: "",
+            userId = prefs[userIdKey] ?: "",
+            deviceId = prefs[deviceIdKey] ?: ""
+        )
+        return creds.takeIf { it.isConfigured }
+    }
+
+    /**
+     * Copies the [sourceProfileId]'s Emby credentials onto the active profile
+     * with a freshly minted deviceId so each profile shows up as its own
+     * client in the Emby server's session list. Returns false when the source
+     * has no credentials to copy.
+     */
+    suspend fun copyFromProfile(sourceProfileId: Int): Boolean {
+        val source = credentialsForProfile(sourceProfileId) ?: return false
+        saveCredentials(
+            serverUrl = source.serverUrl,
+            apiKey = source.apiKey,
+            userId = source.userId,
+            deviceId = UUID.randomUUID().toString()
+        )
+        return true
     }
 
     suspend fun clearCredentials() {

@@ -43,6 +43,7 @@ class AioMetadataSettingsViewModel @Inject constructor(
         val isPrimaryProfileBlocked: Boolean = false,
         val hasConfig: Boolean = false,
         val canProvisionFromMain: Boolean = false,
+        val canResetFromMain: Boolean = false,
         val isProvisioning: Boolean = false,
         val errorMessage: String? = null,
         val statusMessage: String? = null,
@@ -80,6 +81,7 @@ class AioMetadataSettingsViewModel @Inject constructor(
                 val primaryBlocked = profile?.usesPrimaryAddons == true
                 val isMain = profile?.isPrimary == true
                 val canProvision = !isMain && !primaryBlocked && settings.aioUuid.isBlank()
+                val canReset = !isMain && !primaryBlocked && settings.aioUuid.isNotBlank()
                 val cached = repository.cachedConfig()
                 _uiState.update {
                     it.copy(
@@ -89,6 +91,7 @@ class AioMetadataSettingsViewModel @Inject constructor(
                         isPrimaryProfileBlocked = primaryBlocked,
                         hasConfig = settings.aioUuid.isNotBlank(),
                         canProvisionFromMain = canProvision,
+                        canResetFromMain = canReset,
                         providers = cached?.toNuvioProviderStates() ?: it.providers,
                         apiKeys = cached?.apiKeys ?: it.apiKeys,
                         catalogs = cached?.catalogs ?: it.catalogs,
@@ -111,7 +114,22 @@ class AioMetadataSettingsViewModel @Inject constructor(
     fun onProvisionFromMainClick() {
         val current = _uiState.value
         if (current.isProvisioning || !current.canProvisionFromMain) return
+        runProvisionFromMain(reset = false)
+    }
 
+    /**
+     * Wipes the active profile's existing AIOMetadata UUID and mints a fresh
+     * one by re-running provisioning from Main. Useful when the upstream
+     * configure URL renders a blank page (config got into a bad state) and the
+     * user needs a clean recovery without recreating the profile.
+     */
+    fun onResetFromMainClick() {
+        val current = _uiState.value
+        if (current.isProvisioning || !current.canResetFromMain) return
+        runProvisionFromMain(reset = true)
+    }
+
+    private fun runProvisionFromMain(reset: Boolean) {
         val profile = profileManager.activeProfile ?: return
         if (profile.isPrimary) return
 
@@ -132,7 +150,10 @@ class AioMetadataSettingsViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isProvisioning = false,
-                            statusMessage = appContext.getString(R.string.aio_metadata_provision_success)
+                            statusMessage = appContext.getString(
+                                if (reset) R.string.aio_metadata_reset_success
+                                else R.string.aio_metadata_provision_success
+                            )
                         )
                     }
                 }
