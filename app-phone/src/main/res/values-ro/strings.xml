@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Omnio</string>
+    <string name="catalog_see_all_empty_title">Niciun element disponibil</string>
+    <string name="catalog_see_all_from">din %1$s</string>
+    <string name="search_placeholder">Caută filme &amp; seriale</string>
+    <string name="search_start_subtitle">Introdu cel puțin 2 caractere</string>
+    <string name="search_start_title">Începe căutarea</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Omnio</string>
+    <string name="catalog_see_all_empty_title">Ni elementov na voljo</string>
+    <string name="catalog_see_all_from">od %1$s</string>
+    <string name="library_sort_added_asc">Dodano ↑</string>
+    <string name="library_sort_added_desc">Dodano ↓</string>
+    <string name="library_sort_title_asc">Naslov A-Ž</string>
+    <string name="library_sort_title_desc">Naslov Ž-A</string>
+    <string name="library_sort_trakt_order">Vrstni red Trakt</string>
+    <string name="search_placeholder">Iskanje filmov in serij</string>
+    <string name="search_start_subtitle">Vnesite vsaj 2 znaka</string>
+    <string name="search_start_title">Začnite z iskanjem</string>
+</resources>

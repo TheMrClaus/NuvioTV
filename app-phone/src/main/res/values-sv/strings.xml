@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="catalog_see_all_empty_title">Inga objekt tillgängliga</string>
+    <string name="catalog_see_all_from">från %1$s</string>
+    <string name="library_sort_added_asc">Tillagd ↑</string>
+    <string name="library_sort_added_desc">Tillagd ↓</string>
+    <string name="library_sort_title_asc">Titel A-Ö</string>
+    <string name="library_sort_title_desc">Titel Ö-A</string>
+    <string name="library_sort_trakt_order">Trakt-ordning</string>
+    <string name="search_placeholder">Sök filmer &amp; serier</string>
+    <string name="search_start_subtitle">Ange minst 2 tecken</string>
+    <string name="search_start_title">Börja söka</string>
+</resources>
