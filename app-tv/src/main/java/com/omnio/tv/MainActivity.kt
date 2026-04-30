@@ -52,6 +52,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -392,10 +393,15 @@ class MainActivity : ComponentActivity() {
                     val currentRoute = navBackStackEntry?.destination?.route
 
                     val view = LocalView.current
-                    LaunchedEffect(currentRoute) {
-                        val holder = PerformanceMetricsState.getHolderForHierarchy(view)
+                    val metricsHolder = remember(view) {
+                        PerformanceMetricsState.getHolderForHierarchy(view)
+                    }
+                    DisposableEffect(currentRoute) {
                         if (currentRoute != null) {
-                            holder.state?.putState("Screen", currentRoute)
+                            metricsHolder.state?.putState("Screen", currentRoute)
+                        }
+                        onDispose {
+                            metricsHolder.state?.removeState("Screen")
                         }
                     }
 
