@@ -494,11 +494,29 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Build all release APKs, commit the version bump, push tag/branch, and create the GitHub release as a draft.",
     )
+    parser.add_argument(
+        "--module",
+        choices=["app-tv", "app-phone"],
+        default="app-tv",
+        help="App module to release. Defaults to app-tv.",
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
+
+    global APP_MODULE, BUILD_FILE, APK_DIR, EXPECTED_ASSET_NAMES
+    APP_MODULE = args.module
+    BUILD_FILE = ROOT / APP_MODULE / "build.gradle.kts"
+    APK_DIR = ROOT / APP_MODULE / "build" / "outputs" / "apk" / "release"
+    EXPECTED_ASSET_NAMES = [
+        f"{APP_MODULE}-arm64-v8a-release.apk",
+        f"{APP_MODULE}-armeabi-v7a-release.apk",
+        f"{APP_MODULE}-x86_64-release.apk",
+        f"{APP_MODULE}-x86-release.apk",
+        f"{APP_MODULE}-universal-release.apk",
+    ]
 
     selected_modes = [args.dry_run, args.publish, args.draft]
     if sum(1 for enabled in selected_modes if enabled) > 1:
