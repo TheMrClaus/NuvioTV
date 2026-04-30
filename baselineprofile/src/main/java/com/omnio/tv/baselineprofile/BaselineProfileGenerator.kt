@@ -21,12 +21,12 @@ class BaselineProfileGenerator {
     @Test
     fun generate() {
         rule.collect(
-            packageName = "com.omnio.tv.debug", // benchmark build has .debug suffix
+            packageName = "com.omnio.tv",
             includeInStartupProfile = true
         ) {
             pressHome()
             startActivityAndWait()
-            device.wait(Until.hasObject(By.pkg("com.omnio.tv.debug")), 5_000)
+            device.wait(Until.hasObject(By.pkg("com.omnio.tv")), 5_000)
             Thread.sleep(3_000)
         }
     }
