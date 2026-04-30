@@ -29,7 +29,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media3.session.MediaSession
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.omnio.tv.core.player.PlayerEvent
@@ -161,15 +160,7 @@ fun PhonePlayerScreen(
         onDispose { componentActivity?.removeOnConfigurationChangedListener(listener) }
     }
 
-    // MediaSession lifecycle: bind to current ExoPlayer.
     val exoPlayer = viewModel.exoPlayer
-    DisposableEffect(exoPlayer, activity) {
-        val player = exoPlayer
-        val session = if (player != null && activity != null) {
-            MediaSession.Builder(activity, player).build()
-        } else null
-        onDispose { session?.release() }
-    }
 
     // Back press: dismiss sheet → close.
     BackHandler(enabled = sheet != null) { sheet = null }
