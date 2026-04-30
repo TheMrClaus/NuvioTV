@@ -3,12 +3,14 @@ package com.omnio.phone
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.os.ConfigurationCompat
+import androidx.metrics.performance.JankStats
 import com.omnio.phone.ui.PhoneApp
 import com.omnio.phone.ui.screens.player.PhonePlayerPipController
 import com.omnio.phone.ui.theme.OmnioTheme
@@ -17,6 +19,8 @@ import java.util.Locale
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private lateinit var jankStats: JankStats
 
     override fun attachBaseContext(newBase: Context) {
         val tag = newBase.getSharedPreferences("app_locale", Context.MODE_PRIVATE)
@@ -44,6 +48,25 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+
+        jankStats = JankStats.createAndTrack(window) { frameData ->
+            if (frameData.isJank) {
+                Log.w(
+                    "JankStats",
+                    "JANK: ${frameData.frameDurationUiNanos / 1_000_000}ms | states: ${frameData.states}"
+                )
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (::jankStats.isInitialized) jankStats.isTrackingEnabled = true
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (::jankStats.isInitialized) jankStats.isTrackingEnabled = false
     }
 
     override fun onUserLeaveHint() {
