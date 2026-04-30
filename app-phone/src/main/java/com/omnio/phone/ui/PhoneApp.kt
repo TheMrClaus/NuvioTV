@@ -19,12 +19,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.metrics.performance.PerformanceMetricsState
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -98,6 +101,12 @@ private fun SignedInNav() {
         PhoneRoutes.PROFILES,
         PhoneRoutes.ADDONS
     )
+
+    val view = LocalView.current
+    LaunchedEffect(currentRoute) {
+        val holder = PerformanceMetricsState.getHolderForHierarchy(view)
+        holder.state?.putState("Screen", currentRoute)
+    }
 
     Scaffold(
         topBar = {

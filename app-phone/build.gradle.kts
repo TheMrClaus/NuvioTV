@@ -235,6 +235,9 @@ dependencies {
     implementation(libs.zxing.core)
     implementation(libs.androidx.browser)
 
+    // Performance profiling
+    implementation("androidx.metrics:metrics-performance:1.0.0")  // JankStats
+
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation("junit:junit:4.13.2")
