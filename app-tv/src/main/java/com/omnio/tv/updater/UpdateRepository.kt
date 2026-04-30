@@ -16,28 +16,33 @@ class UpdateRepository @Inject constructor(
             val owner = BuildConfig.GITHUB_OWNER
             val repo = BuildConfig.GITHUB_REPO
 
-            val response = gitHubReleaseApi.getLatestRelease(owner = owner, repo = repo)
+            val response = gitHubReleaseApi.getReleases(owner = owner, repo = repo)
             if (!response.isSuccessful) {
                 error("GitHub API error: ${response.code()}")
             }
 
-            val dto = response.body() ?: error("Empty GitHub release response")
-            if (dto.draft || dto.prerelease) {
-                error("Latest release is draft/prerelease")
-            }
+            val releases = response.body().orEmpty()
+            // TV and phone publish to the same repo. Filter to releases that ship a
+            // TV APK asset so phone-only releases don't mask the latest TV update.
+            val tvRelease = releases
+                .firstOrNull { release ->
+                    !release.draft && !release.prerelease &&
+                        AbiSelector.tvApkAssets(release.assets).isNotEmpty()
+                }
+                ?: error("No TV release found in the latest 30 entries")
 
-            val tag = dto.tagName?.takeIf { it.isNotBlank() }
-                ?: dto.name?.takeIf { it.isNotBlank() }
+            val tag = tvRelease.tagName?.takeIf { it.isNotBlank() }
+                ?: tvRelease.name?.takeIf { it.isNotBlank() }
                 ?: error("Release has no tag/name")
 
-            val asset = AbiSelector.chooseBestApkAsset(dto.assets)
-                ?: error("No APK asset found in release")
+            val asset = AbiSelector.chooseBestApkAsset(tvRelease.assets)
+                ?: error("No TV APK asset found in release $tag")
 
             AppUpdate(
                 tag = tag,
-                title = dto.name?.takeIf { it.isNotBlank() } ?: tag,
-                notes = dto.body.orEmpty(),
-                releaseUrl = dto.htmlUrl,
+                title = tvRelease.name?.takeIf { it.isNotBlank() } ?: tag,
+                notes = tvRelease.body.orEmpty(),
+                releaseUrl = tvRelease.htmlUrl,
                 assetName = asset.name,
                 assetUrl = asset.browserDownloadUrl,
                 assetSizeBytes = asset.size
