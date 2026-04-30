@@ -118,6 +118,15 @@ class GitHubContributorsRepositoryTest {
             error("Not needed for this test")
         }
 
+        override suspend fun getReleases(
+            owner: String,
+            repo: String,
+            perPage: Int,
+            page: Int
+        ): Response<List<GitHubReleaseDto>> {
+            error("Not needed for this test")
+        }
+
         override suspend fun getContributors(
             owner: String,
             repo: String
