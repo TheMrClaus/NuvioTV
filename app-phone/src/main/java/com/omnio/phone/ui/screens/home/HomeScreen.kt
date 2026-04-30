@@ -18,7 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -90,9 +90,12 @@ private fun HomeFeed(
         derivedStateOf { listState.isScrollInProgress }
     }
     val view = LocalView.current
-    val metricsHolder = PerformanceMetricsState.getHolderForHierarchy(view)
-    LaunchedEffect(isScrolling) {
+    val metricsHolder = remember(view) {
+        PerformanceMetricsState.getHolderForHierarchy(view)
+    }
+    DisposableEffect(isScrolling) {
         metricsHolder.state?.putState("HomeScrolling", isScrolling.toString())
+        onDispose { metricsHolder.state?.removeState("HomeScrolling") }
     }
 
     LazyColumn(

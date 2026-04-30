@@ -19,8 +19,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
@@ -103,9 +104,12 @@ private fun SignedInNav() {
     )
 
     val view = LocalView.current
-    LaunchedEffect(currentRoute) {
-        val holder = PerformanceMetricsState.getHolderForHierarchy(view)
-        holder.state?.putState("Screen", currentRoute)
+    val metricsHolder = remember(view) {
+        PerformanceMetricsState.getHolderForHierarchy(view)
+    }
+    DisposableEffect(currentRoute) {
+        metricsHolder.state?.putState("Screen", currentRoute)
+        onDispose { metricsHolder.state?.removeState("Screen") }
     }
 
     Scaffold(

@@ -196,12 +196,16 @@ fun ModernHomeContent(
     // Tag JankStats with key UI states so jank reports are actionable.
     val currentView = LocalView.current
     val focusManager = LocalFocusManager.current
-    val metricsHolder = PerformanceMetricsState.getHolderForHierarchy(currentView)
-    LaunchedEffect(isVerticalRowsScrolling) {
-        metricsHolder.state?.putState("HomeScrolling", isVerticalRowsScrolling.toString())
+    val metricsHolder = remember(currentView) {
+        PerformanceMetricsState.getHolderForHierarchy(currentView)
     }
-    LaunchedEffect(enrichingItemId) {
+    DisposableEffect(isVerticalRowsScrolling) {
+        metricsHolder.state?.putState("HomeScrolling", isVerticalRowsScrolling.toString())
+        onDispose { metricsHolder.state?.removeState("HomeScrolling") }
+    }
+    DisposableEffect(enrichingItemId) {
         metricsHolder.state?.putState("HeroEnriching", (enrichingItemId != null).toString())
+        onDispose { metricsHolder.state?.removeState("HeroEnriching") }
     }
 
     val uiCaches = remember { ModernHomeUiCaches() }
