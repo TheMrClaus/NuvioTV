@@ -5,6 +5,8 @@ import com.omnio.tv.data.remote.dto.GitHubAssetDto
 
 internal object AbiSelector {
 
+    private const val TV_ASSET_PREFIX = "app-tv-"
+
     private val knownAbis = listOf(
         "arm64-v8a",
         "armeabi-v7a",
@@ -12,8 +14,14 @@ internal object AbiSelector {
         "x86"
     )
 
+    fun tvApkAssets(assets: List<GitHubAssetDto>): List<GitHubAssetDto> =
+        assets.filter { asset ->
+            asset.name.endsWith(".apk", ignoreCase = true) &&
+                asset.name.startsWith(TV_ASSET_PREFIX, ignoreCase = true)
+        }
+
     fun chooseBestApkAsset(assets: List<GitHubAssetDto>): GitHubAssetDto? {
-        val apkAssets = assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
+        val apkAssets = tvApkAssets(assets)
         if (apkAssets.isEmpty()) return null
         if (apkAssets.size == 1) return apkAssets.first()
 
