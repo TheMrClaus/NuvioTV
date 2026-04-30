@@ -219,7 +219,6 @@ baselineProfile {
     automaticGenerationDuringBuild = false
     saveInSrc = true
     mergeIntoMain = true
-    baselineProfileOutputDir = "src/main"
     filter {
         include("com.omnio.tv.**")
     }
