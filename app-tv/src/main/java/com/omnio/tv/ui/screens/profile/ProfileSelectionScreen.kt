@@ -1436,6 +1436,8 @@ private fun EditProfileOverlay(
         mutableStateOf(profile.aioSharing)
     }
     var focusedAvatarName by remember { mutableStateOf<String?>(null) }
+    var showNameEditor by remember { mutableStateOf(false) }
+    var isAvatarSectionExpanded by remember { mutableStateOf(false) }
     val selectedAvatar = remember(avatarCatalog, selectedAvatarId) {
         avatarCatalog.find { it.id == selectedAvatarId }
     }
@@ -1443,12 +1445,6 @@ private fun EditProfileOverlay(
         selectedAvatar != null -> selectedAvatar.imageUrl
         selectedAvatarId == profile.avatarId -> avatarUrlResolver(profile.avatarId)
         else -> null
-    }
-    val nameFocusRequester = remember { FocusRequester() }
-
-    LaunchedEffect(Unit) {
-        repeat(2) { withFrameNanos { } }
-        runCatching { nameFocusRequester.requestFocus() }
     }
 
     Box(
@@ -1564,10 +1560,11 @@ private fun EditProfileOverlay(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    ProfileNameField(
-                        value = profileName,
-                        onValueChange = { if (it.length <= 20) profileName = it },
-                        focusRequester = nameFocusRequester
+                    OverlayButton(
+                        text = stringResource(R.string.profile_change_name_action),
+                        isPrimary = false,
+                        modifier = Modifier.fillMaxWidth(),
+                        onClick = { showNameEditor = true }
                     )
 
                     OverlayButton(
@@ -1588,57 +1585,55 @@ private fun EditProfileOverlay(
                         .verticalScroll(editOverlayRightScroll),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.profile_choose_avatar),
-                        modifier = Modifier.fillMaxWidth(),
-                        color = OmnioColors.TextSecondary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center
+                    AvatarSectionToggle(
+                        expanded = isAvatarSectionExpanded,
+                        onToggle = { isAvatarSectionExpanded = !isAvatarSectionExpanded }
                     )
 
-                    if (avatarCatalog.isNotEmpty()) {
-                        AvatarPickerGrid(
-                            avatars = avatarCatalog,
-                            selectedAvatarId = selectedAvatarId,
-                            onAvatarSelected = { avatar ->
-                                if (selectedAvatarId == avatar.id) {
-                                    selectedAvatarId = null
-                                    selectedColorHex = profile.avatarColorHex
-                                } else {
-                                    selectedAvatarId = avatar.id
-                                    avatar.bgColor?.let { selectedColorHex = it }
-                                }
-                            },
-                            onAvatarFocused = { avatar ->
-                                focusedAvatarName = avatar?.displayName
-                            },
-                            modifier = Modifier.heightIn(max = 240.dp)
-                        )
-
-                        Text(
-                            text = focusedAvatarName ?: stringResource(R.string.profile_avatar_focus_hint),
-                            modifier = Modifier.fillMaxWidth(),
-                            color = if (focusedAvatarName != null) OmnioColors.TextPrimary else OmnioColors.TextTertiary,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
-                        )
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(160.dp)
-                                .clip(RoundedCornerShape(18.dp))
-                                .background(OmnioColors.BackgroundCard)
-                                .border(1.dp, OmnioColors.Border, RoundedCornerShape(18.dp)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = stringResource(R.string.profile_choose_avatar),
-                                color = OmnioColors.TextTertiary,
-                                fontSize = 15.sp
+                    if (isAvatarSectionExpanded) {
+                        if (avatarCatalog.isNotEmpty()) {
+                            AvatarPickerGrid(
+                                avatars = avatarCatalog,
+                                selectedAvatarId = selectedAvatarId,
+                                onAvatarSelected = { avatar ->
+                                    if (selectedAvatarId == avatar.id) {
+                                        selectedAvatarId = null
+                                        selectedColorHex = profile.avatarColorHex
+                                    } else {
+                                        selectedAvatarId = avatar.id
+                                        avatar.bgColor?.let { selectedColorHex = it }
+                                    }
+                                },
+                                onAvatarFocused = { avatar ->
+                                    focusedAvatarName = avatar?.displayName
+                                },
+                                modifier = Modifier.heightIn(max = 240.dp)
                             )
+
+                            Text(
+                                text = focusedAvatarName ?: stringResource(R.string.profile_avatar_focus_hint),
+                                modifier = Modifier.fillMaxWidth(),
+                                color = if (focusedAvatarName != null) OmnioColors.TextPrimary else OmnioColors.TextTertiary,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(160.dp)
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(OmnioColors.BackgroundCard)
+                                    .border(1.dp, OmnioColors.Border, RoundedCornerShape(18.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.profile_choose_avatar),
+                                    color = OmnioColors.TextTertiary,
+                                    fontSize = 15.sp
+                                )
+                            }
                         }
                     }
 
@@ -1663,6 +1658,115 @@ private fun EditProfileOverlay(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+
+    if (showNameEditor) {
+        ProfileNameEditDialog(
+            currentValue = profileName,
+            onSave = {
+                if (it.isNotBlank()) {
+                    profileName = it.take(20)
+                }
+                showNameEditor = false
+            },
+            onDismiss = { showNameEditor = false }
+        )
+    }
+}
+
+@Composable
+private fun AvatarSectionToggle(
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    var isFocused by remember { mutableStateOf(false) }
+    val borderColor by animateColorAsState(
+        targetValue = if (isFocused) OmnioColors.FocusRing else OmnioColors.Border,
+        animationSpec = tween(120),
+        label = "avatarToggleBorder"
+    )
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isFocused) OmnioColors.FocusBackground else OmnioColors.BackgroundCard,
+        animationSpec = tween(120),
+        label = "avatarToggleBackground"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(backgroundColor)
+            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+            .focusable(interactionSource = remember { MutableInteractionSource() })
+            .onFocusChanged { isFocused = it.isFocused }
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = stringResource(R.string.profile_choose_avatar),
+            color = OmnioColors.TextPrimary,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium
+        )
+        Text(
+            text = if (expanded) {
+                stringResource(R.string.profile_avatar_collapse)
+            } else {
+                stringResource(R.string.profile_avatar_expand)
+            },
+            color = OmnioColors.TextSecondary,
+            fontSize = 13.sp
+        )
+    }
+}
+
+@Composable
+private fun ProfileNameEditDialog(
+    currentValue: String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var draftName by remember { mutableStateOf(currentValue) }
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        repeat(2) { withFrameNanos { } }
+        runCatching { focusRequester.requestFocus() }
+    }
+
+    OmnioDialog(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.profile_change_name_title),
+        subtitle = stringResource(R.string.profile_change_name_subtitle),
+        width = 520.dp,
+    ) {
+        ProfileNameField(
+            value = draftName,
+            onValueChange = { if (it.length <= 20) draftName = it },
+            focusRequester = focusRequester
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            OverlayButton(
+                text = stringResource(R.string.profile_cancel),
+                isPrimary = false,
+                onClick = onDismiss
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            OverlayButton(
+                text = stringResource(R.string.profile_save),
+                isPrimary = true,
+                enabled = draftName.isNotBlank(),
+                onClick = { onSave(draftName.trim()) }
+            )
         }
     }
 }

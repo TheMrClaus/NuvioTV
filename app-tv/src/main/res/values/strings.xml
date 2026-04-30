@@ -613,6 +613,9 @@
     <string name="aio_metadata_config_password_title">Config password</string>
     <string name="aio_metadata_config_password_subtitle">Required when logging in to the web interface — tap to copy</string>
     <string name="aio_metadata_qr_caption">Scan to open the configure page on your phone</string>
+    <string name="aio_metadata_show_qr_title">Show configure QR code</string>
+    <string name="aio_metadata_show_qr_subtitle">Open a fullscreen QR you can scan with your phone</string>
+    <string name="aio_metadata_qr_dismiss_hint">Press Back or click anywhere to close</string>
     <string name="cd_aio_metadata_qr">AIOMetadata configure QR code</string>
     <string name="aio_metadata_rotate_token_title">Rotate token</string>
     <string name="aio_metadata_rotate_token_subtitle">Invalidates your current addon URL and issues a new one</string>
@@ -809,6 +812,11 @@
     <string name="profile_choose_avatar">Choose Avatar</string>
     <string name="profile_avatar_none_selected">No avatar selected</string>
     <string name="profile_avatar_focus_hint">Focus an avatar to view its name</string>
+    <string name="profile_avatar_expand">Show ▾</string>
+    <string name="profile_avatar_collapse">Hide ▴</string>
+    <string name="profile_change_name_action">Change name</string>
+    <string name="profile_change_name_title">Change profile name</string>
+    <string name="profile_change_name_subtitle">Up to 20 characters</string>
     <string name="profile_avatar_category_all">All</string>
     <string name="profile_avatar_category_anime">Anime</string>
     <string name="profile_avatar_category_animation">Animation</string>

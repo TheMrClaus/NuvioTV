@@ -6,13 +6,18 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.KeyEvent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -32,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.key.onKeyEvent
@@ -67,6 +73,7 @@ fun AioMetadataSettingsContent(
 
     var keyDialogProvider by remember { mutableStateOf<AioMetadataProvider?>(null) }
     var showResetConfirm by remember { mutableStateOf(false) }
+    var showQrFullscreen by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SettingsDetailHeader(
@@ -189,7 +196,11 @@ fun AioMetadataSettingsContent(
                     }
 
                     item(key = "aio_configure_qr") {
-                        AioConfigureQr(url = uiState.configureUrl)
+                        SettingsActionRow(
+                            title = stringResource(R.string.aio_metadata_show_qr_title),
+                            subtitle = stringResource(R.string.aio_metadata_show_qr_subtitle),
+                            onClick = { showQrFullscreen = true }
+                        )
                     }
                 }
 
@@ -251,6 +262,13 @@ fun AioMetadataSettingsContent(
             onDismiss = { showResetConfirm = false }
         )
     }
+
+    if (showQrFullscreen && uiState.configureUrl.isNotBlank()) {
+        AioConfigureQrFullscreenOverlay(
+            url = uiState.configureUrl,
+            onDismiss = { showQrFullscreen = false }
+        )
+    }
 }
 
 @Composable
@@ -285,29 +303,59 @@ private fun ProviderRow(
 }
 
 @Composable
-private fun AioConfigureQr(url: String) {
-    val bitmap = remember(url) {
-        runCatching { QrCodeGenerator.generate(url, 420) }.getOrNull()
-    } ?: return
+private fun AioConfigureQrFullscreenOverlay(url: String, onDismiss: () -> Unit) {
+    BackHandler(onBack = onDismiss)
 
-    Column(
+    val bitmap = remember(url) {
+        runCatching { QrCodeGenerator.generate(url, 720) }.getOrNull()
+    }
+
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.94f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            ),
+        contentAlignment = Alignment.Center
     ) {
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = stringResource(R.string.cd_aio_metadata_qr),
-            modifier = Modifier.size(160.dp),
-            contentScale = ContentScale.Fit
-        )
-        Text(
-            text = stringResource(R.string.aio_metadata_qr_caption),
-            style = MaterialTheme.typography.bodySmall,
-            color = OmnioColors.TextSecondary
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            if (bitmap != null) {
+                Box(
+                    modifier = Modifier
+                        .background(Color.White)
+                        .padding(20.dp)
+                ) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = stringResource(R.string.cd_aio_metadata_qr),
+                        modifier = Modifier.size(420.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.aio_metadata_qr_caption),
+                style = MaterialTheme.typography.bodyLarge,
+                color = OmnioColors.TextPrimary
+            )
+            Text(
+                text = url,
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextSecondary
+            )
+            Text(
+                text = stringResource(R.string.aio_metadata_qr_dismiss_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextTertiary
+            )
+        }
     }
 }
 
