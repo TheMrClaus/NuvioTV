@@ -1446,6 +1446,12 @@ private fun EditProfileOverlay(
         selectedAvatarId == profile.avatarId -> avatarUrlResolver(profile.avatarId)
         else -> null
     }
+    val initialFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        repeat(2) { withFrameNanos { } }
+        runCatching { initialFocusRequester.requestFocus() }
+    }
 
     Box(
         modifier = Modifier
@@ -1563,7 +1569,9 @@ private fun EditProfileOverlay(
                     OverlayButton(
                         text = stringResource(R.string.profile_change_name_action),
                         isPrimary = false,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(initialFocusRequester),
                         onClick = { showNameEditor = true }
                     )
 
