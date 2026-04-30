@@ -53,6 +53,8 @@ import com.omnio.phone.ui.screens.settings.PhonePlayerDefaultsScreen
 import com.omnio.phone.ui.screens.settings.PhoneSettingsScreen
 import com.omnio.phone.ui.screens.scan.PhoneTvLoginScannerScreen
 import com.omnio.phone.ui.screens.splash.SplashScreen
+import com.omnio.phone.updater.UpdateViewModel
+import com.omnio.phone.updater.ui.UpdatePromptDialog
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -88,6 +90,21 @@ fun PhoneApp(viewModel: AppViewModel = hiltViewModel()) {
         AppGate.PreparingLibrary -> SplashScreen()
         AppGate.Ready -> SignedInNav()
     }
+
+    PhoneUpdateGate()
+}
+
+@Composable
+private fun PhoneUpdateGate(viewModel: UpdateViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    UpdatePromptDialog(
+        state = state,
+        onDismiss = viewModel::dismissDialog,
+        onDownload = viewModel::downloadUpdate,
+        onInstall = viewModel::installUpdateOrRequestPermission,
+        onIgnore = viewModel::ignoreThisVersion,
+        onOpenUnknownSources = viewModel::openUnknownSourcesSettings
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

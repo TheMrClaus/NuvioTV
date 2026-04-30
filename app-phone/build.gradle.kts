@@ -55,6 +55,9 @@ android {
         targetSdk = 36
         versionCode = 3
         versionName = "0.1.1-beta"
+
+        buildConfigField("String", "GITHUB_OWNER", "\"TheMrClaus\"")
+        buildConfigField("String", "GITHUB_REPO", "\"OmnioTV\"")
     }
 
     signingConfigs {
@@ -140,6 +143,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
