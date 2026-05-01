@@ -57,18 +57,21 @@ android {
         buildConfigField("String", "INTRODB_API_URL", "\"${releaseValue("INTRODB_API_URL")}\"")
         buildConfigField("String", "AVATAR_PUBLIC_BASE_URL", "\"${releaseValue("AVATAR_PUBLIC_BASE_URL")}\"")
         buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${releaseValue("AIOMETADATA_BASE_URL", "")}\"")
+        buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
     }
 
     buildTypes {
         debug {
             buildConfigField("String", "AVATAR_PUBLIC_BASE_URL", "\"${debugValue("AVATAR_PUBLIC_BASE_URL", allowReleaseFallback = true)}\"")
             buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${debugValue("AIOMETADATA_BASE_URL", allowReleaseFallback = true)}\"")
+            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${debugValue("AIOSTREAMS_BASE_URL", allowReleaseFallback = true)}\"")
             buildConfigField("String", "PARENTAL_GUIDE_API_URL", "\"${debugValue("PARENTAL_GUIDE_API_URL")}\"")
             buildConfigField("String", "INTRODB_API_URL", "\"${debugValue("INTRODB_API_URL")}\"")
         }
         release {
             buildConfigField("String", "AVATAR_PUBLIC_BASE_URL", "\"${releaseValue("AVATAR_PUBLIC_BASE_URL")}\"")
             buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${releaseValue("AIOMETADATA_BASE_URL", "")}\"")
+            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
             buildConfigField("String", "PARENTAL_GUIDE_API_URL", "\"${releaseValue("PARENTAL_GUIDE_API_URL")}\"")
             buildConfigField("String", "INTRODB_API_URL", "\"${releaseValue("INTRODB_API_URL")}\"")
         }

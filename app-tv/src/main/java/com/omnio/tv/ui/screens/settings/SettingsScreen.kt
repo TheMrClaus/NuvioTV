@@ -79,7 +79,8 @@ private enum class IntegrationSettingsSection {
     Tmdb,
     MdbList,
     AnimeSkip,
-    AioMetadata
+    AioMetadata,
+    AioStreams
 }
 
 internal enum class SettingsSectionDestination {
@@ -238,6 +239,7 @@ fun SettingsScreen(
     val integrationMdbListFocusRequester = remember { FocusRequester() }
     val integrationAnimeSkipFocusRequester = remember { FocusRequester() }
     val integrationAioMetadataFocusRequester = remember { FocusRequester() }
+    val integrationAioStreamsFocusRequester = remember { FocusRequester() }
     var integrationSection by remember { mutableStateOf(IntegrationSettingsSection.Hub) }
     var pendingContentFocusCategory by remember { mutableStateOf<SettingsCategory?>(null) }
     var pendingContentFocusRequestId by remember { mutableLongStateOf(0L) }
@@ -429,6 +431,7 @@ fun SettingsScreen(
                             mdbListFocusRequester = integrationMdbListFocusRequester,
                             animeSkipFocusRequester = integrationAnimeSkipFocusRequester,
                             aioMetadataFocusRequester = integrationAioMetadataFocusRequester,
+                            aioStreamsFocusRequester = integrationAioStreamsFocusRequester,
                             autoFocusEnabled = allowDetailAutofocus
                         )
                         SettingsCategory.ABOUT -> AboutSettingsContent(
@@ -519,6 +522,7 @@ private fun IntegrationSettingsContent(
     mdbListFocusRequester: FocusRequester,
     animeSkipFocusRequester: FocusRequester,
     aioMetadataFocusRequester: FocusRequester,
+    aioStreamsFocusRequester: FocusRequester,
     autoFocusEnabled: Boolean
 ) {
     BackHandler(enabled = selectedSection != IntegrationSettingsSection.Hub) {
@@ -535,6 +539,7 @@ private fun IntegrationSettingsContent(
             IntegrationSettingsSection.MdbList -> mdbListFocusRequester
             IntegrationSettingsSection.AnimeSkip -> animeSkipFocusRequester
             IntegrationSettingsSection.AioMetadata -> aioMetadataFocusRequester
+            IntegrationSettingsSection.AioStreams -> aioStreamsFocusRequester
         }
         runCatching { requester.requestFocus() }
     }
@@ -595,6 +600,13 @@ private fun IntegrationSettingsContent(
                                 onClick = { onSelectSection(IntegrationSettingsSection.AioMetadata) }
                             )
                         }
+                        item(key = "integration_hub_aio_streams") {
+                            SettingsActionRow(
+                                title = stringResource(R.string.aio_streams_title),
+                                subtitle = stringResource(R.string.aio_streams_subtitle),
+                                onClick = { onSelectSection(IntegrationSettingsSection.AioStreams) }
+                            )
+                        }
                     }
                 }
             }
@@ -627,6 +639,12 @@ private fun IntegrationSettingsContent(
         IntegrationSettingsSection.AioMetadata -> {
             AioMetadataSettingsContent(
                 initialFocusRequester = aioMetadataFocusRequester
+            )
+        }
+
+        IntegrationSettingsSection.AioStreams -> {
+            AioStreamsSettingsContent(
+                initialFocusRequester = aioStreamsFocusRequester
             )
         }
     }

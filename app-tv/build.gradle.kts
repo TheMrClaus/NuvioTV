@@ -70,6 +70,7 @@ android {
         buildConfigField("String", "DONATIONS_DONATE_URL", "\"${releaseValue("DONATIONS_DONATE_URL")}\"")
         buildConfigField("String", "AVATAR_PUBLIC_BASE_URL", "\"${releaseValue("AVATAR_PUBLIC_BASE_URL")}\"")
         buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${releaseValue("AIOMETADATA_BASE_URL", "")}\"")
+        buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
 
         // In-app updater (GitHub Releases)
         buildConfigField("String", "GITHUB_OWNER", "\"TheMrClaus\"")
@@ -106,6 +107,7 @@ android {
             buildConfigField("String", "DONATIONS_DONATE_URL", "\"${debugValue("DONATIONS_DONATE_URL", allowReleaseFallback = true)}\"")
             buildConfigField("String", "AVATAR_PUBLIC_BASE_URL", "\"${debugValue("AVATAR_PUBLIC_BASE_URL", allowReleaseFallback = true)}\"")
             buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${debugValue("AIOMETADATA_BASE_URL", allowReleaseFallback = true)}\"")
+            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${debugValue("AIOSTREAMS_BASE_URL", allowReleaseFallback = true)}\"")
         }
         release {
             isMinifyEnabled = true
@@ -135,6 +137,7 @@ android {
             buildConfigField("String", "DONATIONS_DONATE_URL", "\"${releaseValue("DONATIONS_DONATE_URL")}\"")
             buildConfigField("String", "AVATAR_PUBLIC_BASE_URL", "\"${releaseValue("AVATAR_PUBLIC_BASE_URL")}\"")
             buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${releaseValue("AIOMETADATA_BASE_URL", "")}\"")
+            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
         }
         create("benchmark") {
             initWith(buildTypes.getByName("release"))

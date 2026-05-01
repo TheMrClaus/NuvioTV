@@ -1,0 +1,70 @@
+name: aiostreams
+
+services:
+  postgres:
+    # Pinned to 17 to match Neon (the upstream addon's reference deploy
+    # uses Neon, so dumps/migrations come from a PG 17 server). Using 16
+    # here breaks restore on `\restrict` and `transaction_timeout` GUC.
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: aiostreams
+      POSTGRES_USER: aiostreams
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiostreams -d aiostreams"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --requirepass
+      - ${REDIS_PASSWORD:?REDIS_PASSWORD required}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  aiostreams:
+    image: ghcr.io/viren070/aiostreams:2026.04.29.1659-nightly@sha256:24de0ff60c9fe0c25c0391e2225a7e53602f9b7bfd5ae2417af993a5b5d8d0c4
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URI: postgres://aiostreams:${POSTGRES_PASSWORD}@postgres:5432/aiostreams?sslmode=disable
+      REDIS_URI: redis://:${REDIS_PASSWORD}@redis:6379
+      BASE_URL: ${BASE_URL:?BASE_URL required}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY required}
+      PORT: 3000
+    volumes:
+      - aiostreams_data:/app/data
+    # No public port binding here — how the addon is reached from outside
+    # (reverse proxy, tunnel, etc.) is configured in a docker-compose.override.yml
+    # that lives only on the host. Compose auto-merges it on `up`.
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3000/api/v1/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  redis_data:
+  aiostreams_data:

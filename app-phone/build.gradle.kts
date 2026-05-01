@@ -58,6 +58,7 @@ android {
 
         buildConfigField("String", "GITHUB_OWNER", "\"TheMrClaus\"")
         buildConfigField("String", "GITHUB_REPO", "\"OmnioTV\"")
+        buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
     }
 
     signingConfigs {
@@ -73,10 +74,12 @@ android {
         debug {
             isDebuggable = true
             isMinifyEnabled = false
+            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
         }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

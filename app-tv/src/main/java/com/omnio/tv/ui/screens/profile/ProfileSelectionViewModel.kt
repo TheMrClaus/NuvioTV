@@ -14,6 +14,7 @@ import com.omnio.tv.domain.model.AioSharingMode
 import com.omnio.tv.domain.model.TraktSharingMode
 import com.omnio.tv.domain.model.UserProfile
 import com.omnio.tv.domain.repository.AioMetadataRepository
+import com.omnio.tv.domain.repository.AioStreamsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +38,8 @@ class ProfileSelectionViewModel @Inject constructor(
     private val profileSyncService: ProfileSyncService,
     private val avatarRepository: AvatarRepository,
     private val addonPreferences: AddonPreferences,
-    private val aioMetadataRepository: AioMetadataRepository
+    private val aioMetadataRepository: AioMetadataRepository,
+    private val aioStreamsRepository: AioStreamsRepository,
 ) : ViewModel() {
     private var isAvatarCatalogLoading = false
 
@@ -144,15 +146,11 @@ class ProfileSelectionViewModel @Inject constructor(
                 // provisioning step also swaps Main's AIO manifest out of
                 // the addon list and inserts the new per-profile one.
                 if (isKids || aioSharing != AioSharingMode.INDEPENDENT) {
-                    aioMetadataRepository.provisionFromMain(
-                        targetProfileId = newId,
+                    provisionAioIntegrations(
+                        profileId = newId,
+                        profileName = name,
                         kidsMaxAgeRating = if (isKids) maxAgeRating else null,
-                    ).onFailure { error ->
-                        _provisionMessage.value = ProvisionMessage.Failure(
-                            profileName = name,
-                            reason = error.message
-                        )
-                    }
+                    )
                 }
                 profileSyncService.pushToRemote()
                 refreshProfilePinStates()
@@ -190,15 +188,11 @@ class ProfileSelectionViewModel @Inject constructor(
                 )
             )
             if (needsProvision) {
-                aioMetadataRepository.provisionFromMain(
-                    targetProfileId = profile.id,
+                provisionAioIntegrations(
+                    profileId = profile.id,
+                    profileName = profile.name,
                     kidsMaxAgeRating = if (profile.isKids) profile.maxAgeRating else null,
-                ).onFailure { error ->
-                    _provisionMessage.value = ProvisionMessage.Failure(
-                        profileName = profile.name,
-                        reason = error.message
-                    )
-                }
+                )
             }
             profileSyncService.pushToRemote()
             refreshProfilePinStates()
@@ -259,6 +253,32 @@ class ProfileSelectionViewModel @Inject constructor(
 
     fun consumeProvisionMessage() {
         _provisionMessage.value = null
+    }
+
+    private suspend fun provisionAioIntegrations(
+        profileId: Int,
+        profileName: String,
+        kidsMaxAgeRating: AgeRatingTier?,
+    ) {
+        aioMetadataRepository.provisionFromMain(
+            targetProfileId = profileId,
+            kidsMaxAgeRating = kidsMaxAgeRating,
+        ).onFailure { error ->
+            _provisionMessage.value = ProvisionMessage.Failure(
+                profileName = profileName,
+                reason = error.message
+            )
+        }
+
+        aioStreamsRepository.provisionFromMain(
+            targetProfileId = profileId,
+            kidsMaxAgeRating = kidsMaxAgeRating,
+        ).onFailure { error ->
+            _provisionMessage.value = ProvisionMessage.Failure(
+                profileName = profileName,
+                reason = error.message
+            )
+        }
     }
 
     fun verifyProfilePin(profileId: Int, pin: String, onComplete: (Result<SupabaseProfilePinVerifyResult>) -> Unit) {

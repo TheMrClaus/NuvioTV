@@ -465,16 +465,15 @@ fun ProfileSelectionScreen(
             }
         }
 
-        // Surface AIOMetadata provisioning failures from create/edit flows so
-        // the user knows the kid-tuned config wasn't actually minted (otherwise
-        // the AIOMetadata settings screen for that profile shows no URL/QR).
+        // Surface AIO integration provisioning failures from create/edit flows
+        // so the user knows the per-profile configs were not fully minted.
         LaunchedEffect(provisionMessage) {
             val current = provisionMessage
             if (current is ProvisionMessage.Failure) {
                 pinActionMessage = context.getString(
-                    R.string.aio_metadata_provision_failed,
+                    R.string.aio_integrations_provision_failed,
                     current.profileName,
-                    current.reason ?: context.getString(R.string.aio_metadata_provision_unknown_reason)
+                    current.reason ?: context.getString(R.string.aio_integrations_provision_unknown_reason)
                 )
                 viewModel.consumeProvisionMessage()
             }
