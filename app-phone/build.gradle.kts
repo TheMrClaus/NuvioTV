@@ -53,8 +53,8 @@ android {
         applicationId = "com.omnio.phone"
         minSdk = 24
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.1.3-beta"
+        versionCode = 6
+        versionName = "0.1.4-beta"
 
         buildConfigField("String", "GITHUB_OWNER", "\"TheMrClaus\"")
         buildConfigField("String", "GITHUB_REPO", "\"OmnioTV\"")
