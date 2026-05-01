@@ -58,6 +58,11 @@ services:
       # (the default).
       WHITELISTED_REGEX_PATTERNS_URLS: |
         ["https://raw.githubusercontent.com/Vidhin05/Releases-Regex/main/English/regexes.json"]
+      # SEL (Stream Expression Language) sync URL allowlist — same idea as
+      # WHITELISTED_REGEX_PATTERNS_URLS but for stream-expression sources.
+      # Enforced while SEL_SYNC_ACCESS is `trusted` (the default).
+      WHITELISTED_SEL_URLS: |
+        ["https://raw.githubusercontent.com/Tam-Taro/SEL-Filtering-and-Sorting/refs/heads/main/AIOStreams-SyncedURLs/Tamtaro-synced-ISEs.json","https://raw.githubusercontent.com/Tam-Taro/SEL-Filtering-and-Sorting/refs/heads/main/AIOStreams-SyncedURLs/Tamtaro-synced-ESEs-extended.json","https://raw.githubusercontent.com/Tam-Taro/SEL-Filtering-and-Sorting/refs/heads/main/AIOStreams-SyncedURLs/Tamtaro-synced-PSEs.json","https://raw.githubusercontent.com/Vidhin05/Releases-Regex/main/English/expressions.json"]
     volumes:
       - aiostreams_data:/app/data
     # No public port binding here — how the addon is reached from outside
