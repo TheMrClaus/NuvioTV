@@ -59,6 +59,11 @@ android {
         buildConfigField("String", "GITHUB_OWNER", "\"TheMrClaus\"")
         buildConfigField("String", "GITHUB_REPO", "\"OmnioTV\"")
         buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
+        buildConfigField(
+            "String",
+            "UPDATE_MANIFEST_URL",
+            "\"${releaseValue("PHONE_UPDATE_MANIFEST_URL", "https://raw.githubusercontent.com/TheMrClaus/OmnioTV/dev/updates/app-phone.json")}\""
+        )
     }
 
     signingConfigs {

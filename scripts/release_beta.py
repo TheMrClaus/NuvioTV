@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -16,6 +18,13 @@ APP_MODULE = "app-tv"
 BUILD_FILE = ROOT / APP_MODULE / "build.gradle.kts"
 RELEASE_OUTPUT_DIR = ROOT / "build" / "release"
 APK_DIR = ROOT / APP_MODULE / "build" / "outputs" / "apk" / "release"
+UPDATE_MANIFESTS_DIR = ROOT / "updates"
+GITHUB_OWNER = "TheMrClaus"
+GITHUB_REPO = "OmnioTV"
+MODULE_DISPLAY_NAMES = {
+    "app-tv": "OmnioTV",
+    "app-phone": "Omnio Phone",
+}
 DEFAULT_BETA_NOTICE = (
     "## This is a beta version intended for testing only. Expect breaking changes "
     "in updates. Normal users are advised to wait for the stable release."
@@ -128,10 +137,35 @@ def write_build_file(contents: str) -> None:
     BUILD_FILE.write_text(contents, encoding="utf-8-sig")
 
 
+def module_display_name(app_module: str) -> str:
+    return MODULE_DISPLAY_NAMES.get(app_module, app_module)
+
+
+def default_release_tag(version_name: str) -> str:
+    return f"{version_name}-{APP_MODULE}"
+
+
+def default_release_title(version_name: str) -> str:
+    return f"{module_display_name(APP_MODULE)} {version_name}"
+
+
 def last_tag() -> str | None:
     result = run("git", "describe", "--tags", "--abbrev=0", check=False)
     tag = result.stdout.strip()
     return tag or None
+
+
+def last_tag_for_module() -> str | None:
+    result = run(
+        "git",
+        "tag",
+        "--list",
+        f"*-{APP_MODULE}",
+        "--sort=-creatordate",
+        check=False,
+    )
+    tag = next((line.strip() for line in result.stdout.splitlines() if line.strip()), None)
+    return tag or last_tag()
 
 
 def release_range(previous_tag: str | None) -> str | None:
@@ -258,6 +292,78 @@ def write_release_notes(version_name: str, notes: str) -> Path:
     path = release_notes_path(version_name)
     path.write_text(notes, encoding="utf-8")
     return path
+
+
+def update_manifest_preview_path() -> Path:
+    RELEASE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    return RELEASE_OUTPUT_DIR / f"update-manifest-{APP_MODULE}.json"
+
+
+def update_manifest_repo_path() -> Path:
+    return UPDATE_MANIFESTS_DIR / f"{APP_MODULE}.json"
+
+
+def build_update_manifest(
+    *,
+    version_name: str,
+    release_tag: str,
+    release_title: str,
+    notes: str,
+    assets: list[Path],
+) -> dict[str, object]:
+    release_url = f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/tag/{release_tag}"
+    download_base = (
+        f"https://github.com/{GITHUB_OWNER}/{GITHUB_REPO}/releases/download/{release_tag}"
+    )
+    published_at_utc = (
+        datetime.now(timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+    return {
+        "app_module": APP_MODULE,
+        "app_name": module_display_name(APP_MODULE),
+        "version_name": version_name,
+        "release_tag": release_tag,
+        "release_title": release_title,
+        "release_notes": notes.strip(),
+        "release_url": release_url,
+        "published_at_utc": published_at_utc,
+        "assets": [
+            {
+                "name": asset.name,
+                "download_url": f"{download_base}/{asset.name}",
+                "size_bytes": asset.stat().st_size,
+                "content_type": "application/vnd.android.package-archive",
+            }
+            for asset in assets
+        ],
+    }
+
+
+def write_update_manifest(path: Path, manifest: dict[str, object]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def commit_manifest_update(manifest_path: Path, branch_name: str, release_tag: str) -> bool:
+    relative_path = manifest_path.relative_to(ROOT)
+    subprocess.run(["git", "add", str(relative_path)], cwd=ROOT, check=True)
+    status = git("status", "--short", str(relative_path))
+    if not status:
+        return False
+
+    subprocess.run(
+        ["git", "commit", "-m", f"release: update {APP_MODULE} manifest for {release_tag}"],
+        cwd=ROOT,
+        check=True,
+        text=True,
+    )
+    subprocess.run(["git", "pull", "--rebase", "origin", branch_name], cwd=ROOT, check=True)
+    subprocess.run(["git", "push", "origin", f"HEAD:{branch_name}"], cwd=ROOT, check=True)
+    return True
 
 
 def append_job_summary(
@@ -412,7 +518,7 @@ def create_github_release(
     if draft:
         command.append("--draft")
     else:
-        command.append("--latest")
+        command.append("--latest=false")
     subprocess.run(command, cwd=ROOT, check=True, text=True)
 
 
@@ -441,11 +547,18 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--release-tag",
-        help="Git tag to create for the release. Defaults to the target versionName.",
+        help="Git tag to create for the release. Defaults to <versionName>-<module>.",
     )
     parser.add_argument(
         "--release-title",
-        help="GitHub release title. Defaults to the release tag.",
+        help="GitHub release title. Defaults to '<app name> <versionName>'.",
+    )
+    parser.add_argument(
+        "--previous-tag",
+        help=(
+            "Optional tag to use as the release-notes baseline. Useful while migrating "
+            "from unscoped tags to app-scoped tags."
+        ),
     )
     parser.add_argument(
         "--commit-message",
@@ -526,7 +639,7 @@ def main() -> int:
 
     original_contents = read_build_file()
     current_version_name, current_version_code = parse_versions(original_contents)
-    previous_tag = last_tag()
+    previous_tag = args.previous_tag or last_tag_for_module()
 
     if args.manual_release:
         if args.version:
@@ -542,7 +655,7 @@ def main() -> int:
         release_tag = args.release_tag
         release_title = args.release_title
         commit_message = "manual release: no version bump"
-        notes_key = release_tag
+        notes_key = f"{APP_MODULE}-{release_tag}"
     else:
         if not args.version:
             raise SystemExit("version is required unless --manual-release is set.")
@@ -554,10 +667,10 @@ def main() -> int:
         )
         if next_version_code < 1:
             raise SystemExit("versionCode must be a positive integer.")
-        release_tag = args.release_tag or target_version_name
-        release_title = args.release_title or release_tag
+        release_tag = args.release_tag or default_release_tag(target_version_name)
+        release_title = args.release_title or default_release_title(target_version_name)
         commit_message = args.commit_message or f"release: {release_tag}"
-        notes_key = target_version_name
+        notes_key = f"{APP_MODULE}-{target_version_name}"
 
     custom_notes = args.custom_notes
     if args.custom_notes_file:
@@ -596,6 +709,7 @@ def main() -> int:
         print("Dry run expected assets:")
         for asset_name in EXPECTED_ASSET_NAMES:
             print(f"- {asset_name}")
+        print(f"Update manifest target: {update_manifest_repo_path().relative_to(ROOT)}")
         append_job_summary(
             mode=mode,
             version_name=target_version_name,
@@ -624,11 +738,25 @@ def main() -> int:
         print(f"Updated {BUILD_FILE.relative_to(ROOT)}")
 
     assets: list[Path] = []
+    manifest_preview: Path | None = None
     try:
         assets = build_release()
         print("Built release assets:")
         for asset in assets:
             print(f"- {asset.relative_to(ROOT)}")
+
+        manifest_payload = build_update_manifest(
+            version_name=target_version_name,
+            release_tag=release_tag,
+            release_title=release_title,
+            notes=notes,
+            assets=assets,
+        )
+        manifest_preview = write_update_manifest(
+            update_manifest_preview_path(),
+            manifest_payload,
+        )
+        print(f"Update manifest preview: {manifest_preview.relative_to(ROOT)}")
 
         if args.publish or args.draft:
             branch_name = current_branch()
@@ -651,10 +779,29 @@ def main() -> int:
                     f"({release_title}) from branch {branch_name}"
                 )
             else:
+                manifest_repo_path = write_update_manifest(
+                    update_manifest_repo_path(),
+                    manifest_payload,
+                )
+                manifest_changed = commit_manifest_update(
+                    manifest_repo_path,
+                    branch_name,
+                    release_tag,
+                )
                 print(
                     f"Published GitHub release {release_tag} "
                     f"({release_title}) from branch {branch_name}"
                 )
+                if manifest_changed:
+                    print(
+                        f"Updated app manifest {manifest_repo_path.relative_to(ROOT)} "
+                        f"on branch {branch_name}"
+                    )
+                else:
+                    print(
+                        f"App manifest already up to date: "
+                        f"{manifest_repo_path.relative_to(ROOT)}"
+                    )
     except Exception:
         if not (args.publish or args.draft):
             write_build_file(original_contents)

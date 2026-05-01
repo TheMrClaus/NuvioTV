@@ -75,6 +75,11 @@ android {
         // In-app updater (GitHub Releases)
         buildConfigField("String", "GITHUB_OWNER", "\"TheMrClaus\"")
         buildConfigField("String", "GITHUB_REPO", "\"OmnioTV\"")
+        buildConfigField(
+            "String",
+            "UPDATE_MANIFEST_URL",
+            "\"${releaseValue("TV_UPDATE_MANIFEST_URL", "https://raw.githubusercontent.com/TheMrClaus/OmnioTV/dev/updates/app-tv.json")}\""
+        )
     }
 
     signingConfigs {

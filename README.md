@@ -37,15 +37,26 @@ It acts as a client-side playback interface that integrates with the Stremio add
 
 ## Installation
 
-Download the latest APK from [GitHub Releases](https://github.com/TheMrClaus/OmnioTV/releases/latest) and sideload onto your Android TV device.
+This repository publishes both the TV app and the phone companion app, so do not rely on the repo-wide `releases/latest` link.
+
+For Android TV installs, open [GitHub Releases](https://github.com/TheMrClaus/OmnioTV/releases) and download the newest release tagged `*-app-tv`, then sideload one of the `app-tv-*.apk` assets.
+
+The in-app updaters use app-specific manifests under [updates/app-tv.json](updates/app-tv.json) and [updates/app-phone.json](updates/app-phone.json). Those files are refreshed by [scripts/release_beta.py](scripts/release_beta.py) on publish.
 
 Release builds ship per-ABI APKs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`) plus a universal APK.
 
 ## Repository layout
 
 ```
-app/                — Android TV application (Kotlin + Compose, single module)
+app-tv/             — Android TV application (Kotlin + Compose)
+app-phone/          — Android phone companion application
+core-domain/        — Domain models and repository interfaces
+core-data/          — DTOs, repositories, persistence, and mappers
+core-platform/      — Network, auth, plugin, sync, and DI wiring
+core-player/        — Playback runtime, Media3 forks, MPV bridge
+core-ui-shared/     — Shared Compose UI components
 baselineprofile/    — Macrobenchmark module that generates baseline profiles
+baselineprofile-phone/ — Phone baseline profile / macrobenchmark module
 web/panel/          — Next.js account panel (account.omnio.tv) — v2 full edit
 web/tv-login/       — Next.js TV pairing flow (app.omnio.tv/tv-login)
 supabase/           — Postgres migrations and Edge Functions
@@ -70,16 +81,19 @@ On macOS, [dev-setup/setup-omniotv-dev.sh](dev-setup/setup-omniotv-dev.sh) insta
 git clone https://github.com/TheMrClaus/OmnioTV.git
 cd OmnioTV
 
-./gradlew :app:assembleDebug          # debug APK
-./gradlew :app:installDebug           # install on connected device/emulator
-./gradlew :app:testDebugUnitTest      # JVM unit tests
-./gradlew :app:lint                   # Android lint
+./gradlew :app-tv:assembleDebug       # TV debug APK
+./gradlew :app-tv:installDebug        # install TV app on connected device/emulator
+./gradlew :app-tv:testDebugUnitTest   # TV JVM unit tests
+./gradlew :app-tv:lint                # TV Android lint
+
+./gradlew :app-phone:assembleDebug    # phone debug APK
+./gradlew :app-phone:installDebug     # install phone app on connected device/emulator
 ```
 
 Run a single test class:
 
 ```bash
-./gradlew :app:testDebugUnitTest --tests "com.omnio.tv.SomeTestClass"
+./gradlew :app-tv:testDebugUnitTest --tests "com.omnio.tv.SomeTestClass"
 ```
 
 Beta releases are produced by [scripts/release_beta.py](scripts/release_beta.py) or the `Beta Release` GitHub Actions workflow.

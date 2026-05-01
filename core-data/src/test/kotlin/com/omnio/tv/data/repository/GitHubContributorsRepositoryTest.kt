@@ -3,6 +3,7 @@ package com.omnio.tv.data.repository
 import com.omnio.tv.data.remote.api.GitHubReleaseApi
 import com.omnio.tv.data.remote.dto.GitHubContributorDto
 import com.omnio.tv.data.remote.dto.GitHubReleaseDto
+import com.omnio.tv.data.remote.dto.UpdateManifestDto
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
@@ -124,6 +125,10 @@ class GitHubContributorsRepositoryTest {
             perPage: Int,
             page: Int
         ): Response<List<GitHubReleaseDto>> {
+            error("Not needed for this test")
+        }
+
+        override suspend fun getUpdateManifest(url: String): Response<UpdateManifestDto> {
             error("Not needed for this test")
         }
 

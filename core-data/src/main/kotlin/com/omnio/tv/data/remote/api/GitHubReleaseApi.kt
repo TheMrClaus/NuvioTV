@@ -2,10 +2,12 @@ package com.omnio.tv.data.remote.api
 
 import com.omnio.tv.data.remote.dto.GitHubContributorDto
 import com.omnio.tv.data.remote.dto.GitHubReleaseDto
+import com.omnio.tv.data.remote.dto.UpdateManifestDto
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Url
 
 interface GitHubReleaseApi {
 
@@ -22,6 +24,11 @@ interface GitHubReleaseApi {
         @Query("per_page") perPage: Int = 30,
         @Query("page") page: Int = 1
     ): Response<List<GitHubReleaseDto>>
+
+    @GET
+    suspend fun getUpdateManifest(
+        @Url url: String
+    ): Response<UpdateManifestDto>
 
     @GET("repos/{owner}/{repo}/contributors")
     suspend fun getContributors(

@@ -55,7 +55,7 @@ class UpdateViewModel @Inject constructor(
 
             result
                 .onSuccess { update ->
-                    val remoteNewer = VersionUtils.isRemoteNewer(update.tag, BuildConfig.VERSION_NAME)
+                    val remoteNewer = VersionUtils.isRemoteNewer(update.versionName, BuildConfig.VERSION_NAME)
                     val shouldShow = remoteNewer && (ignoredTag == null || ignoredTag != update.tag)
 
                     _uiState.update {
