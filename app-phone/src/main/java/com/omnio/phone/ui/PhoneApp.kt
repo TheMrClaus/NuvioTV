@@ -53,6 +53,7 @@ import com.omnio.phone.ui.screens.settings.PhonePlayerDefaultsScreen
 import com.omnio.phone.ui.screens.settings.PhoneSettingsScreen
 import com.omnio.phone.ui.screens.scan.PhoneTvLoginScannerScreen
 import com.omnio.phone.ui.screens.splash.SplashScreen
+import com.omnio.phone.diag.CrashReportDialog
 import com.omnio.phone.updater.UpdateViewModel
 import com.omnio.phone.updater.ui.UpdatePromptDialog
 import java.net.URLEncoder
@@ -92,6 +93,7 @@ fun PhoneApp(viewModel: AppViewModel = hiltViewModel()) {
     }
 
     PhoneUpdateGate()
+    CrashReportDialog()
 }
 
 @Composable
