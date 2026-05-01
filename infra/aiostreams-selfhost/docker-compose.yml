@@ -52,6 +52,12 @@ services:
       BASE_URL: ${BASE_URL:?BASE_URL required}
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY required}
       PORT: 3000
+      # Public regex-pattern sources non-trusted users are allowed to sync
+      # from. AIOStreams rejects any URL not in this list with "Forbidden
+      # URL(s) in regex configuration" while REGEX_FILTER_ACCESS is `trusted`
+      # (the default).
+      WHITELISTED_REGEX_PATTERNS_URLS: |
+        ["https://raw.githubusercontent.com/Vidhin05/Releases-Regex/main/English/regexes.json"]
     volumes:
       - aiostreams_data:/app/data
     # No public port binding here — how the addon is reached from outside
