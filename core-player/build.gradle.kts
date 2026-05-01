@@ -62,6 +62,7 @@ dependencies {
 
     // Forked Media3 AARs — replace stock media3-exoplayer / media3-ui (excluded above)
     api(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
+    api("androidx.recyclerview:recyclerview:1.4.0")
     api(files("libs/nextlib-mediainfo-local.aar"))
 
     // Media3 modules used by the engine — exposed transitively to :app-tv via api()

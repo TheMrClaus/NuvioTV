@@ -240,7 +240,6 @@ dependencies {
     implementation("androidx.core:core-splashscreen:1.2.0")
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.profileinstaller)
-    implementation("androidx.recyclerview:recyclerview:1.4.0")
     implementation(composeBom)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
