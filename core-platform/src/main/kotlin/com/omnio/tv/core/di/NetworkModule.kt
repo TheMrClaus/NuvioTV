@@ -6,7 +6,6 @@ import com.omnio.tv.core.platform.BuildConfig
 import com.omnio.tv.data.local.EmbyCredentialsDataStore
 import com.omnio.tv.data.remote.api.AddonApi
 import com.omnio.tv.data.remote.api.AioMetadataApi
-import com.omnio.tv.data.remote.api.AioStreamsApi
 import com.omnio.tv.data.remote.api.AniSkipApi
 import com.omnio.tv.data.remote.api.AnimeSkipApi
 import com.omnio.tv.data.remote.api.ArmApi
@@ -22,7 +21,6 @@ import com.omnio.tv.data.remote.api.ParentalGuideApi
 import com.omnio.tv.data.remote.api.SeriesGraphApi
 import com.omnio.tv.data.remote.api.TmdbApi
 import com.omnio.tv.data.remote.dto.aiometadata.AioConfigInnerDtoJsonAdapter
-import com.omnio.tv.data.remote.dto.aiostreams.AioStreamsConfigInnerDtoJsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -60,7 +58,6 @@ object NetworkModule {
     @Singleton
     fun provideMoshi(): Moshi = Moshi.Builder()
         .add(AioConfigInnerDtoJsonAdapter.Factory)
-        .add(AioStreamsConfigInnerDtoJsonAdapter.Factory)
         .add(KotlinJsonAdapterFactory())
         .build()
 
@@ -368,28 +365,6 @@ object NetworkModule {
     @Singleton
     fun provideAioMetadataApi(@Named("aioMetadata") retrofit: Retrofit): AioMetadataApi =
         retrofit.create(AioMetadataApi::class.java)
-
-    @Provides
-    @Singleton
-    @Named("aioStreams")
-    fun provideAioStreamsRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
-        val raw = BuildConfig.AIOSTREAMS_BASE_URL
-        val baseUrl = when {
-            raw.isBlank() -> "http://localhost/"
-            raw.endsWith('/') -> raw
-            else -> "$raw/"
-        }
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(okHttpClient)
-            .addConverterFactory(MoshiConverterFactory.create(moshi))
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    fun provideAioStreamsApi(@Named("aioStreams") retrofit: Retrofit): AioStreamsApi =
-        retrofit.create(AioStreamsApi::class.java)
 
     // --- SeriesGraph API ---
 

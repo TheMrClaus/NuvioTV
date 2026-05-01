@@ -653,44 +653,6 @@
     <string name="aio_metadata_clear">Clear</string>
     <string name="aio_metadata_cancel">Cancel</string>
 
-    <!-- AIOStreams -->
-    <string name="aio_streams_title">AIOStreams</string>
-    <string name="aio_streams_subtitle">Self-hosted aggregated streams with per-profile provisioning</string>
-    <string name="aio_streams_enable_title">Enable AIOStreams</string>
-    <string name="aio_streams_enable_subtitle">Adds your authenticated AIOStreams manifest to this profile</string>
-    <string name="aio_streams_uuid_title">Config UUID</string>
-    <string name="aio_streams_uuid_subtitle">Your per-profile AIOStreams user id</string>
-    <string name="aio_streams_manifest_url_title">Manifest URL</string>
-    <string name="aio_streams_manifest_url_subtitle">Copy to install manually in other Stremio clients</string>
-    <string name="aio_streams_manage_on_web_title">Manage on the web</string>
-    <string name="aio_streams_manage_on_web_subtitle">Uses the authenticated /stremio/&lt;uuid&gt;/&lt;encryptedPassword&gt;/configure path</string>
-    <string name="aio_streams_config_password_title">Config password</string>
-    <string name="aio_streams_config_password_subtitle">Upstream still needs the plaintext password when signing in on the web</string>
-    <string name="aio_streams_show_qr_title">Show configure QR code</string>
-    <string name="aio_streams_show_qr_subtitle">Open a fullscreen QR for the authenticated manage URL</string>
-    <string name="aio_streams_qr_caption">Scan to open the authenticated AIOStreams configure page on your phone</string>
-    <string name="aio_streams_qr_dismiss_hint">Press Back or click anywhere to close</string>
-    <string name="cd_aio_streams_qr">AIOStreams configure QR code</string>
-    <string name="aio_streams_primary_profile_blocked">Switch to a profile with its own addon list to manage AIOStreams.</string>
-    <string name="aio_streams_no_config_banner">AIOStreams isn\'t set up for this profile yet. Provision it from Main to mint a per-profile UUID, password, and manage URL.</string>
-    <string name="aio_streams_provision_action">Provision from Main</string>
-    <string name="aio_streams_provision_in_progress">Provisioning…</string>
-    <string name="aio_streams_provision_success">AIOStreams provisioned. Manage URL and password are below.</string>
-    <string name="aio_streams_provision_unknown_reason">unknown error — check connection and retry.</string>
-    <string name="aio_streams_reset_title">Reset AIOStreams config</string>
-    <string name="aio_streams_reset_subtitle">Delete this profile\'s current upstream user, then mint a fresh copy from Main.</string>
-    <string name="aio_streams_reset_confirm_title">Reset AIOStreams config?</string>
-    <string name="aio_streams_reset_confirm_message">The current manifest URL and authenticated manage URL stop working immediately. Other Stremio clients will need the new manifest after reset.</string>
-    <string name="aio_streams_reset_confirm_action">Reset</string>
-    <string name="aio_streams_reset_success">AIOStreams reset complete. New URL is below.</string>
-    <string name="aio_streams_refresh_subtitle">Reload the latest config and encrypted manifest token from your AIOStreams server</string>
-    <string name="aio_streams_refresh_failed">Failed to reach AIOStreams.</string>
-    <string name="aio_streams_create_failed">Unable to create AIOStreams config.</string>
-    <string name="aio_streams_manifest_unavailable">AIOStreams did not return an authenticated manifest URL. Refresh and try again.</string>
-    <string name="aio_streams_use_provision_from_main">Use Provision from Main for this profile instead of creating an independent AIOStreams config here.</string>
-    <string name="aio_integrations_provision_failed">AIO integration couldn\'t be set up for %1$s: %2$s</string>
-    <string name="aio_integrations_provision_unknown_reason">unknown error — check connection and retry.</string>
-
     <!-- Anime-Skip -->
     <string name="animeskip_title">Anime Skip</string>
     <string name="animeskip_subtitle">Configure your Anime Skip Client ID for anime intro/outro skipping</string>
@@ -1581,12 +1543,12 @@
     <string name="profile_pin_overlay_exit_heading">Enter PIN to leave %1$s</string>
     <string name="profile_pin_overlay_exit_support">Ask a parent to enter the PIN to switch profiles.</string>
 
-    <!-- AIO per-profile sharing -->
-    <string name="profile_aio_section_title">AIO integrations for this profile</string>
-    <string name="profile_aio_full_mirror_title">Mirror Main\'s AIO config fully</string>
-    <string name="profile_aio_full_mirror_subtitle">Same config as Main. Updates on Main propagate here for both AIOMetadata and AIOStreams.</string>
-    <string name="profile_aio_keys_only_title">Mirror Main\'s AIO keys only</string>
-    <string name="profile_aio_keys_only_subtitle">This profile keeps its own tuning where supported. Main updates still provision its AIO integrations here.</string>
-    <string name="profile_aio_keys_only_subtitle_kids">Kid-friendly AIOMetadata plus a separate AIOStreams config, both provisioned from Main.</string>
+    <!-- AIOMetadata per-profile sharing -->
+    <string name="profile_aio_section_title">AIOMetadata for this profile</string>
+    <string name="profile_aio_full_mirror_title">Mirror Main\'s AIOMetadata fully</string>
+    <string name="profile_aio_full_mirror_subtitle">Same API keys, catalogs, and settings as Main. Updates on Main propagate here.</string>
+    <string name="profile_aio_keys_only_title">Mirror Main\'s API keys only</string>
+    <string name="profile_aio_keys_only_subtitle">This profile keeps its own catalogs and settings. When you rotate a key on Main, it updates here too.</string>
+    <string name="profile_aio_keys_only_subtitle_kids">Kid-friendly catalogs, but TMDB/TVDB keys are kept in sync with Main.</string>
 
 </resources>

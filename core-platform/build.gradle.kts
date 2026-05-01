@@ -63,7 +63,6 @@ android {
         buildConfigField("String", "IMDB_TAPFRAME_API_BASE_URL", "\"${releaseValue("IMDB_TAPFRAME_API_BASE_URL")}\"")
         buildConfigField("String", "DONATIONS_BASE_URL", "\"${releaseValue("DONATIONS_BASE_URL")}\"")
         buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${releaseValue("AIOMETADATA_BASE_URL", "")}\"")
-        buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
     }
 
     buildTypes {
@@ -79,7 +78,6 @@ android {
             buildConfigField("String", "IMDB_TAPFRAME_API_BASE_URL", "\"${debugValue("IMDB_TAPFRAME_API_BASE_URL")}\"")
             buildConfigField("String", "DONATIONS_BASE_URL", "\"${debugValue("DONATIONS_BASE_URL", allowReleaseFallback = true)}\"")
             buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${debugValue("AIOMETADATA_BASE_URL", allowReleaseFallback = true)}\"")
-            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${debugValue("AIOSTREAMS_BASE_URL", allowReleaseFallback = true)}\"")
         }
         release {
             buildConfigField("String", "SUPABASE_URL", "\"${releaseValue("SUPABASE_URL")}\"")
@@ -91,7 +89,6 @@ android {
             buildConfigField("String", "IMDB_TAPFRAME_API_BASE_URL", "\"${releaseValue("IMDB_TAPFRAME_API_BASE_URL")}\"")
             buildConfigField("String", "DONATIONS_BASE_URL", "\"${releaseValue("DONATIONS_BASE_URL")}\"")
             buildConfigField("String", "AIOMETADATA_BASE_URL", "\"${releaseValue("AIOMETADATA_BASE_URL", "")}\"")
-            buildConfigField("String", "AIOSTREAMS_BASE_URL", "\"${releaseValue("AIOSTREAMS_BASE_URL", "")}\"")
         }
     }
 
