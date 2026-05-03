@@ -1007,11 +1007,22 @@ private fun AddonCardContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = addon.displayName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = OmnioColors.TextPrimary
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = addon.displayName,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = OmnioColors.TextPrimary
+                    )
+                    com.omnio.tv.ui.components.cinematic.SourceKind.fromAddonName(addon.displayName)?.let { kind ->
+                        com.omnio.tv.ui.components.cinematic.SourceBadge(
+                            src = kind,
+                            size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
+                        )
+                    }
+                }
                 Text(
                     text = "v${addon.version}",
                     style = MaterialTheme.typography.bodySmall,
