@@ -64,6 +64,12 @@ import kotlinx.coroutines.delay
 private const val BACKDROP_ASPECT_RATIO = 16f / 9f
 private const val TRAILER_PREVIEW_REQUEST_FOCUS_DEBOUNCE_MS = 140L
 private val YEAR_REGEX = Regex("""\b(19|20)\d{2}\b""")
+private val CONTENT_CARD_LABEL_BAND_GRADIENT = Brush.verticalGradient(
+    colors = listOf(
+        Color.Transparent,
+        Color.Black.copy(alpha = 0.95f)
+    )
+)
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -440,6 +446,43 @@ fun ContentCard(
                             }
                     )
                 }
+
+                if (showLabels && !isBackdropExpanded) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .fillMaxSize(0.42f)
+                            .drawWithCache {
+                                onDrawBehind { drawRect(CONTENT_CARD_LABEL_BAND_GRADIENT) }
+                            }
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                    ) {
+                        Text(
+                            text = item.name,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = Color.White,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        item.releaseInfo?.let { info ->
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = info,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White.copy(alpha = 0.82f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -472,30 +515,6 @@ fun ContentCard(
             }
         }
 
-        if (showLabels && !isBackdropExpanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            ) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = OmnioColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                item.releaseInfo?.let { info ->
-                    Text(
-                        text = info,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = OmnioTheme.extendedColors.textSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
     }
 }
 
