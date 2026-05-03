@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
@@ -327,6 +328,24 @@ private fun HeroTitleContent(
         modifier = Modifier,
         verticalArrangement = Arrangement.spacedBy(titleSpacing)
     ) {
+        // Cinematic eyebrow: small mark + spaced caps "OMNIO PICKS" — sits above the title.
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.graphicsLayer { alpha = metaAlpha }
+        ) {
+            com.omnio.tv.ui.components.cinematic.OmnioMark(size = 14.dp)
+            Text(
+                text = "OMNIO PICKS",
+                color = OmnioColors.TextPrimary,
+                style = androidx.compose.ui.text.TextStyle(
+                    fontFamily = com.omnio.tv.ui.theme.InterFamily,
+                    fontSize = 10.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    letterSpacing = 4.sp
+                )
+            )
+        }
         var logoLoadFailed by remember(preview.logo) { mutableStateOf(false) }
         val showLogo = !preview.logo.isNullOrBlank() && !logoLoadFailed
         if (showLogo) {

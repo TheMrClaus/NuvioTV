@@ -286,14 +286,7 @@ private fun SupportersBrandFront(
         verticalArrangement = Arrangement.Center
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Image(
-                painter = painterResource(id = R.drawable.app_logo_wordmark),
-                    contentDescription = stringResource(R.string.cd_omnio_logo),
-                modifier = Modifier
-                    .fillMaxWidth(0.78f)
-                    .height(86.dp),
-                contentScale = ContentScale.Fit
-            )
+            com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 64.dp)
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(

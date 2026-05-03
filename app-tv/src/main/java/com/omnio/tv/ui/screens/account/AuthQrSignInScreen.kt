@@ -133,14 +133,7 @@ fun AuthQrSignInScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_logo_wordmark),
-                contentDescription = stringResource(R.string.cd_omnio),
-                    modifier = Modifier
-                        .fillMaxWidth(0.85f)
-                        .height(60.dp),
-                    contentScale = ContentScale.Fit
-                )
+                com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 44.dp)
                 Spacer(modifier = Modifier.height(22.dp))
                 Text(
                     text = stringResource(R.string.auth_qr_title),

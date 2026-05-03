@@ -696,13 +696,8 @@ private fun ProfileSelectionMainContent(
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = painterResource(id = R.drawable.app_logo_wordmark),
-                                contentDescription = stringResource(R.string.cd_omnio_logo),
-            modifier = Modifier
-                .width(ProfileSelectionSpacing.LogoWidth)
-                .height(ProfileSelectionSpacing.LogoHeight),
-            contentScale = ContentScale.Fit
+        com.omnio.tv.ui.components.cinematic.OmnioWordmark(
+            height = ProfileSelectionSpacing.LogoHeight * 0.7f
         )
 
         Spacer(modifier = Modifier.height(ProfileSelectionSpacing.LogoToHeading))

@@ -138,14 +138,7 @@ internal fun SettingsBrandPanel(
 
         Spacer(modifier = Modifier.height(26.dp))
 
-        Image(
-            painter = painterResource(id = R.drawable.app_logo_wordmark),
-                contentDescription = stringResource(R.string.cd_omnio_logo),
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(72.dp),
-            contentScale = ContentScale.Fit
-        )
+        com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 56.dp)
 
         Spacer(modifier = Modifier.height(14.dp))
 

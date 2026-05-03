@@ -86,14 +86,7 @@ fun AboutSettingsContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_logo_wordmark),
-                contentDescription = stringResource(R.string.cd_omnio_logo),
-                    modifier = Modifier
-                        .width(180.dp)
-                        .height(50.dp),
-                    contentScale = ContentScale.Fit
-                )
+                com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 40.dp)
 
                 Text(
                     text = stringResource(R.string.about_made_with_love),
