@@ -964,8 +964,37 @@ private fun StreamCard(
                 }
 
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val sourceKind = remember(stream.addonName, stream.sourceProvider) {
+                        com.omnio.tv.ui.components.cinematic.SourceKind.fromAddonName(stream.sourceProvider)
+                            ?: com.omnio.tv.ui.components.cinematic.SourceKind.fromAddonName(stream.addonName)
+                            ?: when {
+                                stream.isTorrent() -> com.omnio.tv.ui.components.cinematic.SourceKind.P2p
+                                else -> null
+                            }
+                    }
+                    sourceKind?.let { kind ->
+                        com.omnio.tv.ui.components.cinematic.SourceBadge(
+                            src = kind,
+                            size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
+                        )
+                    }
+                    val qualityLabel = remember(stream) {
+                        listOfNotNull(stream.name, stream.title, stream.description)
+                            .joinToString(" ")
+                            .let { text ->
+                                when {
+                                    "4K" in text.uppercase() && "HDR" in text.uppercase() -> "4K HDR"
+                                    "4K" in text.uppercase() || "2160" in text -> "4K"
+                                    "1080" in text -> "1080"
+                                    "720" in text -> "720"
+                                    else -> null
+                                }
+                            }
+                    }
+                    qualityLabel?.let { com.omnio.tv.ui.components.cinematic.QualityBadge(it) }
                     if (stream.isTorrent()) {
                         StreamTypeChip(text = stringResource(R.string.stream_type_torrent), color = OmnioColors.Secondary)
                     }
