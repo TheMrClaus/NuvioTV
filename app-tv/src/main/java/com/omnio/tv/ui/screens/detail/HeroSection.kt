@@ -43,8 +43,10 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.tv.material3.Border
@@ -175,6 +177,27 @@ fun HeroContentSection(
                 .padding(start = 48.dp, end = 48.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.Bottom
         ) {
+            // Cinematic eyebrow: "OMNIO PICKS · MOVIE/SERIES" with a small mark, above the title.
+            if (!isTrailerPlaying) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(bottom = 10.dp)
+                ) {
+                    com.omnio.tv.ui.components.cinematic.OmnioMark(size = 14.dp)
+                    Text(
+                        text = if (isSeriesApi) "OMNIO PICKS · SERIES" else "OMNIO PICKS · MOVIE",
+                        color = OmnioColors.TextPrimary,
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontFamily = com.omnio.tv.ui.theme.InterFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 4.sp
+                        )
+                    )
+                }
+            }
+
             // Logo/Title — always visible during trailer, animates size
             if (shouldShowLogo) {
                 AsyncImage(

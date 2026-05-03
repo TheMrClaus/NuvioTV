@@ -516,14 +516,14 @@ fun ContinueWatchingCard(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(1.5.dp))
                             .height(3.dp)
-                            .background(Color.Black.copy(alpha = 0.3f))
+                            .background(Color.White.copy(alpha = 0.25f))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(progressFraction)
                                 .clip(RoundedCornerShape(1.5.dp))
                                 .height(3.dp)
-                                .background(OmnioColors.Primary)
+                                .background(OmnioColors.Secondary)
                         )
                     }
                 }
