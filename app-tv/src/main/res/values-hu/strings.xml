@@ -69,6 +69,8 @@
     <string name="hero_mark_watched">Megjelölés megnézettként</string>
     <string name="hero_mark_unwatched">Megjelölés nem látottként</string>
     <string name="hero_play_trailer">Előzetes lejátszása</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Nyomd meg a vissza gombot az előzetes bezárásához</string>
     <string name="cd_rating">Értékelés</string>
 

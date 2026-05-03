@@ -69,6 +69,8 @@
     <string name="hero_mark_watched">Επισήμανση ως προβληθέν</string>
     <string name="hero_mark_unwatched">Επισήμανση ως μη προβληθέν</string>
     <string name="hero_play_trailer">Αναπαραγωγή τρέιλερ</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Πατήστε πίσω για έξοδο από το τρέιλερ</string>
     <string name="cd_rating">Βαθμολογία</string>
 

@@ -69,6 +69,8 @@
     <string name="hero_mark_watched">Als gesehen markieren</string>
     <string name="hero_mark_unwatched">Als nicht angesehen markieren</string>
     <string name="hero_play_trailer">Trailer abspielen</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Zurück drücken, um den Trailer zu verlassen</string>
     <string name="cd_rating">Bewertung</string>
 

@@ -69,6 +69,8 @@
     <string name="hero_mark_watched">Marquer comme vu</string>
     <string name="hero_mark_unwatched">Marquer comme non vu</string>
     <string name="hero_play_trailer">Regarder la bande-annonce</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Appuie sur retour pour quitter la bande-annonce</string>
     <string name="cd_rating">Note</string>
 

@@ -8,7 +8,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,7 +44,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cast
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
+import androidx.tv.material3.Icon
 import androidx.tv.material3.Text
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
@@ -50,6 +60,11 @@ import com.omnio.tv.R
 import com.omnio.tv.ui.components.TrailerPlayer
 import com.omnio.tv.core.uishared.OmnioColors
 import androidx.compose.ui.res.stringResource
+import java.time.Clock
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import kotlin.math.roundToInt
+import kotlinx.coroutines.delay
 
 private data class ModernHeroSecondaryMeta(
     val highlightText: String?,
@@ -68,25 +83,32 @@ internal fun ModernHeroScene(
     onTrailerEnded: () -> Unit,
     onFirstFrameRendered: () -> Unit
 ) {
-    ModernHeroMediaLayer(
-        heroBackdrop = state.heroBackdrop,
-        enrichmentActive = state.enrichmentActive,
-        shouldPlayHeroTrailer = state.shouldPlayTrailer,
-        heroTrailerFirstFrameRendered = state.trailerFirstFrameRendered,
-        heroTrailerUrl = state.trailerUrl,
-        heroTrailerAudioUrl = state.trailerAudioUrl,
-        muted = state.trailerMuted,
-        onTrailerEnded = onTrailerEnded,
-        onFirstFrameRendered = onFirstFrameRendered,
-        modifier = modifier,
-        requestWidthPx = requestWidthPx,
-        requestHeightPx = requestHeightPx
-    )
-    ModernHeroGradientLayer(
-        bgColor = bgColor,
-        isFullScreen = state.fullScreenBackdrop,
-        modifier = modifier
-    )
+    Box(modifier = modifier) {
+        ModernHeroMediaLayer(
+            heroBackdrop = state.heroBackdrop,
+            enrichmentActive = state.enrichmentActive,
+            shouldPlayHeroTrailer = state.shouldPlayTrailer,
+            heroTrailerFirstFrameRendered = state.trailerFirstFrameRendered,
+            heroTrailerUrl = state.trailerUrl,
+            heroTrailerAudioUrl = state.trailerAudioUrl,
+            muted = state.trailerMuted,
+            onTrailerEnded = onTrailerEnded,
+            onFirstFrameRendered = onFirstFrameRendered,
+            modifier = Modifier.fillMaxSize(),
+            requestWidthPx = requestWidthPx,
+            requestHeightPx = requestHeightPx
+        )
+        ModernHeroGradientLayer(
+            bgColor = bgColor,
+            isFullScreen = state.fullScreenBackdrop,
+            modifier = Modifier.fillMaxSize()
+        )
+        HeroTopRightCluster(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 36.dp, end = 40.dp)
+        )
+    }
 }
 
 @Composable
@@ -249,6 +271,9 @@ internal fun ModernHeroGradientLayer(
 @Composable
 internal fun HeroTitleBlock(
     preview: HeroPreview?,
+    matchRating: Float? = null,
+    onPlayClick: (() -> Unit)? = null,
+    onInfoClick: (() -> Unit)? = null,
     enrichmentActive: Boolean = false,
     portraitMode: Boolean,
     trailerPlaying: Boolean = false,
@@ -264,13 +289,23 @@ internal fun HeroTitleBlock(
         modifier = modifier,
         contentAlignment = Alignment.BottomStart
     ) {
-        HeroTitleContent(preview = stablePreview!!, portraitMode = portraitMode, trailerPlaying = trailerPlaying)
+        HeroTitleContent(
+            preview = stablePreview!!,
+            matchRating = matchRating,
+            onPlayClick = onPlayClick,
+            onInfoClick = onInfoClick,
+            portraitMode = portraitMode,
+            trailerPlaying = trailerPlaying
+        )
     }
 }
 
 @Composable
 private fun HeroTitleContent(
     preview: HeroPreview?,
+    matchRating: Float? = null,
+    onPlayClick: (() -> Unit)? = null,
+    onInfoClick: (() -> Unit)? = null,
     portraitMode: Boolean,
     trailerPlaying: Boolean = false
 ) {
@@ -322,6 +357,11 @@ private fun HeroTitleContent(
             fontSize = bodyMedium.fontSize * descriptionScale,
             lineHeight = bodyMedium.lineHeight * descriptionScale
         )
+    }
+    val matchPercent = remember(matchRating) {
+        matchRating
+            ?.takeIf { it > 0f }
+            ?.let { (it * 10f).roundToInt().coerceIn(0, 100) }
     }
 
     Column(
@@ -410,7 +450,7 @@ private fun HeroTitleContent(
         val ageRatingBadge = secondaryMeta.ageRating
         val statusBadge = secondaryMeta.status
         val secondaryDetails = secondaryMeta.details
-        val hasSecondaryBadge = ageRatingBadge != null || statusBadge != null
+        val hasSecondaryBadge = statusBadge != null
         val showImdbInPrimary = !preview.isSeries && !hasSecondaryBadge && !preview.imdbText.isNullOrBlank()
         val showImdbInPrimaryWithHighlight = showImdbInPrimary && secondaryHighlightText == null
         val showImdbInSecondary = !preview.imdbText.isNullOrBlank() &&
@@ -490,16 +530,26 @@ private fun HeroTitleContent(
                     }
                 }
             }
+            if (ageRatingBadge != null) {
+                Spacer(modifier = Modifier.weight(1f))
+                HeroAgeRatingPill(text = ageRatingBadge)
+            }
         }
 
-        if (secondaryHighlightText != null || ageRatingBadge != null || showImdbInSecondary || statusBadge != null || secondaryDetails.isNotEmpty()) {
+        if (matchPercent != null || secondaryHighlightText != null || showImdbInSecondary || statusBadge != null || secondaryDetails.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth().graphicsLayer { alpha = metaAlpha },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(metaSpacing)
             ) {
                 val semiBoldLabelMedium = remember(labelMedium) { labelMedium.copy(fontWeight = FontWeight.SemiBold) }
-        secondaryHighlightText?.let { text ->
+                matchPercent?.let { percent ->
+                    HeroMatchPill(text = stringResource(R.string.hero_match_percent, percent))
+                }
+                if (matchPercent != null && (secondaryHighlightText != null || statusBadge != null || showImdbInSecondary || secondaryDetails.isNotEmpty())) {
+                    HeroMetaDivider(metaScale)
+                }
+                secondaryHighlightText?.let { text ->
                     Text(
                         text = text,
                         style = semiBoldLabelMedium,
@@ -508,33 +558,17 @@ private fun HeroTitleContent(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                if (secondaryHighlightText != null && (hasSecondaryBadge || showImdbInSecondary || secondaryDetails.isNotEmpty())) {
+                if (secondaryHighlightText != null && (statusBadge != null || showImdbInSecondary || secondaryDetails.isNotEmpty())) {
                     HeroMetaDivider(metaScale)
                 }
-                if (ageRatingBadge != null && statusBadge != null) {
-                    HeroCombinedMetaBadge(
-                        leftText = ageRatingBadge,
-                        rightText = statusBadge,
+                statusBadge?.let { badge ->
+                    HeroMetaBadge(
+                        text = badge,
                         textStyle = labelMedium,
                         contentColor = OmnioColors.TextPrimary
                     )
-                } else {
-                    ageRatingBadge?.let { badge ->
-                        HeroMetaBadge(
-                            text = badge,
-                            textStyle = labelMedium,
-                            contentColor = OmnioColors.TextPrimary
-                        )
-                    }
-                    statusBadge?.let { badge ->
-                        HeroMetaBadge(
-                            text = badge,
-                            textStyle = labelMedium,
-                            contentColor = OmnioColors.TextPrimary
-                        )
-                    }
                 }
-                if ((ageRatingBadge != null || statusBadge != null) && (showImdbInSecondary || secondaryDetails.isNotEmpty())) {
+                if (statusBadge != null && (showImdbInSecondary || secondaryDetails.isNotEmpty())) {
                     HeroMetaDivider(metaScale)
                 }
                 if (showImdbInSecondary) {
@@ -572,9 +606,143 @@ private fun HeroTitleContent(
                 color = OmnioColors.TextPrimary,
                 maxLines = descriptionMaxLines,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.graphicsLayer { alpha = metaAlpha }
+                modifier = Modifier
+                    .widthIn(max = 640.dp)
+                    .graphicsLayer { alpha = metaAlpha }
             )
         }
+
+        Row(
+            modifier = Modifier.graphicsLayer { alpha = metaAlpha },
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            HeroActionButton(
+                label = stringResource(R.string.hero_play),
+                icon = Icons.Filled.PlayArrow,
+                containerColor = Color.White,
+                contentColor = Color.Black,
+                onClick = onPlayClick
+            )
+            HeroActionButton(
+                label = stringResource(R.string.hero_more_info),
+                icon = Icons.Filled.Info,
+                containerColor = Color(0xB36D6D6E),
+                contentColor = Color.White,
+                onClick = onInfoClick ?: onPlayClick
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroTopRightCluster(modifier: Modifier = Modifier) {
+    val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
+    val currentTime by produceState(initialValue = LocalTime.now(Clock.systemDefaultZone())) {
+        while (true) {
+            value = LocalTime.now(Clock.systemDefaultZone())
+            val delayMs = ((60 - value.second) * 1000L) - value.nano / 1_000_000L
+            delay(delayMs.coerceAtLeast(1L))
+        }
+    }
+
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Cast,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.90f),
+            modifier = Modifier.size(22.dp)
+        )
+        Text(
+            text = currentTime.format(timeFormatter),
+            color = Color.White.copy(alpha = 0.72f),
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
+        )
+    }
+}
+
+@Composable
+private fun HeroMatchPill(text: String) {
+    Text(
+        text = text,
+        color = Color.White,
+        style = MaterialTheme.typography.labelMedium.copy(
+            fontSize = 14.sp,
+            fontWeight = FontWeight.SemiBold
+        ),
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .background(Color.White.copy(alpha = 0.15f))
+            .border(
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.30f)),
+                shape = RoundedCornerShape(4.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    )
+}
+
+@Composable
+private fun HeroAgeRatingPill(text: String) {
+    Text(
+        text = text,
+        color = Color.White,
+        style = MaterialTheme.typography.labelMedium.copy(
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold
+        ),
+        modifier = Modifier
+            .clip(RoundedCornerShape(4.dp))
+            .border(
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.60f)),
+                shape = RoundedCornerShape(4.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+    )
+}
+
+@Composable
+private fun HeroActionButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: (() -> Unit)?
+) {
+    Button(
+        onClick = { onClick?.invoke() },
+        enabled = onClick != null,
+        colors = ButtonDefaults.colors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+            focusedContainerColor = containerColor,
+            focusedContentColor = contentColor,
+            disabledContainerColor = containerColor.copy(alpha = 0.60f),
+            disabledContentColor = contentColor.copy(alpha = 0.80f)
+        ),
+        shape = ButtonDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        contentPadding = PaddingValues(horizontal = 18.dp, vertical = 12.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
+            )
+        )
     }
 }
 

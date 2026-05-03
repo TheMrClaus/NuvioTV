@@ -66,6 +66,8 @@
     <string name="hero_mark_watched">Označi kot ogledano</string>
     <string name="hero_mark_unwatched">Označi kot neogledano</string>
     <string name="hero_play_trailer">Predvajaj napovednik</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Pritisnite nazaj za izhod iz napovednika</string>
     <string name="cd_rating">Ocena</string>
 

@@ -40,6 +40,8 @@
     <string name="hero_mark_watched">Oznacz jako obejrzane</string>
     <string name="hero_mark_unwatched">Oznacz jako nieobejrzane</string>
     <string name="hero_play_trailer">Odtwórz zwiastun</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Naciśnij wstecz, aby wyjść ze zwiastuna</string>
     <string name="cd_rating">Ocena</string>
 

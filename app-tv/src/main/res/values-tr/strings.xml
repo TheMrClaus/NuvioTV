@@ -106,6 +106,8 @@
     <string name="hero_mark_watched">İzlendi olarak işaretle</string>
     <string name="hero_mark_unwatched">İzlenmedi olarak işaretle</string>
     <string name="hero_play_trailer">Fragmanı izle</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Fragmandan çıkmak için geri tuşuna basın</string>
     <string name="cd_rating">Değerlendirme</string>
 

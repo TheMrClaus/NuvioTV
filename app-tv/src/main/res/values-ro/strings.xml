@@ -41,6 +41,8 @@
     <string name="hero_mark_watched">Marchează ca vizionat</string>
     <string name="hero_mark_unwatched">Marchează ca nevizionat</string>
     <string name="hero_play_trailer">Redă trailerul</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Apăsați înapoi pentru a ieși din trailer</string>
     <string name="cd_rating">Evaluare</string>
 

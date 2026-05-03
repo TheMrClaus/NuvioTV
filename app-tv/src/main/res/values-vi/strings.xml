@@ -42,6 +42,8 @@
     <string name="hero_mark_watched">Đánh dấu đã xem</string>
     <string name="hero_mark_unwatched">Đánh dấu chưa xem</string>
     <string name="hero_play_trailer">Xem trailer</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Nhấn quay lại để thoát trailer</string>
     <string name="cd_rating">Xếp hạng</string>
 

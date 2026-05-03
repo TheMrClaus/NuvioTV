@@ -69,6 +69,8 @@
     <string name="hero_mark_watched">Merk som sett</string>
     <string name="hero_mark_unwatched">Merk som usett</string>
     <string name="hero_play_trailer">Spill av trailer</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Trykk tilbake for å avslutte trailer</string>
     <string name="cd_rating">Vurdering</string>
 

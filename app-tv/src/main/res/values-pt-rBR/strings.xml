@@ -69,6 +69,8 @@
     <string name="hero_mark_watched">Marcar como assistido</string>
     <string name="hero_mark_unwatched">Desmarcar como assistido</string>
     <string name="hero_play_trailer">Trailer</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">Pressione voltar para fechar o trailer</string>
     <string name="cd_rating">Classificação</string>
 
