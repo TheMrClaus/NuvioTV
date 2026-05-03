@@ -18,7 +18,7 @@ import com.omnio.tv.domain.model.AppTheme
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun OmnioTheme(
-    appTheme: AppTheme = AppTheme.WHITE,
+    appTheme: AppTheme = AppTheme.CINEMATIC,
     appFont: AppFont = AppFont.INTER,
     content: @Composable () -> Unit
 ) {

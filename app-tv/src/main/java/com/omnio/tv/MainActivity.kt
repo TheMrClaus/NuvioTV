@@ -153,7 +153,7 @@ data class DrawerItem(
 )
 
 private data class MainUiPrefs(
-    val theme: AppTheme = AppTheme.WHITE,
+    val theme: AppTheme = AppTheme.CINEMATIC,
     val font: AppFont = AppFont.INTER,
     val hasChosenLayout: Boolean? = null,
     val sidebarCollapsed: Boolean = false,
