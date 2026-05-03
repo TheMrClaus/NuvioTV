@@ -134,6 +134,26 @@ fun AuthQrSignInScreen(
                 verticalArrangement = Arrangement.Center
             ) {
                 com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 44.dp)
+                Spacer(modifier = Modifier.height(18.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    listOf(
+                        com.omnio.tv.ui.components.cinematic.SourceKind.Rd,
+                        com.omnio.tv.ui.components.cinematic.SourceKind.Usenet,
+                        com.omnio.tv.ui.components.cinematic.SourceKind.Emby,
+                        com.omnio.tv.ui.components.cinematic.SourceKind.Jellyfin,
+                        com.omnio.tv.ui.components.cinematic.SourceKind.Plex,
+                        com.omnio.tv.ui.components.cinematic.SourceKind.Http,
+                        com.omnio.tv.ui.components.cinematic.SourceKind.P2p
+                    ).forEach { kind ->
+                        com.omnio.tv.ui.components.cinematic.SourceBadge(
+                            src = kind,
+                            size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(22.dp))
                 Text(
                     text = stringResource(R.string.auth_qr_title),
