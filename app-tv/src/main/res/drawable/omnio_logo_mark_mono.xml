@@ -1,0 +1,30 @@
+<!--
+  Omnio mark — single-color variant for monochrome contexts (white-on-dark
+  splash, picture-in-picture overlays, low-color displays).
+  Defaults to white; tint via android:tint at the call site to override.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64"
+    android:tint="#FFFFFFFF">
+
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="6"
+        android:pathData="M 32,4 a 28,28 0 1,0 0,56 a 28,28 0 1,0 0,-56 Z" />
+
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeAlpha="0.55"
+        android:pathData="M 32,16 a 16,16 0 1,0 0,32 a 16,16 0 1,0 0,-32 Z" />
+
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:strokeWidth="0"
+        android:pathData="M 28,22 L 46,32 L 28,42 Z" />
+</vector>
