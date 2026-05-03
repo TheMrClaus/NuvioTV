@@ -15,21 +15,24 @@ val DMSansFamily = FontFamily(
     Font(R.font.dm_sans_variable, FontWeight.Normal),
     Font(R.font.dm_sans_variable, FontWeight.Medium),
     Font(R.font.dm_sans_variable, FontWeight.SemiBold),
-    Font(R.font.dm_sans_variable, FontWeight.Bold)
+    Font(R.font.dm_sans_variable, FontWeight.Bold),
+    Font(R.font.dm_sans_variable, FontWeight.Black)
 )
 
 val InterFamily = FontFamily(
     Font(R.font.inter_variable, FontWeight.Normal),
     Font(R.font.inter_variable, FontWeight.Medium),
     Font(R.font.inter_variable, FontWeight.SemiBold),
-    Font(R.font.inter_variable, FontWeight.Bold)
+    Font(R.font.inter_variable, FontWeight.Bold),
+    Font(R.font.inter_variable, FontWeight.Black)
 )
 
 val OpenSansFamily = FontFamily(
     Font(R.font.opensans_variable, FontWeight.Normal),
     Font(R.font.opensans_variable, FontWeight.Medium),
     Font(R.font.opensans_variable, FontWeight.SemiBold),
-    Font(R.font.opensans_variable, FontWeight.Bold)
+    Font(R.font.opensans_variable, FontWeight.Bold),
+    Font(R.font.opensans_variable, FontWeight.Black)
 )
 
 fun getFontFamily(appFont: AppFont): FontFamily = when (appFont) {
@@ -53,24 +56,24 @@ fun getFontFamily(appFont: AppFont): FontFamily = when (appFont) {
 fun tvOmnioTypography(fontFamily: FontFamily): OmnioTypography = OmnioTypography(
     displayLarge = TextStyle(
         fontFamily = fontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Black,
         fontSize = 48.sp,
-        lineHeight = 56.sp,
-        letterSpacing = (-0.5).sp
+        lineHeight = 44.16.sp,
+        letterSpacing = (-1.92).sp
     ),
     displayMedium = TextStyle(
         fontFamily = fontFamily,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.Black,
         fontSize = 36.sp,
-        lineHeight = 44.sp,
-        letterSpacing = 0.sp
+        lineHeight = 33.12.sp,
+        letterSpacing = (-1.44).sp
     ),
     displaySmall = TextStyle(fontFamily = fontFamily),
     headlineLarge = TextStyle(
         fontFamily = fontFamily,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Black,
         fontSize = 28.sp,
-        lineHeight = 36.sp,
+        lineHeight = 25.76.sp,
         letterSpacing = 0.sp
     ),
     headlineMedium = TextStyle(

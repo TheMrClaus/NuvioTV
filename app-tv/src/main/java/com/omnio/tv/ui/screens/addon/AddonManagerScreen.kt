@@ -10,6 +10,8 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -83,6 +85,7 @@ import androidx.tv.material3.Text
 import com.omnio.tv.domain.model.Addon
 import com.omnio.tv.domain.model.CatalogDescriptor
 import com.omnio.tv.ui.components.LoadingIndicator
+import com.omnio.tv.ui.components.cinematic.cinematicFocus
 import com.omnio.tv.core.uishared.OmnioColors
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -948,21 +951,20 @@ private fun AddonCard(
     isReadOnly: Boolean = false
 ) {
     if (isReadOnly) {
+        val interactionSource = remember { MutableInteractionSource() }
+        val focused by interactionSource.collectIsFocusedAsState()
         Surface(
             onClick = { },
             modifier = Modifier
                 .fillMaxWidth()
+                .cinematicFocus(focused = focused, cornerRadius = 8.dp)
                 .animateContentSize(),
+            interactionSource = interactionSource,
             colors = ClickableSurfaceDefaults.colors(
                 containerColor = OmnioColors.BackgroundCard,
                 focusedContainerColor = OmnioColors.BackgroundCard
             ),
-            border = ClickableSurfaceDefaults.border(
-                focusedBorder = Border(
-                    border = BorderStroke(2.dp, OmnioColors.FocusRing),
-                    shape = RoundedCornerShape(12.dp)
-                )
-            ),
+            border = ClickableSurfaceDefaults.border(focusedBorder = Border.None),
             shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
             scale = ClickableSurfaceDefaults.scale(focusedScale = 1f)
         ) {

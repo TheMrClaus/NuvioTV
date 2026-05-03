@@ -11,6 +11,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -86,6 +88,7 @@ import com.omnio.tv.domain.model.Stream
 import com.omnio.tv.core.player.SourceChipItem
 import com.omnio.tv.core.player.SourceChipStatus
 import com.omnio.tv.ui.components.SourceStatusFilterChip
+import com.omnio.tv.ui.components.cinematic.cinematicFocus
 import com.omnio.tv.core.uishared.OmnioColors
 import com.omnio.tv.ui.components.StreamsSkeletonList
 import com.omnio.tv.ui.screens.player.LoadingOverlay
@@ -918,23 +921,27 @@ private fun StreamCard(
                 .build()
         }
     }
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
 
     Card(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
+            .cinematicFocus(focused = focused, cornerRadius = 8.dp)
             .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
             .then(if (onUpKey != null) Modifier.onKeyEvent { event ->
                 if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN && event.key == Key.DirectionUp) {
                     onUpKey(); true
                 } else false
             } else Modifier),
+        interactionSource = interactionSource,
         colors = CardDefaults.colors(
             containerColor = OmnioColors.BackgroundElevated,
             focusedContainerColor = OmnioColors.BackgroundElevated
         ),
         shape = CardDefaults.shape(shape = RoundedCornerShape(12.dp)),
-        scale = CardDefaults.scale(focusedScale = 1.08f)
+        scale = CardDefaults.scale(focusedScale = 1f)
     ) {
         Row(
             modifier = Modifier
