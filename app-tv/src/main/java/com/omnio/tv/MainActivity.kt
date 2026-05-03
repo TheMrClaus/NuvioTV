@@ -122,6 +122,7 @@ import com.omnio.tv.ui.navigation.OmnioNavHost
 import com.omnio.tv.ui.navigation.Screen
 import com.omnio.tv.ui.components.OmnioScrollDefaults
 import com.omnio.tv.ui.components.ProfileAvatarCircle
+import com.omnio.tv.ui.components.cinematic.OmnioWordmark
 import com.omnio.tv.ui.screens.account.AuthQrSignInScreen
 import com.omnio.tv.ui.screens.profile.ProfileSelectionScreen
 import com.omnio.tv.core.uishared.OmnioColors
@@ -694,13 +695,12 @@ private fun LegacySidebarScaffold(
                                 }
                             }
                         } else {
-                            Image(
-                                painter = painterResource(id = R.drawable.app_logo_wordmark),
-                                contentDescription = "OmnioTV",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(42.dp)
-                            )
+                            Box(
+                                modifier = Modifier.fillMaxWidth(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                OmnioWordmark(height = 28.dp)
+                            }
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                     }

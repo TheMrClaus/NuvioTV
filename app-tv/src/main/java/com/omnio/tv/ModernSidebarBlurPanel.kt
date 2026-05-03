@@ -52,6 +52,7 @@ import androidx.tv.material3.Text
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeChild
 import com.omnio.tv.ui.components.ProfileAvatarCircle
+import com.omnio.tv.ui.components.cinematic.OmnioWordmark
 import com.omnio.tv.core.uishared.OmnioColors
 import coil.compose.rememberAsyncImagePainter
 import coil.decode.SvgDecoder
@@ -159,17 +160,11 @@ internal fun ModernSidebarBlurPanel(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset(y = 12.dp),
+                    .offset(y = 12.dp)
+                    .graphicsLayer { alpha = sidebarLabelAlpha },
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_logo_wordmark),
-                        contentDescription = "OmnioTV",
-                    modifier = Modifier
-                        .fillMaxWidth(0.72f)
-                        .height(36.dp),
-                    alpha = sidebarLabelAlpha
-                )
+                OmnioWordmark(height = 26.dp)
             }
         }
 
@@ -229,7 +224,7 @@ private fun SidebarNavigationItem(
     val shape = RoundedCornerShape(999.dp)
     val backgroundColor by animateColorAsState(
         targetValue = when {
-            selected -> Color.White
+            selected -> OmnioColors.Secondary  // Cinematic red wash on active
             isFocused -> Color.White.copy(alpha = 0.18f)
             else -> Color.Transparent
         },
@@ -242,8 +237,8 @@ private fun SidebarNavigationItem(
         label = "sidebarItemBorder"
     )
 
-    val contentColor = if (selected) Color(0xFF10151F) else Color.White
-    val iconCircleColor = if (selected) Color(0xFFE7E2EF) else Color(0xFF6A6A74)
+    val contentColor = Color.White
+    val iconCircleColor = if (selected) Color.White.copy(alpha = 0.18f) else Color(0xFF6A6A74)
     Row(
         modifier = modifier
             .clip(shape)
