@@ -1098,4 +1098,8 @@
     <string name="update_ignore">Ignorer</string>
     <string name="watchlist_added">Lagt til ønskelisten</string>
     <string name="watchlist_removed">Fjernet fra ønskelisten</string>
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
 </resources>

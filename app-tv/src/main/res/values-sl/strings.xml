@@ -1517,4 +1517,8 @@
     <string name="update_ignore">Prezri</string>
 	<string name="watchlist_added">Dodano na seznam za ogled</string>
     <string name="watchlist_removed">Odstranjeno s seznama za ogled</string>														  
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
 </resources>

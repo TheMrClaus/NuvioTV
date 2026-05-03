@@ -875,4 +875,8 @@
     <string name="update_open_settings">Mở cài đặt</string>
     <string name="update_install">Cài đặt</string>
     <string name="update_ignore">Bỏ qua</string>
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
 </resources>

@@ -1275,4 +1275,9 @@
    <string name="debug_signin_success">Login realizado com sucesso</string>
    <string name="debug_generate_description">Item %1$s gerado em debug #%2$d</string>
    <string name="debug_generate_result_failed">Falha: %1$s</string>
-  </resources>
+
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
+</resources>

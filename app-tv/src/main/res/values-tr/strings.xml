@@ -1188,4 +1188,8 @@
     <string name="update_ignore">Atla</string>
     <string name="watchlist_added">İzleme listesine eklendi</string>
     <string name="watchlist_removed">İzleme listesinden kaldırıldı</string>
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
 </resources>

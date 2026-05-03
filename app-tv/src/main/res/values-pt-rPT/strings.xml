@@ -1032,4 +1032,8 @@
     <string name="update_ignore">Ignorar</string>
     <string name="watchlist_added">Adicionado à lista de interesses</string>
     <string name="watchlist_removed">Removido da lista de interesses</string>
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
 </resources>

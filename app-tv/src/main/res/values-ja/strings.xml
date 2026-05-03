@@ -1154,4 +1154,8 @@
     <string name="update_ignore">無視</string>
     <string name="watchlist_added">ウォッチリストに追加しました</string>
     <string name="watchlist_removed">ウォッチリストから削除しました</string>
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
 </resources>

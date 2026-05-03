@@ -836,4 +836,9 @@
     <string name="update_open_settings">Deschide Setările</string>
     <string name="update_install">Instalează</string>
     <string name="update_ignore">Ignoră</string>
-  </resources>
+
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
+</resources>

@@ -976,4 +976,8 @@
     <string name="update_open_settings">सेटिंग्स खोलें</string>
     <string name="update_install">इंस्टॉल</string>
     <string name="update_ignore">नज़रअंदाज़ करें</string>
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
 </resources>
