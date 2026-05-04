@@ -3,6 +3,7 @@ package com.omnio.tv
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -39,6 +41,7 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
@@ -61,6 +64,38 @@ import coil.request.ImageRequest
 private val SidebarLeadingVisualSize = 34.dp
 private val SidebarContentGap = 14.dp
 private val SidebarProfileContentGap = 18.dp
+private val SidebarActiveIndicatorWidth = 4.dp
+
+internal enum class SidebarItemTone {
+    Idle,
+    Focused,
+    Active
+}
+
+internal data class SidebarNavigationItemTreatment(
+    val tone: SidebarItemTone,
+    val showActiveIndicator: Boolean
+)
+
+internal fun sidebarNavigationItemTreatment(
+    selected: Boolean,
+    focused: Boolean
+): SidebarNavigationItemTreatment {
+    return when {
+        selected -> SidebarNavigationItemTreatment(
+            tone = SidebarItemTone.Active,
+            showActiveIndicator = true
+        )
+        focused -> SidebarNavigationItemTreatment(
+            tone = SidebarItemTone.Focused,
+            showActiveIndicator = false
+        )
+        else -> SidebarNavigationItemTreatment(
+            tone = SidebarItemTone.Idle,
+            showActiveIndicator = false
+        )
+    }
+}
 
 @Composable
 internal fun ModernSidebarBlurPanel(
@@ -106,9 +141,22 @@ internal fun ModernSidebarBlurPanel(
     val borderBase = OmnioColors.Border
     val panelBackgroundBrush = remember(blurEnabled, bgElevated, bgCard) {
         if (blurEnabled) {
-            Brush.verticalGradient(listOf(Color(0xD64A4F59), Color(0xCC3F454F), Color(0xC640474F)))
+            Brush.verticalGradient(
+                listOf(
+                    Color(0xF01A1417),
+                    Color(0xDE251B20),
+                    Color(0xCC33242A),
+                    Color(0xC63B3238)
+                )
+            )
         } else {
-            Brush.verticalGradient(listOf(bgElevated, bgCard))
+            Brush.verticalGradient(
+                listOf(
+                    Color(0xFF191316),
+                    bgElevated,
+                    bgCard
+                )
+            )
         }
     }
     val panelBorderColor = remember(blurEnabled, borderBase) {
@@ -222,11 +270,15 @@ private fun SidebarNavigationItem(
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(999.dp)
+    val treatment = sidebarNavigationItemTreatment(
+        selected = selected,
+        focused = isFocused
+    )
     val backgroundColor by animateColorAsState(
-        targetValue = when {
-            selected -> OmnioColors.Secondary  // Cinematic red wash on active
-            isFocused -> Color.White.copy(alpha = 0.18f)
-            else -> Color.Transparent
+        targetValue = when (treatment.tone) {
+            SidebarItemTone.Active -> Color(0x4DC62828)
+            SidebarItemTone.Focused -> Color.White.copy(alpha = 0.18f)
+            SidebarItemTone.Idle -> Color.Transparent
         },
         animationSpec = tween(durationMillis = 180),
         label = "sidebarItemBackground"
@@ -236,10 +288,15 @@ private fun SidebarNavigationItem(
         animationSpec = tween(durationMillis = 180),
         label = "sidebarItemBorder"
     )
+    val activeIndicatorColor by animateColorAsState(
+        targetValue = if (treatment.showActiveIndicator) Color(0xFFD32F2F) else Color.Transparent,
+        animationSpec = tween(durationMillis = 180),
+        label = "sidebarItemActiveIndicator"
+    )
 
     val contentColor = Color.White
     val iconCircleColor = if (selected) Color.White.copy(alpha = 0.18f) else Color(0xFF6A6A74)
-    Row(
+    Box(
         modifier = modifier
             .clip(shape)
             .background(backgroundColor)
@@ -257,49 +314,63 @@ private fun SidebarNavigationItem(
                     true
                 } else false
             }
-            .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 14.dp, vertical = 10.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(SidebarLeadingVisualSize)
-                .clip(CircleShape)
-                .background(iconCircleColor)
-                .padding(6.dp)
-                .graphicsLayer {
-                    scaleX = iconScale
-                    scaleY = iconScale
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                icon != null -> Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(22.dp)
-                )
-
-                iconRes != null -> Icon(
-                    painter = rememberRawSvgPainter(iconRes),
-                    contentDescription = null,
-                    tint = contentColor,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+        if (treatment.showActiveIndicator) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .width(SidebarActiveIndicatorWidth)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(topStart = 999.dp, bottomStart = 999.dp))
+                    .background(activeIndicatorColor)
+            )
         }
-        Spacer(modifier = Modifier.width(SidebarContentGap))
 
-        Text(
-            text = label,
-            color = contentColor,
-            modifier = Modifier
-                .weight(1f)
-                .graphicsLayer { alpha = labelAlpha },
-            style = androidx.tv.material3.MaterialTheme.typography.titleLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(SidebarLeadingVisualSize)
+                    .clip(CircleShape)
+                    .background(iconCircleColor)
+                    .padding(6.dp)
+                    .graphicsLayer {
+                        scaleX = iconScale
+                        scaleY = iconScale
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    icon != null -> Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+
+                    iconRes != null -> Icon(
+                        painter = rememberRawSvgPainter(iconRes),
+                        contentDescription = null,
+                        tint = contentColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(SidebarContentGap))
+
+            Text(
+                text = label,
+                color = contentColor,
+                modifier = Modifier
+                    .weight(1f)
+                    .graphicsLayer { alpha = labelAlpha },
+                style = androidx.tv.material3.MaterialTheme.typography.titleLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
