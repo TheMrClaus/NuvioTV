@@ -472,7 +472,7 @@ fun ModernHomeContent(
         modifier = Modifier.fillMaxSize()
     ) {
         val posterCardCornerRadius = remember(uiState.posterCardCornerRadiusDp) { uiState.posterCardCornerRadiusDp.dp }
-        val rowHorizontalPadding = 52.dp
+        val rowHorizontalPadding = modernHomeHeroStartPaddingDp().dp
 
         val activeCarouselItem = remember(activeRow, clampedActiveItemIndex) {
             activeRow?.items?.getOrNull(clampedActiveItemIndex)

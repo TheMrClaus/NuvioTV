@@ -340,7 +340,7 @@ internal fun ModernRowSection(
         val rowSubtitle = remember(row) { row.sourceCountSubtitle() }
         val textColor = remember { OmnioColors.TextPrimary }
         val textModifier = remember(rowTitleBottom) {
-            Modifier.padding(start = 52.dp, bottom = rowTitleBottom)
+            Modifier.padding(start = modernHomeRowStartPaddingDp().dp, bottom = rowTitleBottom)
         }
         Column(modifier = textModifier) {
             Text(
@@ -454,7 +454,7 @@ internal fun ModernRowSection(
         }
 
         val density = LocalDensity.current
-        val rowStartPadding = 52.dp
+        val rowStartPadding = modernHomeRowStartPaddingDp().dp
         val context = LocalContext.current
         val imageLoader = context.imageLoader
 

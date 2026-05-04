@@ -73,6 +73,26 @@ private data class ModernHeroSecondaryMeta(
     val details: List<String>
 )
 
+internal data class ModernHeroTopRightClusterTreatment(
+    val showCastIcon: Boolean,
+    val endPaddingDp: Int
+)
+
+internal fun modernHeroTopRightClusterTreatment(): ModernHeroTopRightClusterTreatment {
+    return ModernHeroTopRightClusterTreatment(
+        showCastIcon = false,
+        endPaddingDp = 56
+    )
+}
+
+internal fun heroTopRightClusterShowsCastIcon(
+    treatment: ModernHeroTopRightClusterTreatment
+): Boolean = treatment.showCastIcon
+
+internal fun modernHomeHeroStartPaddingDp(): Int = 32
+
+internal fun modernHomeRowStartPaddingDp(): Int = modernHomeHeroStartPaddingDp()
+
 @Composable
 internal fun ModernHeroScene(
     state: ModernHeroSceneState,
@@ -84,6 +104,7 @@ internal fun ModernHeroScene(
     onFirstFrameRendered: () -> Unit
 ) {
     Box(modifier = modifier) {
+        val topRightClusterTreatment = modernHeroTopRightClusterTreatment()
         ModernHeroMediaLayer(
             heroBackdrop = state.heroBackdrop,
             enrichmentActive = state.enrichmentActive,
@@ -106,7 +127,7 @@ internal fun ModernHeroScene(
         HeroTopRightCluster(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 36.dp, end = 40.dp)
+                .padding(top = 36.dp, end = topRightClusterTreatment.endPaddingDp.dp)
         )
     }
 }
@@ -637,6 +658,7 @@ private fun HeroTitleContent(
 
 @Composable
 private fun HeroTopRightCluster(modifier: Modifier = Modifier) {
+    val treatment = modernHeroTopRightClusterTreatment()
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     val currentTime by produceState(initialValue = LocalTime.now(Clock.systemDefaultZone())) {
         while (true) {
@@ -651,12 +673,14 @@ private fun HeroTopRightCluster(modifier: Modifier = Modifier) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        Icon(
-            imageVector = Icons.Filled.Cast,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.90f),
-            modifier = Modifier.size(22.dp)
-        )
+        if (heroTopRightClusterShowsCastIcon(treatment)) {
+            Icon(
+                imageVector = Icons.Filled.Cast,
+                contentDescription = null,
+                tint = Color.White.copy(alpha = 0.72f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
         Text(
             text = currentTime.format(timeFormatter),
             color = Color.White.copy(alpha = 0.72f),
