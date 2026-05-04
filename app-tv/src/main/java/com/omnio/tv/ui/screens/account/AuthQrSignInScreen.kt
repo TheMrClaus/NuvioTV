@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import androidx.compose.ui.res.stringResource
 import com.omnio.tv.R
+import com.omnio.tv.OnboardingStepIndicator
 import com.omnio.tv.domain.model.AuthState
 import com.omnio.tv.core.uishared.OmnioColors
 import kotlinx.coroutines.delay
@@ -53,6 +55,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun AuthQrSignInScreen(
     onBackPress: () -> Unit = {},
+    onboardingStep: Int? = null,
     onContinue: (() -> Unit)? = null,
     viewModel: AccountViewModel = hiltViewModel()
 ) {
@@ -116,93 +119,135 @@ fun AuthQrSignInScreen(
     }
     val remainingMillis = uiState.qrLoginExpiresAtMillis?.let { (it - nowMillis).coerceAtLeast(0L) } ?: 0L
 
+    val heroTitle = if (onboardingStep != null) {
+        stringResource(R.string.onboarding_pair_title)
+    } else {
+        stringResource(R.string.auth_qr_title)
+    }
+    val heroSubtitle = if (isSignedIn) {
+        stringResource(R.string.auth_qr_connected)
+    } else if (onboardingStep != null) {
+        stringResource(R.string.onboarding_pair_subtitle)
+    } else {
+        stringResource(R.string.auth_qr_phone_hint)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .background(
+                color = OmnioColors.Background
+            )
     ) {
-        Row(
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF160808),
+                            OmnioColors.BackgroundElevated,
+                            OmnioColors.Background
+                        )
+                    )
+                )
+        )
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 48.dp, vertical = 28.dp),
-            horizontalArrangement = Arrangement.spacedBy(36.dp)
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(0.45f)
-                    .fillMaxHeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 44.dp)
-                Spacer(modifier = Modifier.height(18.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    listOf(
-                        com.omnio.tv.ui.components.cinematic.SourceKind.Rd,
-                        com.omnio.tv.ui.components.cinematic.SourceKind.Usenet,
-                        com.omnio.tv.ui.components.cinematic.SourceKind.Emby,
-                        com.omnio.tv.ui.components.cinematic.SourceKind.Jellyfin,
-                        com.omnio.tv.ui.components.cinematic.SourceKind.Plex,
-                        com.omnio.tv.ui.components.cinematic.SourceKind.Http,
-                        com.omnio.tv.ui.components.cinematic.SourceKind.P2p
-                    ).forEach { kind ->
-                        com.omnio.tv.ui.components.cinematic.SourceBadge(
-                            src = kind,
-                            size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(22.dp))
-                Text(
-                    text = stringResource(R.string.auth_qr_title),
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = OmnioColors.TextPrimary,
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = if (isSignedIn) {
-                        stringResource(R.string.auth_qr_connected)
-                    } else {
-                        stringResource(R.string.auth_qr_phone_hint)
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = OmnioColors.TextSecondary,
-                    textAlign = TextAlign.Center
-                )
-                if (isSignedIn) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = fullAccount.email,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFF7CFF9B),
-                        textAlign = TextAlign.Center
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = fullAccount.userId,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = OmnioColors.TextSecondary,
-                        textAlign = TextAlign.Center
-                    )
-                }
+            onboardingStep?.let {
+                OnboardingStepIndicator(currentStep = it)
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(0.55f)
-                    .fillMaxHeight()
-                    .border(1.dp, OmnioColors.Border.copy(alpha = 0.5f), RoundedCornerShape(18.dp))
-                    .background(
-                        OmnioColors.BackgroundElevated.copy(alpha = 0.35f),
-                        RoundedCornerShape(18.dp)
-                    )
-                    .padding(26.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val compactLayout = maxWidth < 1000.dp
+
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(36.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(if (compactLayout) 0.42f else 0.45f)
+                            .fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        com.omnio.tv.ui.components.cinematic.OmnioMark(
+                            size = 72.dp,
+                            animated = onboardingStep != null
+                        )
+                        Spacer(modifier = Modifier.height(18.dp))
+                        com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 44.dp)
+                        Spacer(modifier = Modifier.height(22.dp))
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            listOf(
+                                com.omnio.tv.ui.components.cinematic.SourceKind.Rd,
+                                com.omnio.tv.ui.components.cinematic.SourceKind.Usenet,
+                                com.omnio.tv.ui.components.cinematic.SourceKind.Emby,
+                                com.omnio.tv.ui.components.cinematic.SourceKind.Jellyfin,
+                                com.omnio.tv.ui.components.cinematic.SourceKind.Plex,
+                                com.omnio.tv.ui.components.cinematic.SourceKind.Http,
+                                com.omnio.tv.ui.components.cinematic.SourceKind.P2p
+                            ).forEach { kind ->
+                                com.omnio.tv.ui.components.cinematic.SourceBadge(
+                                    src = kind,
+                                    size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(28.dp))
+                        Text(
+                            text = heroTitle,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = OmnioColors.TextPrimary,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            text = heroSubtitle,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = OmnioColors.TextSecondary,
+                            textAlign = TextAlign.Center
+                        )
+                        if (isSignedIn) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = fullAccount.email,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color(0xFF7CFF9B),
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = fullAccount.userId,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = OmnioColors.TextSecondary,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(if (compactLayout) 0.58f else 0.55f)
+                            .fillMaxHeight()
+                            .border(1.dp, OmnioColors.Border.copy(alpha = 0.5f), RoundedCornerShape(28.dp))
+                            .background(
+                                Color.Black.copy(alpha = 0.22f),
+                                RoundedCornerShape(28.dp)
+                            )
+                            .padding(30.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                 Text(
                     text = stringResource(R.string.auth_qr_account_login),
                     style = MaterialTheme.typography.titleLarge,
@@ -335,6 +380,8 @@ fun AuthQrSignInScreen(
                                 stringResource(R.string.auth_qr_back)
                             }
                         )
+                    }
+                }
                     }
                 }
             }

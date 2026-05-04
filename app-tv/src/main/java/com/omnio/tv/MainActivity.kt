@@ -26,6 +26,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
@@ -48,6 +49,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Search
@@ -73,7 +75,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
@@ -101,6 +105,8 @@ import androidx.tv.material3.DrawerValue
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.ModalNavigationDrawer
+import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Surface
 import androidx.tv.material3.SurfaceDefaults
 import androidx.tv.material3.Text
@@ -224,11 +230,25 @@ class MainActivity : ComponentActivity() {
             var hasSelectedProfileThisSession by rememberSaveable { mutableStateOf(false) }
             var onboardingCompletedThisSession by remember { mutableStateOf(false) }
             var onboardingProfileSyncInProgress by remember { mutableStateOf(false) }
+            var hasAdvancedPastWelcome by rememberSaveable { mutableStateOf(false) }
             val hasSeenAuthQrOnFirstLaunch by appOnboardingDataStore
                 .hasSeenAuthQrOnFirstLaunch
                 .map<Boolean, Boolean?> { it }
                 .collectAsState(initial = null)
             val authState by authManager.authState.collectAsState()
+            val firstLaunchOnboardingStep = remember(
+                hasSeenAuthQrOnFirstLaunch,
+                authState,
+                onboardingCompletedThisSession,
+                hasAdvancedPastWelcome
+            ) {
+                resolveFirstLaunchOnboardingStep(
+                    hasSeenAuthQrOnFirstLaunch = hasSeenAuthQrOnFirstLaunch,
+                    isSignedIn = authState is AuthState.FullAccount,
+                    onboardingCompletedThisSession = onboardingCompletedThisSession,
+                    hasAdvancedPastWelcome = hasAdvancedPastWelcome
+                )
+            }
 
             LaunchedEffect(hasSeenAuthQrOnFirstLaunch, authState) {
                 if (hasSeenAuthQrOnFirstLaunch == false && authState is AuthState.FullAccount) {
@@ -309,49 +329,56 @@ class MainActivity : ComponentActivity() {
                         return@Surface
                     }
 
-                    if (
-                        hasSeenAuthQrOnFirstLaunch == false &&
-                        authState !is AuthState.FullAccount &&
-                        !onboardingCompletedThisSession
-                    ) {
-                        AuthQrSignInScreen(
-                            onBackPress = {},
-                            onContinue = {
-                                lifecycleScope.launch {
-                                    val shouldRunRemoteOnboardingSync =
-                                        authManager.authState.value is AuthState.FullAccount
+                    if (firstLaunchOnboardingStep != null && firstLaunchOnboardingStep != FirstLaunchOnboardingStep.Complete) {
+                        when (firstLaunchOnboardingStep) {
+                            FirstLaunchOnboardingStep.Welcome -> {
+                                FirstLaunchWelcomeScreen(
+                                    onContinue = { hasAdvancedPastWelcome = true }
+                                )
+                            }
+                            FirstLaunchOnboardingStep.Pair -> {
+                                AuthQrSignInScreen(
+                                    onBackPress = {},
+                                    onboardingStep = 2,
+                                    onContinue = {
+                                        lifecycleScope.launch {
+                                            val shouldRunRemoteOnboardingSync =
+                                                authManager.authState.value is AuthState.FullAccount
 
-                                    if (shouldRunRemoteOnboardingSync) {
-                                        if (onboardingProfileSyncInProgress) return@launch
-                                        onboardingProfileSyncInProgress = true
-                                        val maxAttempts = 3
-                                        var synced = false
-                                        for (attempt in 0 until maxAttempts) {
-                                            val result = profileSyncService.pullFromRemote()
-                                            if (result.isSuccess) {
-                                                synced = true
-                                                break
+                                            if (shouldRunRemoteOnboardingSync) {
+                                                if (onboardingProfileSyncInProgress) return@launch
+                                                onboardingProfileSyncInProgress = true
+                                                val maxAttempts = 3
+                                                var synced = false
+                                                for (attempt in 0 until maxAttempts) {
+                                                    val result = profileSyncService.pullFromRemote()
+                                                    if (result.isSuccess) {
+                                                        synced = true
+                                                        break
+                                                    }
+                                                    if (attempt < maxAttempts - 1) {
+                                                        delay(1_000)
+                                                    }
+                                                }
+                                                if (!synced) {
+                                                    android.util.Log.w(
+                                                        "MainActivity",
+                                                        "Onboarding profile sync failed after retries; continuing"
+                                                    )
+                                                }
                                             }
-                                            if (attempt < maxAttempts - 1) {
-                                                delay(1_000)
-                                            }
+                                            appOnboardingDataStore.setHasSeenAuthQrOnFirstLaunch(true)
+                                            onboardingCompletedThisSession = true
+                                            onboardingProfileSyncInProgress = false
                                         }
-                                        if (!synced) {
-                                            android.util.Log.w(
-                                                "MainActivity",
-                                                "Onboarding profile sync failed after retries; continuing"
-                                            )
+                                        if (authManager.authState.value is AuthState.FullAccount) {
+                                            startupSyncService.requestSyncNow()
                                         }
                                     }
-                                    appOnboardingDataStore.setHasSeenAuthQrOnFirstLaunch(true)
-                                    onboardingCompletedThisSession = true
-                                    onboardingProfileSyncInProgress = false
-                                }
-                                if (authManager.authState.value is AuthState.FullAccount) {
-                                    startupSyncService.requestSyncNow()
-                                }
+                                )
                             }
-                        )
+                            FirstLaunchOnboardingStep.Complete -> Unit
+                        }
                         return@Surface
                     }
 
@@ -365,7 +392,8 @@ class MainActivity : ComponentActivity() {
                                 if (authManager.authState.value is AuthState.FullAccount) {
                                     startupSyncService.requestSyncNow()
                                 }
-                            }
+                            },
+                            onboardingStep = if (hasSeenAuthQrOnFirstLaunch == false || onboardingCompletedThisSession) 3 else null
                         )
                         return@Surface
                     }
@@ -545,6 +573,182 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         profileSettingsSyncService.requestForegroundPull()
+    }
+}
+
+@Composable
+private fun FirstLaunchWelcomeScreen(
+    onContinue: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF170808),
+                        OmnioColors.BackgroundElevated,
+                        OmnioColors.Background
+                    )
+                )
+            )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(
+                            Color(0x66C62828),
+                            Color.Transparent,
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 72.dp, vertical = 56.dp),
+            horizontalAlignment = Alignment.Start,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            OnboardingStepIndicator(currentStep = 1)
+
+            Column(
+                modifier = Modifier.fillMaxWidth(0.6f),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                com.omnio.tv.ui.components.cinematic.OmnioMark(
+                    size = 88.dp,
+                    animated = true
+                )
+                OmnioWordmark(height = 50.dp)
+                Text(
+                    text = stringResource(R.string.onboarding_welcome_title),
+                    color = Color.White,
+                    fontSize = 54.sp,
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = 58.sp
+                )
+                Text(
+                    text = stringResource(R.string.onboarding_welcome_subtitle),
+                    color = OmnioColors.TextSecondary,
+                    fontSize = 20.sp,
+                    lineHeight = 28.sp
+                )
+                Text(
+                    text = stringResource(R.string.onboarding_welcome_support),
+                    color = OmnioColors.TextTertiary,
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = stringResource(R.string.onboarding_welcome_badge),
+                        color = Color(0xFFFF8A80),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.4.sp
+                    )
+                    Text(
+                        text = stringResource(R.string.onboarding_welcome_footer),
+                        color = OmnioColors.TextSecondary,
+                        fontSize = 14.sp
+                    )
+                }
+
+                Button(
+                    onClick = onContinue,
+                    colors = ButtonDefaults.colors(
+                        containerColor = Color(0xFFC62828),
+                        focusedContainerColor = Color.White,
+                        contentColor = Color.White,
+                        focusedContentColor = Color.Black
+                    ),
+                    contentPadding = PaddingValues(horizontal = 32.dp, vertical = 14.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.onboarding_welcome_continue),
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun OnboardingStepIndicator(
+    currentStep: Int,
+    modifier: Modifier = Modifier
+) {
+    val titles = listOf(
+        stringResource(R.string.onboarding_step_welcome),
+        stringResource(R.string.onboarding_step_pair),
+        stringResource(R.string.onboarding_step_profile)
+    )
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        titles.forEachIndexed { index, title ->
+            val stepNumber = index + 1
+            val isActive = stepNumber == currentStep
+            val isComplete = stepNumber < currentStep
+            val indicatorColor = when {
+                isActive -> Color(0xFFC62828)
+                isComplete -> Color.White.copy(alpha = 0.85f)
+                else -> Color.White.copy(alpha = 0.16f)
+            }
+            val titleColor = when {
+                isActive -> Color.White
+                isComplete -> OmnioColors.TextSecondary
+                else -> OmnioColors.TextTertiary
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(indicatorColor.copy(alpha = if (isActive) 1f else 0.14f))
+                        .border(
+                            width = 1.dp,
+                            color = indicatorColor,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stepNumber.toString(),
+                        color = if (isActive || isComplete) Color.White else OmnioColors.TextSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Text(
+                    text = title,
+                    color = titleColor,
+                    fontSize = 13.sp,
+                    fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
+                    letterSpacing = 0.4.sp
+                )
+            }
+        }
     }
 }
 

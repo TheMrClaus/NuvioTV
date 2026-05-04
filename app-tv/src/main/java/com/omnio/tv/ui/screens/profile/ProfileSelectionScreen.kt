@@ -20,6 +20,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -64,6 +65,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
@@ -90,6 +93,7 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.ButtonDefaults
 import androidx.tv.material3.Text
 import androidx.compose.ui.res.stringResource
+import com.omnio.tv.OnboardingStepIndicator
 import com.omnio.tv.R
 import com.omnio.tv.data.remote.supabase.AvatarCatalogItem
 import com.omnio.tv.domain.model.AgeRatingTier
@@ -164,6 +168,7 @@ private data class KeyboardVisibilityState(
 fun ProfileSelectionScreen(
     onProfileSelected: () -> Unit,
     screenMode: ProfileSelectionMode = ProfileSelectionMode.Selection,
+    onboardingStep: Int? = null,
     onBackPress: (() -> Unit)? = null,
     viewModel: ProfileSelectionViewModel = hiltViewModel()
 ) {
@@ -272,6 +277,7 @@ fun ProfileSelectionScreen(
                     screenTitle = screenTitle,
                     screenSubtitle = screenSubtitle,
                     screenHint = screenHint,
+                    onboardingStep = onboardingStep,
                     isManagementMode = isManagementMode,
                     profiles = profiles,
                     activeProfileId = activeProfileId,
@@ -676,6 +682,7 @@ private fun ProfileSelectionMainContent(
     screenTitle: String,
     screenSubtitle: String,
     screenHint: String,
+    onboardingStep: Int?,
     isManagementMode: Boolean,
     profiles: List<UserProfile>,
     activeProfileId: Int,
@@ -696,6 +703,14 @@ private fun ProfileSelectionMainContent(
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        onboardingStep?.let {
+            OnboardingStepIndicator(
+                currentStep = it,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            Spacer(modifier = Modifier.height(28.dp))
+        }
+
         com.omnio.tv.ui.components.cinematic.OmnioWordmark(
             height = ProfileSelectionSpacing.LogoHeight * 0.7f
         )
@@ -846,6 +861,13 @@ private fun ProfileCard(
         focusProgress
     )
     val nameWeight = if (isFocused) FontWeight.SemiBold else FontWeight.Medium
+    val cardShape = RoundedCornerShape(28.dp)
+    val surfaceBrush = Brush.verticalGradient(
+        listOf(
+            Color.White.copy(alpha = 0.12f + (0.08f * focusProgress)),
+            Color.White.copy(alpha = 0.02f + (0.04f * focusProgress))
+        )
+    )
 
     Column(
         modifier = Modifier
@@ -854,6 +876,17 @@ private fun ProfileCard(
                 scaleX = itemScale
                 scaleY = itemScale
             }
+            .clip(cardShape)
+            .background(surfaceBrush, cardShape)
+            .border(
+                width = androidx.compose.ui.unit.lerp(1.dp, 2.dp, focusProgress),
+                color = lerp(
+                    Color.White.copy(alpha = 0.08f),
+                    Color(0x99FFFFFF),
+                    focusProgress
+                ),
+                shape = cardShape
+            )
             .focusRequester(focusRequester)
             .onFocusChanged {
                 isFocused = it.isFocused
@@ -889,8 +922,8 @@ private fun ProfileCard(
                 onClick = onClick
             )
             .padding(
-                horizontal = ProfileSelectionSpacing.CardPaddingHorizontal,
-                vertical = ProfileSelectionSpacing.CardPaddingVertical
+                horizontal = 16.dp,
+                vertical = 20.dp
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1015,6 +1048,8 @@ private fun AddProfileCard(
         Color.White.copy(alpha = 0.12f),
         focusProgress
     )
+    val cardShape = RoundedCornerShape(28.dp)
+    val dashEffect = remember { PathEffect.dashPathEffect(floatArrayOf(14f, 8f), 0f) }
 
     Column(
         modifier = Modifier
@@ -1023,6 +1058,8 @@ private fun AddProfileCard(
                 scaleX = itemScale
                 scaleY = itemScale
             }
+            .clip(cardShape)
+            .background(Color.White.copy(alpha = 0.025f), cardShape)
             .focusRequester(focusRequester)
             .onFocusChanged {
                 isFocused = it.isFocused
@@ -1034,8 +1071,8 @@ private fun AddProfileCard(
                 onClick = onClick
             )
             .padding(
-                horizontal = ProfileSelectionSpacing.CardPaddingHorizontal,
-                vertical = ProfileSelectionSpacing.CardPaddingVertical
+                horizontal = 16.dp,
+                vertical = 20.dp
             ),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -1046,15 +1083,18 @@ private fun AddProfileCard(
             Box(
                 modifier = Modifier
                     .size(outerAvatarSize)
-                    .clip(CircleShape)
-                    .border(
-                        width = ringWidth,
-                        color = ringColor,
-                        shape = CircleShape
-                    )
                     .background(addBackgroundColor, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
+                Canvas(modifier = Modifier.matchParentSize()) {
+                    drawCircle(
+                        color = ringColor,
+                        style = Stroke(
+                            width = ringWidth.toPx(),
+                            pathEffect = dashEffect
+                        )
+                    )
+                }
                 Box(
                     modifier = Modifier.size(34.dp),
                     contentAlignment = Alignment.Center
