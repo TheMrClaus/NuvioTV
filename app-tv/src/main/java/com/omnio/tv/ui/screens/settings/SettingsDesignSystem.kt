@@ -65,6 +65,10 @@ internal val SettingsContainerRadius = 28.dp
 internal val SettingsPillRadius = 999.dp
 internal val SettingsSecondaryCardRadius = 18.dp
 internal val SettingsRailItemHeight = 56.dp
+private val SettingsCinematicHeaderRed = Color(0xFFFF5A5F)
+private val SettingsCinematicSurface = Color(0xFF12141A)
+private val SettingsCinematicSurfaceFocused = Color(0xFF181B22)
+private val SettingsCinematicPanel = Color(0xFF0F1117)
 
 @Composable
 internal fun SettingsStandaloneScaffold(
@@ -302,21 +306,33 @@ internal fun SettingsRailButton(
 internal fun SettingsDetailHeader(
     title: String,
     subtitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    cinematicStyle: Boolean = false
 ) {
     Column(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        verticalArrangement = Arrangement.spacedBy(if (cinematicStyle) 10.dp else 6.dp)
     ) {
+        if (cinematicStyle) {
+            Text(
+                text = "CURATED PANEL",
+                style = MaterialTheme.typography.labelMedium,
+                color = SettingsCinematicHeaderRed,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 1.4.sp
+            )
+        }
         Text(
             text = title,
-            style = MaterialTheme.typography.headlineMedium,
+            style = if (cinematicStyle) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineMedium,
             color = OmnioColors.TextPrimary
         )
         Text(
             text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
-            color = OmnioColors.TextSecondary
+            color = OmnioColors.TextSecondary,
+            maxLines = if (cinematicStyle) 3 else Int.MAX_VALUE,
+            overflow = if (cinematicStyle) TextOverflow.Ellipsis else TextOverflow.Clip
         )
     }
 }
@@ -326,26 +342,28 @@ internal fun SettingsGroupCard(
     modifier: Modifier = Modifier,
     title: String? = null,
     subtitle: String? = null,
+    cinematicStyle: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(SettingsSecondaryCardRadius))
-            .background(OmnioColors.BackgroundCard)
+            .background(if (cinematicStyle) SettingsCinematicPanel else OmnioColors.BackgroundCard)
             .border(
                 width = 1.dp,
-                color = OmnioColors.Border,
+                color = if (cinematicStyle) Color.White.copy(alpha = 0.08f) else OmnioColors.Border,
                 shape = RoundedCornerShape(SettingsSecondaryCardRadius)
             )
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(if (cinematicStyle) 18.dp else 14.dp),
+        verticalArrangement = Arrangement.spacedBy(if (cinematicStyle) 14.dp else 10.dp)
     ) {
         if (!title.isNullOrBlank()) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = OmnioColors.TextPrimary
+                style = if (cinematicStyle) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+                color = if (cinematicStyle) SettingsCinematicHeaderRed else OmnioColors.TextPrimary,
+                fontWeight = if (cinematicStyle) FontWeight.SemiBold else FontWeight.Normal
             )
         }
         if (!subtitle.isNullOrBlank()) {
@@ -443,7 +461,10 @@ internal fun SettingsActionRow(
     modifier: Modifier = Modifier,
     onFocused: () -> Unit = {},
     enabled: Boolean = true,
-    trailingIcon: ImageVector = Icons.Default.ChevronRight
+    trailingIcon: ImageVector = Icons.Default.ChevronRight,
+    cinematicStyle: Boolean = false,
+    kicker: String? = null,
+    leadingContent: (@Composable () -> Unit)? = null
 ) {
     val contentAlpha = if (enabled) 1f else 0.4f
     var isFocused by remember { mutableStateOf(false) }
@@ -461,14 +482,21 @@ internal fun SettingsActionRow(
                 }
             },
         colors = CardDefaults.colors(
-            containerColor = OmnioColors.Background,
-            focusedContainerColor = OmnioColors.Background
+            containerColor = if (cinematicStyle) SettingsCinematicSurface else OmnioColors.Background,
+            focusedContainerColor = if (cinematicStyle) SettingsCinematicSurfaceFocused else OmnioColors.Background
         ),
         border = CardDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, OmnioColors.FocusRing.copy(alpha = contentAlpha)),
+                border = BorderStroke(
+                    2.dp,
+                    if (cinematicStyle) SettingsCinematicHeaderRed.copy(alpha = contentAlpha) else OmnioColors.FocusRing.copy(alpha = contentAlpha)
+                ),
                 shape = RoundedCornerShape(SettingsPillRadius)
-            )
+            ),
+            border = if (cinematicStyle) Border(
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.06f * contentAlpha)),
+                shape = RoundedCornerShape(SettingsPillRadius)
+            ) else Border.None
         ),
         shape = CardDefaults.shape(RoundedCornerShape(SettingsPillRadius)),
         scale = CardDefaults.scale(focusedScale = 1f, pressedScale = 1f)
@@ -476,24 +504,39 @@ internal fun SettingsActionRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 12.dp),
+                .padding(horizontal = if (cinematicStyle) 20.dp else 18.dp, vertical = if (cinematicStyle) 14.dp else 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (leadingContent != null) {
+                leadingContent()
+                Spacer(modifier = Modifier.width(16.dp))
+            }
+
             Column(modifier = Modifier.weight(1f)) {
+                if (!kicker.isNullOrBlank()) {
+                    Text(
+                        text = kicker.uppercase(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SettingsCinematicHeaderRed.copy(alpha = contentAlpha),
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.1.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                }
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = if (cinematicStyle) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyLarge,
                     color = OmnioColors.TextPrimary.copy(alpha = contentAlpha),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 if (!subtitle.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.height(if (cinematicStyle) 4.dp else 2.dp))
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = OmnioColors.TextSecondary.copy(alpha = contentAlpha),
-                        maxLines = 1,
+                        maxLines = if (cinematicStyle) 2 else 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -504,7 +547,7 @@ internal fun SettingsActionRow(
                 Text(
                     text = value,
                     style = MaterialTheme.typography.labelLarge,
-                    color = OmnioColors.TextSecondary.copy(alpha = contentAlpha),
+                    color = if (cinematicStyle) Color.White.copy(alpha = 0.78f * contentAlpha) else OmnioColors.TextSecondary.copy(alpha = contentAlpha),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -514,7 +557,7 @@ internal fun SettingsActionRow(
             Icon(
                 imageVector = trailingIcon,
                 contentDescription = null,
-                tint = OmnioColors.TextTertiary.copy(alpha = contentAlpha),
+                tint = if (cinematicStyle) SettingsCinematicHeaderRed.copy(alpha = contentAlpha) else OmnioColors.TextTertiary.copy(alpha = contentAlpha),
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -579,9 +622,9 @@ private fun SettingsTogglePill(
             .clip(RoundedCornerShape(SettingsPillRadius))
             .background(
                 if (checked) {
-                    OmnioColors.Secondary.copy(alpha = 0.35f * alpha)
+                    OmnioColors.Secondary.copy(alpha = 0.92f * alpha)
                 } else {
-                    OmnioColors.Border.copy(alpha = alpha)
+                    Color.White.copy(alpha = 0.14f * alpha)
                 }
             )
             .padding(2.dp),

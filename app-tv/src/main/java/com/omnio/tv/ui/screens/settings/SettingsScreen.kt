@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -869,13 +870,15 @@ private fun IntegrationSettingsContent(
             ) {
                 SettingsDetailHeader(
                     title = stringResource(R.string.settings_integrations_section),
-                    subtitle = stringResource(R.string.settings_integrations_section_subtitle)
+                    subtitle = stringResource(R.string.settings_integrations_section_subtitle),
+                    cinematicStyle = true
                 )
 
                 SettingsGroupCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .weight(1f),
+                    cinematicStyle = true
                 ) {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -885,7 +888,10 @@ private fun IntegrationSettingsContent(
                                 title = stringResource(R.string.settings_emby_title),
                                 subtitle = stringResource(R.string.settings_emby_subtitle),
                                 onClick = { onSelectSection(IntegrationSettingsSection.Emby) },
-                                modifier = Modifier.focusRequester(hubEntryFocusRequester)
+                                modifier = Modifier.focusRequester(hubEntryFocusRequester),
+                                cinematicStyle = true,
+                                kicker = "Media Server",
+                                leadingContent = { IntegrationHubGlyph("E") }
                             )
                         }
                         item(key = "integration_hub_tmdb") {
@@ -893,28 +899,40 @@ private fun IntegrationSettingsContent(
                                 title = "TMDB",
                                 subtitle = stringResource(R.string.settings_tmdb_subtitle),
                                 onClick = { onSelectSection(IntegrationSettingsSection.Tmdb) },
-                                modifier = Modifier
+                                modifier = Modifier,
+                                cinematicStyle = true,
+                                kicker = "Metadata",
+                                leadingContent = { IntegrationHubGlyph("T") }
                             )
                         }
                         item(key = "integration_hub_mdblist") {
                             SettingsActionRow(
                                 title = "MDBList",
                                 subtitle = stringResource(R.string.settings_mdblist_subtitle),
-                                onClick = { onSelectSection(IntegrationSettingsSection.MdbList) }
+                                onClick = { onSelectSection(IntegrationSettingsSection.MdbList) },
+                                cinematicStyle = true,
+                                kicker = "Discovery",
+                                leadingContent = { IntegrationHubGlyph("M") }
                             )
                         }
                         item(key = "integration_hub_animeskip") {
                             SettingsActionRow(
                                 title = "Anime-Skip",
                                 subtitle = stringResource(R.string.settings_animeskip_subtitle),
-                                onClick = { onSelectSection(IntegrationSettingsSection.AnimeSkip) }
+                                onClick = { onSelectSection(IntegrationSettingsSection.AnimeSkip) },
+                                cinematicStyle = true,
+                                kicker = "Companion",
+                                leadingContent = { IntegrationHubGlyph("A") }
                             )
                         }
                         item(key = "integration_hub_aio_metadata") {
                             SettingsActionRow(
                                 title = stringResource(R.string.aio_metadata_title),
                                 subtitle = stringResource(R.string.aio_metadata_subtitle),
-                                onClick = { onSelectSection(IntegrationSettingsSection.AioMetadata) }
+                                onClick = { onSelectSection(IntegrationSettingsSection.AioMetadata) },
+                                cinematicStyle = true,
+                                kicker = "Library",
+                                leadingContent = { IntegrationHubGlyph("AI") }
                             )
                         }
                     }
@@ -951,5 +969,24 @@ private fun IntegrationSettingsContent(
                 initialFocusRequester = aioMetadataFocusRequester
             )
         }
+    }
+}
+
+@Composable
+private fun IntegrationHubGlyph(label: String) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color.White.copy(alpha = 0.08f))
+            .border(1.dp, Color.White.copy(alpha = 0.08f), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = Color.White,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

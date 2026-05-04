@@ -189,13 +189,15 @@ fun PlaybackSettingsContent(
     ) {
         SettingsDetailHeader(
             title = stringResource(R.string.playback_title),
-            subtitle = stringResource(R.string.playback_subtitle)
+            subtitle = stringResource(R.string.playback_subtitle),
+            cinematicStyle = true
         )
 
         SettingsGroupCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
+            cinematicStyle = true
         ) {
             PlaybackSettingsSections(
                 initialFocusRequester = initialFocusRequester,

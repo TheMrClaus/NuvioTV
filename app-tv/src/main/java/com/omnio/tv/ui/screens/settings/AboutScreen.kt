@@ -6,14 +6,12 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -24,9 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -70,14 +66,16 @@ fun AboutSettingsContent(
     ) {
         SettingsDetailHeader(
             title = stringResource(R.string.about_title),
-            subtitle = stringResource(R.string.about_subtitle)
+            subtitle = stringResource(R.string.about_subtitle),
+            cinematicStyle = true
         )
 
         SettingsGroupCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
-            title = null
+            title = null,
+            cinematicStyle = true
         ) {
             Column(
                 modifier = Modifier
@@ -115,7 +113,9 @@ fun AboutSettingsContent(
                     },
                     onClick = {
                         updateViewModel.checkForUpdates(force = true, showNoUpdateFeedback = true)
-                    }
+                    },
+                    cinematicStyle = true,
+                    kicker = "Maintenance"
                 )
 
                 SettingsActionRow(
@@ -128,14 +128,18 @@ fun AboutSettingsContent(
                             Uri.parse("https://tapframe.github.io/NuvioStreaming/#privacy-policy")
                         )
                         context.startActivity(intent)
-                    }
+                    },
+                    cinematicStyle = true,
+                    kicker = "Legal"
                 )
 
                 SettingsActionRow(
                     title = stringResource(R.string.about_supporters_contributors),
                     subtitle = stringResource(R.string.about_supporters_contributors_subtitle),
                     trailingIcon = Icons.Default.ChevronRight,
-                    onClick = onNavigateToSupportersContributors
+                    onClick = onNavigateToSupportersContributors,
+                    cinematicStyle = true,
+                    kicker = "Credits"
                 )
             }
         }

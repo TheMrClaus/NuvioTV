@@ -110,7 +110,8 @@ internal fun LazyListScope.subtitleSettingsItems(
             subtitle = languageName,
             onClick = onShowLanguageDialog,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -126,7 +127,8 @@ internal fun LazyListScope.subtitleSettingsItems(
             subtitle = secondaryLanguageName,
             onClick = onShowSecondaryLanguageDialog,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -137,7 +139,8 @@ internal fun LazyListScope.subtitleSettingsItems(
             subtitle = subtitleStartupModeLabel(playerSettings.addonSubtitleStartupMode),
             onClick = onShowSubtitleStartupModeDialog,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -179,7 +182,8 @@ internal fun LazyListScope.subtitleSettingsItems(
             isChecked = playerSettings.subtitleStyle.bold,
             onCheckedChange = onSetSubtitleBold,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -214,7 +218,8 @@ internal fun LazyListScope.subtitleSettingsItems(
             isChecked = playerSettings.subtitleStyle.outlineEnabled,
             onCheckedChange = onSetSubtitleOutlineEnabled,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -249,7 +254,8 @@ internal fun LazyListScope.subtitleSettingsItems(
             isChecked = playerSettings.useLibass,
             onCheckedChange = onSetUseLibass,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
