@@ -690,6 +690,7 @@ fun ModernHomeContent(
             trailerPlaying = heroSceneState.fullScreenBackdrop &&
                 heroSceneState.shouldPlayTrailer &&
                 heroSceneState.trailerFirstFrameRendered,
+            isRowsScrolling = isVerticalRowsScrolling,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(

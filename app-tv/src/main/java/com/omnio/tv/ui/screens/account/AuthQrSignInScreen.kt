@@ -52,6 +52,27 @@ import com.omnio.tv.domain.model.AuthState
 import com.omnio.tv.core.uishared.OmnioColors
 import kotlinx.coroutines.delay
 
+internal data class AuthQrBrandingTreatment(
+    val showMark: Boolean,
+    val showWordmark: Boolean
+)
+
+internal fun authQrBrandingTreatment(): AuthQrBrandingTreatment {
+    return AuthQrBrandingTreatment(
+        showMark = false,
+        showWordmark = true
+    )
+}
+
+internal fun shouldShowWaitingStatePlaceholderSurfaces(
+    isSignedIn: Boolean,
+    hasQrBitmap: Boolean,
+    isLoading: Boolean
+): Boolean {
+    if (isSignedIn || hasQrBitmap) return false
+    return isLoading
+}
+
 @Composable
 fun AuthQrSignInScreen(
     onBackPress: () -> Unit = {},
@@ -131,6 +152,7 @@ fun AuthQrSignInScreen(
     } else {
         stringResource(R.string.auth_qr_phone_hint)
     }
+    val brandingTreatment = authQrBrandingTreatment()
 
     Box(
         modifier = Modifier
@@ -177,13 +199,17 @@ fun AuthQrSignInScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        com.omnio.tv.ui.components.cinematic.OmnioMark(
-                            size = 72.dp,
-                            animated = onboardingStep != null
-                        )
-                        Spacer(modifier = Modifier.height(18.dp))
-                        com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 44.dp)
-                        Spacer(modifier = Modifier.height(22.dp))
+                        if (brandingTreatment.showMark) {
+                            com.omnio.tv.ui.components.cinematic.OmnioMark(
+                                size = 72.dp,
+                                animated = onboardingStep != null
+                            )
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
+                        if (brandingTreatment.showWordmark) {
+                            com.omnio.tv.ui.components.cinematic.OmnioWordmark(height = 44.dp)
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -210,7 +236,7 @@ fun AuthQrSignInScreen(
                             color = OmnioColors.TextPrimary,
                             textAlign = TextAlign.Center
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             text = heroSubtitle,
                             style = MaterialTheme.typography.bodyLarge,
@@ -286,7 +312,13 @@ fun AuthQrSignInScreen(
                                 .padding(8.dp),
                             contentScale = ContentScale.Fit
                         )
-                    } else {
+                    } else if (
+                        shouldShowWaitingStatePlaceholderSurfaces(
+                            isSignedIn = isSignedIn,
+                            hasQrBitmap = false,
+                            isLoading = uiState.isLoading
+                        )
+                    ) {
                         Box(
                             modifier = Modifier
                                 .size(200.dp)

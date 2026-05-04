@@ -618,12 +618,8 @@ private fun FirstLaunchWelcomeScreen(
 
             Column(
                 modifier = Modifier.fillMaxWidth(0.6f),
-                verticalArrangement = Arrangement.spacedBy(20.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                com.omnio.tv.ui.components.cinematic.OmnioMark(
-                    size = 88.dp,
-                    animated = true
-                )
                 OmnioWordmark(height = 50.dp)
                 Text(
                     text = stringResource(R.string.onboarding_welcome_title),

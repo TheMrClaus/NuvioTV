@@ -78,16 +78,39 @@ internal data class ModernHeroTopRightClusterTreatment(
     val endPaddingDp: Int
 )
 
+internal enum class HeroActionContainer {
+    Accent,
+    Card
+}
+
+internal data class ModernHeroActionButtonTreatment(
+    val primaryContainer: HeroActionContainer,
+    val primaryContentColor: Color,
+    val secondaryContainer: HeroActionContainer,
+    val secondaryContentColor: Color
+)
+
 internal fun modernHeroTopRightClusterTreatment(): ModernHeroTopRightClusterTreatment {
     return ModernHeroTopRightClusterTreatment(
         showCastIcon = false,
-        endPaddingDp = 56
+        endPaddingDp = 44
     )
 }
 
 internal fun heroTopRightClusterShowsCastIcon(
     treatment: ModernHeroTopRightClusterTreatment
 ): Boolean = treatment.showCastIcon
+
+internal fun modernHeroActionButtonTreatment(): ModernHeroActionButtonTreatment {
+    return ModernHeroActionButtonTreatment(
+        primaryContainer = HeroActionContainer.Accent,
+        primaryContentColor = Color.White,
+        secondaryContainer = HeroActionContainer.Card,
+        secondaryContentColor = OmnioColors.TextPrimary
+    )
+}
+
+internal fun shouldShowHeroActionRow(isRowsScrolling: Boolean): Boolean = !isRowsScrolling
 
 internal fun modernHomeHeroStartPaddingDp(): Int = 32
 
@@ -298,6 +321,7 @@ internal fun HeroTitleBlock(
     enrichmentActive: Boolean = false,
     portraitMode: Boolean,
     trailerPlaying: Boolean = false,
+    isRowsScrolling: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var stablePreview by remember { mutableStateOf<HeroPreview?>(null) }
@@ -316,7 +340,8 @@ internal fun HeroTitleBlock(
             onPlayClick = onPlayClick,
             onInfoClick = onInfoClick,
             portraitMode = portraitMode,
-            trailerPlaying = trailerPlaying
+            trailerPlaying = trailerPlaying,
+            isRowsScrolling = isRowsScrolling
         )
     }
 }
@@ -328,7 +353,8 @@ private fun HeroTitleContent(
     onPlayClick: (() -> Unit)? = null,
     onInfoClick: (() -> Unit)? = null,
     portraitMode: Boolean,
-    trailerPlaying: Boolean = false
+    trailerPlaying: Boolean = false,
+    isRowsScrolling: Boolean = false
 ) {
     if (preview == null) return
     val descriptionMaxLines = 4
@@ -633,25 +659,34 @@ private fun HeroTitleContent(
             )
         }
 
-        Row(
-            modifier = Modifier.graphicsLayer { alpha = metaAlpha },
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            HeroActionButton(
-                label = stringResource(R.string.hero_play),
-                icon = Icons.Filled.PlayArrow,
-                containerColor = Color.White,
-                contentColor = Color.Black,
-                onClick = onPlayClick
-            )
-            HeroActionButton(
-                label = stringResource(R.string.hero_more_info),
-                icon = Icons.Filled.Info,
-                containerColor = Color(0xB36D6D6E),
-                contentColor = Color.White,
-                onClick = onInfoClick ?: onPlayClick
-            )
+        val buttonTreatment = modernHeroActionButtonTreatment()
+        if (shouldShowHeroActionRow(isRowsScrolling)) {
+            Row(
+                modifier = Modifier.graphicsLayer { alpha = metaAlpha },
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HeroActionButton(
+                    label = stringResource(R.string.hero_play),
+                    icon = Icons.Filled.PlayArrow,
+                    containerColor = when (buttonTreatment.primaryContainer) {
+                        HeroActionContainer.Accent -> OmnioColors.Secondary
+                        HeroActionContainer.Card -> OmnioColors.BackgroundCard
+                    },
+                    contentColor = buttonTreatment.primaryContentColor,
+                    onClick = onPlayClick
+                )
+                HeroActionButton(
+                    label = stringResource(R.string.hero_more_info),
+                    icon = Icons.Filled.Info,
+                    containerColor = when (buttonTreatment.secondaryContainer) {
+                        HeroActionContainer.Accent -> OmnioColors.Secondary
+                        HeroActionContainer.Card -> OmnioColors.BackgroundCard
+                    },
+                    contentColor = buttonTreatment.secondaryContentColor,
+                    onClick = onInfoClick ?: onPlayClick
+                )
+            }
         }
     }
 }

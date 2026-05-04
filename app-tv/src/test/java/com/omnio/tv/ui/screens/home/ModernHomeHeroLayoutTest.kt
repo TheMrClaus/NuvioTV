@@ -1,5 +1,6 @@
 package com.omnio.tv.ui.screens.home
 
+import androidx.compose.ui.graphics.Color
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,24 +9,31 @@ import org.junit.Test
 class ModernHomeHeroLayoutTest {
 
     @Test
-    fun `hero top right cluster keeps cast icon disabled and clock inset away from edge`() {
+    fun `hero top right cluster keeps cast icon disabled and clock inset slightly inside edge`() {
         val treatment = modernHeroTopRightClusterTreatment()
 
         assertFalse(treatment.showCastIcon)
-        assertTrue(treatment.endPaddingDp >= 56)
+        assertEquals(44, treatment.endPaddingDp)
         assertFalse(heroTopRightClusterShowsCastIcon(treatment))
     }
 
     @Test
-    fun `hero top right cluster cast icon visibility follows treatment`() {
-        assertTrue(
-            heroTopRightClusterShowsCastIcon(
-                ModernHeroTopRightClusterTreatment(
-                    showCastIcon = true,
-                    endPaddingDp = 56
-                )
-            )
+    fun `hero buttons use Omnio action palette`() {
+        assertEquals(
+            ModernHeroActionButtonTreatment(
+                primaryContainer = HeroActionContainer.Accent,
+                primaryContentColor = Color.White,
+                secondaryContainer = HeroActionContainer.Card,
+                secondaryContentColor = Color.White
+            ),
+            modernHeroActionButtonTreatment()
         )
+    }
+
+    @Test
+    fun `hero actions are hidden only while rows are actively scrolling`() {
+        assertFalse(shouldShowHeroActionRow(isRowsScrolling = true))
+        assertTrue(shouldShowHeroActionRow(isRowsScrolling = false))
     }
 
     @Test

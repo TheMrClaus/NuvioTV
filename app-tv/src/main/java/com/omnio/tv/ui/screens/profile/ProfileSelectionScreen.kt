@@ -136,6 +136,20 @@ private object ProfileSelectionSpacing {
     val PinSupportMaxWidth = 720.dp
 }
 
+internal data class ProfileSelectionMainLayoutTreatment(
+    val titleToGridGapDp: Int,
+    val bottomHintPaddingDp: Int,
+    val usesFlexibleBottomSpacer: Boolean
+)
+
+internal fun profileSelectionMainLayoutTreatment(): ProfileSelectionMainLayoutTreatment {
+    return ProfileSelectionMainLayoutTreatment(
+        titleToGridGapDp = 56,
+        bottomHintPaddingDp = 24,
+        usesFlexibleBottomSpacer = true
+    )
+}
+
 private val ProfileCardFocusEasing = CubicBezierEasing(0.22f, 1f, 0.36f, 1f)
 private const val ProfilePinLength = 4
 
@@ -694,6 +708,7 @@ private fun ProfileSelectionMainContent(
     onProfileLongPress: (UserProfile) -> Unit,
     onAddProfileClick: () -> Unit
 ) {
+    val layoutTreatment = profileSelectionMainLayoutTreatment()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -734,7 +749,7 @@ private fun ProfileSelectionMainContent(
             fontWeight = FontWeight.Medium
         )
 
-        Spacer(modifier = Modifier.weight(1f, fill = true))
+        Spacer(modifier = Modifier.height(layoutTreatment.titleToGridGapDp.dp))
 
         ProfileGrid(
             profiles = profiles,
@@ -749,7 +764,11 @@ private fun ProfileSelectionMainContent(
             onAddProfileClick = onAddProfileClick
         )
 
-        Spacer(modifier = Modifier.weight(1f, fill = true))
+        if (layoutTreatment.usesFlexibleBottomSpacer) {
+            Spacer(modifier = Modifier.weight(1f, fill = true))
+        }
+
+        Spacer(modifier = Modifier.height(layoutTreatment.bottomHintPaddingDp.dp))
 
         Text(
             text = screenHint,
