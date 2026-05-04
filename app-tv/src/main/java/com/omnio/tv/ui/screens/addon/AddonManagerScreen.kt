@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
@@ -1002,36 +1004,134 @@ private fun AddonCardContent(
     onMoveDown: () -> Unit = {},
     onRemove: () -> Unit = {}
 ) {
-    Column(modifier = Modifier.padding(20.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+    val homeCatalogCount = remember(addon.catalogs) {
+        addon.catalogs.count { !it.isSearchOnlyCatalog() }
+    }
+    val searchCatalogCount = remember(addon.catalogs) {
+        addon.catalogs.count { it.isSearchOnlyCatalog() }
+    }
+    val typeSummary = remember(addon.rawTypes) {
+        addon.rawTypes.distinct().joinToString().ifBlank { "Unknown" }
+    }
+    val resourcesSummary = remember(addon.resources) {
+        addon.resources.joinToString(limit = 3) { it.name }.ifBlank { "No resources" }
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 22.dp, vertical = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(18.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        AddonInfoColumn(
+            modifier = Modifier.weight(1.3f),
+            kicker = "Identity"
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = addon.displayName,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = OmnioColors.TextPrimary
-                    )
-                    com.omnio.tv.ui.components.cinematic.SourceKind.fromAddonName(addon.displayName)?.let { kind ->
-                        com.omnio.tv.ui.components.cinematic.SourceBadge(
-                            src = kind,
-                            size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
-                        )
-                    }
-                }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
                 Text(
-                    text = "v${addon.version}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = OmnioColors.TextSecondary
+                    text = addon.displayName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = OmnioColors.TextPrimary,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
+                com.omnio.tv.ui.components.cinematic.SourceKind.fromAddonName(addon.displayName)?.let { kind ->
+                    com.omnio.tv.ui.components.cinematic.SourceBadge(
+                        src = kind,
+                        size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
+                    )
+                }
             }
-            if (!isReadOnly) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "v${addon.version}",
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextSecondary
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = addon.id,
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextTertiary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        AddonInfoColumn(
+            modifier = Modifier.weight(1.6f),
+            kicker = "Overview"
+        ) {
+            Text(
+                text = addon.description?.takeIf { it.isNotBlank() } ?: "Catalog source ready for playback and discovery.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = OmnioColors.TextSecondary,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "$homeCatalogCount home catalogs • $searchCatalogCount search-only",
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextTertiary
+            )
+        }
+
+        AddonInfoColumn(
+            modifier = Modifier.weight(1.45f),
+            kicker = "Source"
+        ) {
+            Text(
+                text = addon.baseUrl,
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextSecondary,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = resourcesSummary,
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextTertiary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        AddonInfoColumn(
+            modifier = Modifier.weight(1.1f),
+            kicker = "Catalogs"
+        ) {
+            Text(
+                text = stringResource(R.string.addon_catalogs_types, addon.catalogs.size, typeSummary),
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextSecondary,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "${addon.resources.size} resources • ${addon.idPrefixes.size} prefixes",
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextTertiary
+            )
+        }
+
+        AddonInfoColumn(
+            modifier = Modifier.weight(if (isReadOnly) 0.8f else 1.25f),
+            kicker = "Actions"
+        ) {
+            if (isReadOnly) {
+                Text(
+                    text = "Managed remotely",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OmnioColors.TextTertiary
+                )
+            } else {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -1040,10 +1140,12 @@ private fun AddonCardContent(
                         onClick = onMoveUp,
                         enabled = canMoveUp,
                         colors = ButtonDefaults.colors(
-                            containerColor = OmnioColors.BackgroundCard,
+                            containerColor = Color.White.copy(alpha = 0.05f),
                             contentColor = OmnioColors.TextSecondary,
                             focusedContainerColor = OmnioColors.FocusBackground,
-                            focusedContentColor = OmnioColors.Primary
+                            focusedContentColor = OmnioColors.Primary,
+                            disabledContainerColor = Color.White.copy(alpha = 0.03f),
+                            disabledContentColor = OmnioColors.TextTertiary.copy(alpha = 0.55f)
                         ),
                         shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
                     ) {
@@ -1053,53 +1155,64 @@ private fun AddonCardContent(
                         onClick = onMoveDown,
                         enabled = canMoveDown,
                         colors = ButtonDefaults.colors(
-                            containerColor = OmnioColors.BackgroundCard,
+                            containerColor = Color.White.copy(alpha = 0.05f),
                             contentColor = OmnioColors.TextSecondary,
                             focusedContainerColor = OmnioColors.FocusBackground,
-                            focusedContentColor = OmnioColors.Primary
+                            focusedContentColor = OmnioColors.Primary,
+                            disabledContainerColor = Color.White.copy(alpha = 0.03f),
+                            disabledContentColor = OmnioColors.TextTertiary.copy(alpha = 0.55f)
                         ),
                         shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
                     ) {
                         Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = stringResource(R.string.cd_move_down))
                     }
-                    Button(
-                        onClick = onRemove,
-                        colors = ButtonDefaults.colors(
-                            containerColor = OmnioColors.BackgroundCard,
-                            contentColor = OmnioColors.TextSecondary,
-                            focusedContainerColor = OmnioColors.FocusBackground,
-                            focusedContentColor = OmnioColors.Error
-                        ),
-                        shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
-                    ) {
-                        Text(text = stringResource(R.string.addon_remove))
-                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Button(
+                    onClick = onRemove,
+                    colors = ButtonDefaults.colors(
+                        containerColor = Color(0xFF281518),
+                        contentColor = Color(0xFFFFC1C1),
+                        focusedContainerColor = Color(0xFFB3261E),
+                        focusedContentColor = Color.White
+                    ),
+                    shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
+                ) {
+                    Text(text = stringResource(R.string.addon_remove))
                 }
             }
         }
+    }
+}
 
-        if (!addon.description.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = addon.description ?: "",
-                style = MaterialTheme.typography.bodyMedium,
-                color = OmnioColors.TextSecondary
+@Composable
+private fun AddonInfoColumn(
+    modifier: Modifier = Modifier,
+    kicker: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = modifier
+            .widthIn(min = 0.dp)
+            .background(
+                color = Color.White.copy(alpha = 0.025f),
+                shape = RoundedCornerShape(18.dp)
             )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.06f),
+                shape = RoundedCornerShape(18.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(0.dp)
+    ) {
         Text(
-            text = addon.baseUrl,
-            style = MaterialTheme.typography.bodySmall,
-            color = OmnioColors.TextTertiary
+            text = kicker.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = OmnioColors.Secondary.copy(alpha = 0.9f)
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = stringResource(R.string.addon_catalogs_types, addon.catalogs.size, addon.rawTypes.joinToString()),
-            style = MaterialTheme.typography.bodySmall,
-            color = OmnioColors.TextTertiary
-        )
+        Spacer(modifier = Modifier.height(10.dp))
+        content()
     }
 }
 
