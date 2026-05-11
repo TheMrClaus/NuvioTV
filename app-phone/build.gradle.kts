@@ -1,4 +1,4 @@
-﻿import java.util.Properties
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -194,7 +194,7 @@ play {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
-    val composeBom = platform("androidx.compose:compose-bom:2026.04.01")
+    val composeBom = platform("androidx.compose:compose-bom:2026.05.00")
 
     baselineProfile(project(":baselineprofile-phone"))
 
@@ -249,7 +249,7 @@ dependencies {
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.11.0")
     testImplementation("io.mockk:mockk:1.14.9")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation(libs.androidx.compose.ui.test.manifest)
