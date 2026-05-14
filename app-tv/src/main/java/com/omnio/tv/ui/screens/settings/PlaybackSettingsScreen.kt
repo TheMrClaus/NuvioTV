@@ -189,13 +189,15 @@ fun PlaybackSettingsContent(
     ) {
         SettingsDetailHeader(
             title = stringResource(R.string.playback_title),
-            subtitle = stringResource(R.string.playback_subtitle)
+            subtitle = stringResource(R.string.playback_subtitle),
+            cinematicStyle = true
         )
 
         SettingsGroupCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
+            cinematicStyle = true
         ) {
             PlaybackSettingsSections(
                 initialFocusRequester = initialFocusRequester,
@@ -375,7 +377,8 @@ internal fun ToggleSettingsItem(
     isChecked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     onFocused: () -> Unit = {},
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    cinematicStyle: Boolean = false
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val contentAlpha = if (enabled) 1f else 0.4f
@@ -392,12 +395,19 @@ internal fun ToggleSettingsItem(
                 }
             },
         colors = CardDefaults.colors(
-            containerColor = OmnioColors.Background,
-            focusedContainerColor = OmnioColors.Background
+            containerColor = if (cinematicStyle) Color(0xFF14161D) else OmnioColors.Background,
+            focusedContainerColor = if (cinematicStyle) Color(0xFF1A1D25) else OmnioColors.Background
         ),
         border = CardDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, if (enabled) OmnioColors.FocusRing else OmnioColors.FocusRing.copy(alpha = 0.3f)),
+                border = BorderStroke(
+                    2.dp,
+                    if (enabled) {
+                        if (cinematicStyle) OmnioColors.Secondary else OmnioColors.FocusRing
+                    } else {
+                        OmnioColors.FocusRing.copy(alpha = 0.3f)
+                    }
+                ),
                 shape = RoundedCornerShape(SettingsPillRadius)
             )
         ),
@@ -443,10 +453,22 @@ internal fun ToggleSettingsItem(
                 checked = isChecked,
                 onCheckedChange = null, // Handled by Card onClick
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = OmnioColors.Secondary.copy(alpha = contentAlpha),
-                    checkedTrackColor = OmnioColors.Secondary.copy(alpha = 0.35f * contentAlpha),
-                    uncheckedThumbColor = OmnioColors.TextSecondary.copy(alpha = contentAlpha),
-                    uncheckedTrackColor = OmnioColors.Border
+                    checkedThumbColor = Color.White.copy(alpha = contentAlpha),
+                    checkedTrackColor = if (cinematicStyle) {
+                        OmnioColors.Secondary.copy(alpha = 0.9f * contentAlpha)
+                    } else {
+                        OmnioColors.Secondary.copy(alpha = 0.35f * contentAlpha)
+                    },
+                    uncheckedThumbColor = if (cinematicStyle) {
+                        Color.White.copy(alpha = contentAlpha)
+                    } else {
+                        OmnioColors.TextSecondary.copy(alpha = contentAlpha)
+                    },
+                    uncheckedTrackColor = if (cinematicStyle) {
+                        Color.White.copy(alpha = 0.14f * contentAlpha)
+                    } else {
+                        OmnioColors.Border
+                    }
                 )
             )
         }
@@ -543,7 +565,8 @@ internal fun NavigationSettingsItem(
     subtitle: String,
     onClick: () -> Unit,
     onFocused: () -> Unit = {},
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    cinematicStyle: Boolean = false
 ) {
     var isFocused by remember { mutableStateOf(false) }
     val contentAlpha = if (enabled) 1f else 0.4f
@@ -560,12 +583,19 @@ internal fun NavigationSettingsItem(
                 }
             },
         colors = CardDefaults.colors(
-            containerColor = OmnioColors.Background,
-            focusedContainerColor = OmnioColors.Background
+            containerColor = if (cinematicStyle) Color(0xFF14161D) else OmnioColors.Background,
+            focusedContainerColor = if (cinematicStyle) Color(0xFF1A1D25) else OmnioColors.Background
         ),
         border = CardDefaults.border(
             focusedBorder = Border(
-                border = BorderStroke(2.dp, if (enabled) OmnioColors.FocusRing else OmnioColors.FocusRing.copy(alpha = 0.3f)),
+                border = BorderStroke(
+                    2.dp,
+                    if (enabled) {
+                        if (cinematicStyle) OmnioColors.Secondary else OmnioColors.FocusRing
+                    } else {
+                        OmnioColors.FocusRing.copy(alpha = 0.3f)
+                    }
+                ),
                 shape = RoundedCornerShape(SettingsPillRadius)
             )
         ),

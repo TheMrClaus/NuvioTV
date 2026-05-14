@@ -90,7 +90,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             isChecked = trailerSettings.enabled,
             onCheckedChange = onSetTrailerEnabled,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -145,7 +146,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             subtitle = audioLangName,
             onClick = onShowAudioLanguageDialog,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -160,7 +162,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             subtitle = secondaryAudioLangName,
             onClick = onShowSecondaryAudioLanguageDialog,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -172,7 +175,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             isChecked = playerSettings.skipSilence,
             onCheckedChange = onSetSkipSilence,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -209,7 +213,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             subtitle = decoderName,
             onClick = onShowDecoderPriorityDialog,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -221,7 +226,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             isChecked = playerSettings.tunnelingEnabled,
             onCheckedChange = onSetTunnelingEnabled,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -233,7 +239,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             isChecked = playerSettings.mapDV7ToHevc,
             onCheckedChange = onSetMapDV7ToHevc,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 
@@ -252,7 +259,8 @@ internal fun LazyListScope.trailerAndAudioSettingsItems(
             subtitle = hwDecodeModeName,
             onClick = onShowMpvHardwareDecodeModeDialog,
             onFocused = onItemFocused,
-            enabled = enabled
+            enabled = enabled,
+            cinematicStyle = true
         )
     }
 }

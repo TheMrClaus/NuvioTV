@@ -68,6 +68,8 @@
     <string name="hero_mark_watched">סמן כנצפה</string>
     <string name="hero_mark_unwatched">סמן כלא נצפה</string>
     <string name="hero_play_trailer">הפעל טריילר</string>
+    <string name="hero_more_info">More Info</string>
+    <string name="hero_match_percent">%1$d%% Match</string>
     <string name="hero_press_back_trailer">לחץ חזרה ליציאה מהטריילר</string>
     <string name="cd_rating">דירוג</string>
 
@@ -1012,4 +1014,19 @@
     <string name="sub_mode_effects_gl">Effects OpenGL</string>
     <string name="sub_mode_effects_gl_sub">תמיכת אנימציה באמצעות אפקטי Media3. מהיר יותר מ-Canvas.</string>
     <string name="sub_advanced_section">רינדור כתוביות מתקדם</string>
+    <!-- Stream picker / Available Sources section -->
+    <string name="available_sources_title">Available Sources</string>
+    <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>
+
+    <string name="onboarding_welcome_title">A better big-screen setup starts in one move.</string>
+    <string name="onboarding_welcome_subtitle">Pair Omnio with your phone to bring in your account, sync your library, and keep the first launch flowing into profiles without extra menus.</string>
+    <string name="onboarding_welcome_support">You can continue without an account if you want to explore first.</string>
+    <string name="onboarding_welcome_badge">FIRST WATCH</string>
+    <string name="onboarding_welcome_footer">Built for a fast TV-first pairing flow.</string>
+    <string name="onboarding_welcome_continue">Pair your phone</string>
+    <string name="onboarding_pair_title">Pair your phone, then keep watching.</string>
+    <string name="onboarding_pair_subtitle">Scan the QR code on your phone, approve the sign-in, and Omnio will continue into your first profile step.</string>
+    <string name="onboarding_step_welcome">Welcome</string>
+    <string name="onboarding_step_pair">Pair</string>
+    <string name="onboarding_step_profile">Profile</string>
 </resources>

@@ -86,6 +86,10 @@ import com.omnio.tv.domain.model.Stream
 import com.omnio.tv.core.player.SourceChipItem
 import com.omnio.tv.core.player.SourceChipStatus
 import com.omnio.tv.ui.components.SourceStatusFilterChip
+import com.omnio.tv.ui.components.cinematic.AvailableSourcesHeader
+import com.omnio.tv.ui.components.cinematic.AvailableSourcesRow
+import com.omnio.tv.ui.components.cinematic.rankStreams
+import com.omnio.tv.ui.components.cinematic.streamAddonCount
 import com.omnio.tv.core.uishared.OmnioColors
 import com.omnio.tv.ui.components.StreamsSkeletonList
 import com.omnio.tv.ui.screens.player.LoadingOverlay
@@ -536,6 +540,18 @@ private fun RightStreamSection(
         modifier = modifier
             .padding(top = 48.dp, end = 48.dp, bottom = 48.dp)
     ) {
+        AvailableSourcesHeader(
+            streamCount = streams.size,
+            addonCount = streamAddonCount(streams),
+            titleText = stringResource(R.string.available_sources_title),
+            subtitleText = stringResource(
+                R.string.available_sources_subtitle,
+                streams.size,
+                streamAddonCount(streams)
+            )
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
         val chipRowHeight = 56.dp
 
         // Addon filter chips
@@ -809,12 +825,20 @@ private fun StreamsList(
     val firstCardFocusRequester = remember { FocusRequester() }
     val lastKeyRepeatDispatchRef = remember { java.util.concurrent.atomic.AtomicLong(0L) }
     val restoreFocusRequester = remember { FocusRequester() }
-    val firstStreamKey = streams.firstOrNull()?.let { first ->
+    val rankedDisplays = remember(streams) { rankStreams(streams) }
+    val sortedFocusIndex = remember(streams, rankedDisplays, focusedStreamIndex) {
+        if (focusedStreamIndex !in streams.indices) -1
+        else {
+            val target = streams[focusedStreamIndex]
+            rankedDisplays.indexOfFirst { it.stream === target }
+        }
+    }
+    val firstStreamKey = rankedDisplays.firstOrNull()?.stream?.let { first ->
         "${first.addonName}_${first.url ?: first.infoHash ?: first.ytId ?: "unknown"}"
     }
 
     LaunchedEffect(requestInitialFocus, firstStreamKey) {
-        if (!requestInitialFocus || streams.isEmpty()) return@LaunchedEffect
+        if (!requestInitialFocus || rankedDisplays.isEmpty()) return@LaunchedEffect
         repeat(2) { withFrameNanos { } }
         try {
             firstCardFocusRequester.requestFocus()
@@ -823,9 +847,9 @@ private fun StreamsList(
         onInitialFocusConsumed()
     }
 
-    LaunchedEffect(shouldRestoreFocusedStream, focusedStreamIndex, streams.size) {
+    LaunchedEffect(shouldRestoreFocusedStream, sortedFocusIndex, rankedDisplays.size) {
         if (!shouldRestoreFocusedStream) return@LaunchedEffect
-        if (streams.isEmpty()) {
+        if (rankedDisplays.isEmpty()) {
             onRestoreFocusedStreamHandled()
             return@LaunchedEffect
         }
@@ -875,14 +899,15 @@ private fun StreamsList(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
     ) {
-        itemsIndexed(streams, key = { index, stream ->
-            "${stream.addonName}_${stream.url ?: stream.infoHash ?: stream.ytId ?: "unknown"}_$index"
-        }) { index, stream ->
-            StreamCard(
-                stream = stream,
-                onClick = { onStreamSelected(stream) },
+        itemsIndexed(rankedDisplays, key = { index, display ->
+            val s = display.stream
+            "${s.addonName}_${s.url ?: s.infoHash ?: s.ytId ?: "unknown"}_$index"
+        }) { index, display ->
+            AvailableSourcesRow(
+                display = display,
+                onClick = { onStreamSelected(display.stream) },
                 focusRequester = when {
-                    shouldRestoreFocusedStream && index == focusedStreamIndex.coerceIn(0, (streams.lastIndex).coerceAtLeast(0)) -> restoreFocusRequester
+                    shouldRestoreFocusedStream && index == sortedFocusIndex.coerceIn(0, rankedDisplays.lastIndex.coerceAtLeast(0)) -> restoreFocusRequester
                     index == 0 -> firstCardFocusRequester
                     else -> null
                 },
@@ -895,132 +920,6 @@ private fun StreamsList(
                 }} else null
             )
         }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun StreamCard(
-    stream: Stream,
-    onClick: () -> Unit,
-    focusRequester: FocusRequester? = null,
-    onUpKey: (() -> Unit)? = null
-) {
-    val context = LocalContext.current
-    val streamName = remember(stream) { stream.getDisplayName() }
-    val streamDescription = remember(stream) { stream.getDisplayDescription() }
-    val addonLogoModel = remember(context, stream.addonLogo) {
-        stream.addonLogo?.let { logo ->
-            ImageRequest.Builder(context)
-                .data(logo)
-                .crossfade(false)
-                .decoderFactory(SvgDecoder.Factory())
-                .build()
-        }
-    }
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
-            .then(if (onUpKey != null) Modifier.onKeyEvent { event ->
-                if (event.nativeKeyEvent.action == KeyEvent.ACTION_DOWN && event.key == Key.DirectionUp) {
-                    onUpKey(); true
-                } else false
-            } else Modifier),
-        colors = CardDefaults.colors(
-            containerColor = OmnioColors.BackgroundElevated,
-            focusedContainerColor = OmnioColors.BackgroundElevated
-        ),
-        shape = CardDefaults.shape(shape = RoundedCornerShape(12.dp)),
-        scale = CardDefaults.scale(focusedScale = 1.08f)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = streamName,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = OmnioColors.TextPrimary
-                )
-
-                streamDescription?.let { description ->
-                    if (description != streamName) {
-                        Text(
-                            text = description,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = OmnioTheme.extendedColors.textSecondary
-                        )
-                    }
-                }
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (stream.isTorrent()) {
-                        StreamTypeChip(text = stringResource(R.string.stream_type_torrent), color = OmnioColors.Secondary)
-                    }
-                    if (stream.isYouTube()) {
-                        StreamTypeChip(text = stringResource(R.string.stream_type_youtube), color = Color(0xFFFF0000))
-                    }
-                    if (stream.isExternal()) {
-                        StreamTypeChip(text = stringResource(R.string.stream_type_external), color = OmnioColors.Primary)
-                    }
-                }
-            }
-
-            Column(
-                horizontalAlignment = Alignment.End
-            ) {
-                if (addonLogoModel != null) {
-                    AsyncImage(
-                        model = addonLogoModel,
-                        contentDescription = stream.addonName,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(RoundedCornerShape(4.dp)),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = stream.addonName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = OmnioTheme.extendedColors.textTertiary,
-                    maxLines = 1
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StreamTypeChip(
-    text: String,
-    color: Color
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(color.copy(alpha = 0.2f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = color
-        )
     }
 }
 

@@ -478,7 +478,9 @@ private fun PlaybackSectionHeader(
             .focusRequester(focusRequester),
         onFocused = onFocused,
         enabled = enabled,
-        trailingIcon = if (expanded) Icons.Default.ExpandMore else Icons.Default.ChevronRight
+        trailingIcon = if (expanded) Icons.Default.ExpandMore else Icons.Default.ChevronRight,
+        cinematicStyle = true,
+        kicker = "Playback Section"
     )
 }
 

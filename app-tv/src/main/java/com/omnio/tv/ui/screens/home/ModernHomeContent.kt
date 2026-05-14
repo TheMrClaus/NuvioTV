@@ -472,11 +472,12 @@ fun ModernHomeContent(
         modifier = Modifier.fillMaxSize()
     ) {
         val posterCardCornerRadius = remember(uiState.posterCardCornerRadiusDp) { uiState.posterCardCornerRadiusDp.dp }
-        val rowHorizontalPadding = 52.dp
+        val rowHorizontalPadding = modernHomeHeroStartPaddingDp().dp
 
         val activeCarouselItem = remember(activeRow, clampedActiveItemIndex) {
             activeRow?.items?.getOrNull(clampedActiveItemIndex)
         }
+        val activeCatalogPayload = activeCarouselItem?.payload as? ModernPayload.Catalog
         val activeItemId = activeCarouselItem?.metaPreview?.id
         val enrichmentActive = enrichingItemId != null && enrichingItemId == activeItemId
         // When enrichment is active use heroItem (frozen), when done use activeCarouselItem
@@ -673,11 +674,23 @@ fun ModernHomeContent(
 
         HeroTitleBlock(
             preview = heroSceneState.preview,
+            matchRating = activeCarouselItem?.metaPreview?.imdbRating,
+            onPlayClick = activeCatalogPayload?.let { payload ->
+                {
+                    onNavigateToDetail(payload.itemId, payload.itemType, payload.addonBaseUrl)
+                }
+            },
+            onInfoClick = activeCatalogPayload?.let { payload ->
+                {
+                    onNavigateToDetail(payload.itemId, payload.itemType, payload.addonBaseUrl)
+                }
+            },
             enrichmentActive = heroSceneState.enrichmentActive,
             portraitMode = !useLandscapePosters,
             trailerPlaying = heroSceneState.fullScreenBackdrop &&
                 heroSceneState.shouldPlayTrailer &&
                 heroSceneState.trailerFirstFrameRendered,
+            isRowsScrolling = isVerticalRowsScrolling,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(

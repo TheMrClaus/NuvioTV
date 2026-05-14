@@ -21,19 +21,19 @@ data class OmnioExtendedColors(
 )
 
 val LocalOmnioColors = staticCompositionLocalOf {
-    OmnioColorScheme(ThemeColors.Ocean)
+    OmnioColorScheme(ThemeColors.Cinematic)
 }
 
 val LocalOmnioExtendedColors = staticCompositionLocalOf {
     OmnioExtendedColors(
-        backgroundElevated = Color(0xFF1A1A1A),
-        backgroundCard = Color(0xFF242424),
+        backgroundElevated = ThemeColors.Cinematic.backgroundElevated,
+        backgroundCard = ThemeColors.Cinematic.backgroundCard,
         textSecondary = Color(0xFFB3B3B3),
         textTertiary = Color(0xFF808080),
-        focusRing = ThemeColors.Ocean.focusRing,
-        focusBackground = ThemeColors.Ocean.focusBackground,
+        focusRing = ThemeColors.Cinematic.focusRing,
+        focusBackground = ThemeColors.Cinematic.focusBackground,
         rating = Color(0xFFFFD700)
     )
 }
 
-val LocalAppTheme = staticCompositionLocalOf { AppTheme.WHITE }
+val LocalAppTheme = staticCompositionLocalOf { AppTheme.CINEMATIC }

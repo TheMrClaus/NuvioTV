@@ -22,6 +22,21 @@ data class ThemeColorPalette(
 
 object ThemeColors {
 
+    /**
+     * Cinematic — true-black, Netflix-red palette. Default theme.
+     * bg-0 #000, bg-1 #0A0A0A, bg-2 #141414, bg-3 #1F1F1F, bg-4 #2A2A2A.
+     * red #E50914 + red-bright #FF1F2D + red-soft #FF4D6D.
+     */
+    val Cinematic = ThemeColorPalette(
+        secondary = Color(0xFFE50914),
+        secondaryVariant = Color(0xFFB0060F),
+        focusRing = Color(0xFFFFFFFF),
+        focusBackground = Color(0x1FE50914),  // red @ 12% wash
+        background = Color(0xFF000000),       // bg-0
+        backgroundElevated = Color(0xFF141414), // bg-2
+        backgroundCard = Color(0xFF1F1F1F)    // bg-3
+    )
+
     val Crimson = ThemeColorPalette(
         secondary = Color(0xFFE53935),
         secondaryVariant = Color(0xFFC62828),
@@ -96,6 +111,7 @@ object ThemeColors {
 
     fun getColorPalette(theme: AppTheme): ThemeColorPalette {
         return when (theme) {
+            AppTheme.CINEMATIC -> Cinematic
             AppTheme.CRIMSON -> Crimson
             AppTheme.OCEAN -> Ocean
             AppTheme.VIOLET -> Violet
@@ -105,4 +121,28 @@ object ThemeColors {
             AppTheme.WHITE -> White
         }
     }
+}
+
+/**
+ * Per-source accent colors for addon/source identification (RD violet, JF blue, …).
+ * Theme-independent — these are brand colors of external providers.
+ */
+object OmnioSourceColors {
+    val Rd = Color(0xFF6C5CE7)      // Real-Debrid violet
+    val Usenet = Color(0xFF22D3EE)  // Usenet cyan
+    val Emby = Color(0xFF52B54B)    // Emby green
+    val Jellyfin = Color(0xFF00A4DC)
+    val Plex = Color(0xFFE5A00D)    // Plex amber
+    val Http = Color(0xFF94A3B8)    // HTTP slate
+    val P2p = Color(0xFFF472B6)     // P2P pink
+}
+
+/**
+ * Quality-tier accent colors for badges.
+ */
+object OmnioQualityColors {
+    val FourK = Color(0xFFFFD166)   // 4K / 4K HDR — warm gold
+    val Hdr = Color(0xFFC7B6FF)     // HDR — soft lavender
+    val FullHd = Color(0xFFA7F3D0)  // 1080 — mint
+    val Hd = Color(0x80FFFFFF)      // 720 — white @ 50%
 }

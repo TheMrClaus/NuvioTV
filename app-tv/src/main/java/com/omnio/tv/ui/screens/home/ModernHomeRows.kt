@@ -41,6 +41,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -60,10 +61,12 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -94,6 +97,13 @@ private const val MODERN_HORIZONTAL_FOCUS_DEBOUNCE_MS = 140L
 private const val POSTER_PREFETCH_DISTANCE = 8
 
 internal val LocalVerticalRowsScrolling = androidx.compose.runtime.compositionLocalOf { false }
+
+private val ROW_LABEL_BAND_GRADIENT = Brush.verticalGradient(
+    colors = listOf(
+        Color.Transparent,
+        Color.Black.copy(alpha = 0.95f)
+    )
+)
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -147,6 +157,7 @@ private fun ModernCatalogRowItem(
     item: ModernCarouselItem,
     payload: ModernPayload.Catalog,
     requester: FocusRequester,
+    topTenRank: Int?,
     useLandscapePosters: Boolean,
     showLabels: Boolean,
     posterCardCornerRadius: Dp,
@@ -238,6 +249,7 @@ private fun ModernCatalogRowItem(
         item = item,
         useLandscapeOverlayTreatment = useLandscapePosters,
         showLabels = showLabels,
+        topTenRank = topTenRank,
         cardCornerRadius = posterCardCornerRadius,
         cardWidth = cardMetrics.width,
         cardHeight = cardMetrics.height,
@@ -325,16 +337,26 @@ internal fun ModernRowSection(
             titleMediumStyle.copy(fontWeight = FontWeight.SemiBold)
         }
         val rowTitle = remember(row.title) { row.title }
+        val rowSubtitle = remember(row) { row.sourceCountSubtitle() }
         val textColor = remember { OmnioColors.TextPrimary }
         val textModifier = remember(rowTitleBottom) {
-            Modifier.padding(start = 52.dp, bottom = rowTitleBottom)
+            Modifier.padding(start = modernHomeRowStartPaddingDp().dp, bottom = rowTitleBottom)
         }
-        Text(
-            text = rowTitle,
-            style = rowTitleStyle,
-            color = textColor,
-            modifier = textModifier
-        )
+        Column(modifier = textModifier) {
+            Text(
+                text = rowTitle,
+                style = rowTitleStyle,
+                color = textColor
+            )
+            rowSubtitle?.let { subtitle ->
+                Text(
+                    text = "· $subtitle",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontFamily = FontFamily.Monospace,
+                    color = OmnioColors.TextSecondary
+                )
+            }
+        }
 
         val rowListState = rowListStates.getOrPut(row.key) {
             LazyListState(
@@ -432,7 +454,7 @@ internal fun ModernRowSection(
         }
 
         val density = LocalDensity.current
-        val rowStartPadding = 52.dp
+        val rowStartPadding = modernHomeRowStartPaddingDp().dp
         val context = LocalContext.current
         val imageLoader = context.imageLoader
 
@@ -607,6 +629,7 @@ internal fun ModernRowSection(
                                 item = item,
                                 payload = payload,
                                 requester = requester,
+                                topTenRank = row.topTenRankOrNull(index),
                                 useLandscapePosters = useLandscapePosters,
                                 showLabels = showLabels,
                                 posterCardCornerRadius = posterCardCornerRadius,
@@ -649,6 +672,7 @@ private fun ModernCarouselCard(
     item: ModernCarouselItem,
     useLandscapeOverlayTreatment: Boolean,
     showLabels: Boolean,
+    topTenRank: Int?,
     cardCornerRadius: Dp,
     cardWidth: Dp,
     cardHeight: Dp,
@@ -841,6 +865,19 @@ private fun ModernCarouselCard(
                 )
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
+                topTenRank?.let { rank ->
+                    Text(
+                        text = rank.toString(),
+                        color = Color.White.copy(alpha = 0.15f),
+                        fontSize = 120.sp,
+                        fontFamily = FontFamily.Serif,
+                        lineHeight = 96.sp,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 6.dp, bottom = 2.dp)
+                    )
+                }
+
                 val mediaLayerModifier = remember(hasLandscapeLogo) {
                     if (hasLandscapeLogo) {
                         Modifier
@@ -885,6 +922,47 @@ private fun ModernCarouselCard(
                     }
                 }
 
+                if (showLabels && !isBackdropExpanded) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .fillMaxSize(0.42f)
+                            .drawWithCache {
+                                onDrawBehind { drawRect(ROW_LABEL_BAND_GRADIENT) }
+                            }
+                    )
+
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                    ) {
+                        if (!hasLandscapeLogo) {
+                            Text(
+                                text = item.title,
+                                style = titleStyle,
+                                color = Color.White,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        item.subtitle?.takeIf { it.isNotBlank() }?.let { subtitle ->
+                            if (!hasLandscapeLogo) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                            }
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color.White.copy(alpha = 0.82f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+
                 if (hasLandscapeLogo) {
                     AsyncImage(
                         model = logoModel,
@@ -894,11 +972,11 @@ private fun ModernCarouselCard(
                             .align(Alignment.BottomStart)
                             .fillMaxWidth(0.62f)
                             .height(cardHeight * 0.34f)
-                            .padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+                            .padding(start = 10.dp, end = 10.dp, bottom = if (showLabels && !isBackdropExpanded) 28.dp else 8.dp),
                         contentScale = ContentScale.Fit,
                         alignment = Alignment.CenterStart
                     )
-                } else if (useLandscapeOverlayTreatment || isBackdropExpanded) {
+                } else if ((useLandscapeOverlayTreatment && !showLabels) || isBackdropExpanded) {
                     Text(
                         text = item.title,
                         style = titleStyle,
@@ -933,32 +1011,31 @@ private fun ModernCarouselCard(
             }
         }
 
-        if (showLabels && !isBackdropExpanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp)
-            ) {
-                Text(
-                    text = item.title,
-                    style = titleStyle,
-                    color = OmnioColors.TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                item.subtitle?.takeIf { it.isNotBlank() }?.let { subtitle ->
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = OmnioColors.TextSecondary,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-        }
     }
+}
+
+internal fun HeroCarouselRow.topTenRankOrNull(index: Int): Int? {
+    if (!isTrendingRail()) return null
+    if (index !in 0..9) return null
+    return index + 1
+}
+
+internal fun HeroCarouselRow.distinctCatalogSourceCount(): Int {
+    return items
+        .mapNotNull { (it.payload as? ModernPayload.Catalog)?.addonBaseUrl?.takeIf(String::isNotBlank) }
+        .distinct()
+        .size
+}
+
+internal fun HeroCarouselRow.sourceCountSubtitle(): String? {
+    val count = distinctCatalogSourceCount()
+    return if (count > 1) "across $count sources" else null
+}
+
+private fun HeroCarouselRow.isTrendingRail(): Boolean {
+    val normalizedTitle = title.lowercase()
+    val normalizedCatalogId = catalogId?.lowercase().orEmpty()
+    return "trending" in normalizedTitle || "trending" in normalizedCatalogId
 }
 
 

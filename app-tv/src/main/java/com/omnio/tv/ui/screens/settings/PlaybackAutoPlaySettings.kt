@@ -227,7 +227,8 @@ internal fun LazyListScope.autoPlaySettingsItems(
                 title = stringResource(R.string.autoplay_scope),
                 subtitle = sourceLabel,
                 onClick = onShowSourceDialog,
-                onFocused = onItemFocused
+                onFocused = onItemFocused,
+                cinematicStyle = true
             )
         }
 
@@ -243,7 +244,8 @@ internal fun LazyListScope.autoPlaySettingsItems(
                     title = stringResource(R.string.autoplay_allowed_addons),
                     subtitle = addonSubtitle,
                     onClick = onShowAddonSelectionDialog,
-                    onFocused = onItemFocused
+                    onFocused = onItemFocused,
+                    cinematicStyle = true
                 )
             }
         }
@@ -260,7 +262,8 @@ internal fun LazyListScope.autoPlaySettingsItems(
                     title = stringResource(R.string.autoplay_allowed_plugins),
                     subtitle = pluginSubtitle,
                     onClick = onShowPluginSelectionDialog,
-                    onFocused = onItemFocused
+                    onFocused = onItemFocused,
+                    cinematicStyle = true
                 )
             }
         }

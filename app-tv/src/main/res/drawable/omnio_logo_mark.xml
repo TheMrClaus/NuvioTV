@@ -1,0 +1,59 @@
+<!--
+  Omnio mark — concentric "omni-source" rings + red play wedge.
+  Source: omniotv/project/assets/logo-mark.svg, viewBox 0 0 64 64.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- Outer ring: circle r=28, stroke-width=6 -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeWidth="6"
+        android:pathData="M 32,4 a 28,28 0 1,0 0,56 a 28,28 0 1,0 0,-56 Z">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="0" android:startY="0"
+                android:endX="64" android:endY="64">
+                <item android:offset="0" android:color="#FF4D6D" />
+                <item android:offset="1" android:color="#E50914" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Inner ring: circle r=16, stroke-width=4, opacity 0.55 -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeWidth="4"
+        android:strokeAlpha="0.55"
+        android:pathData="M 32,16 a 16,16 0 1,0 0,32 a 16,16 0 1,0 0,-32 Z">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:type="linear"
+                android:startX="0" android:startY="0"
+                android:endX="64" android:endY="64">
+                <item android:offset="0" android:color="#FF4D6D" />
+                <item android:offset="1" android:color="#E50914" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Play wedge -->
+    <path
+        android:strokeWidth="0"
+        android:pathData="M 28,22 L 46,32 L 28,42 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0" android:startY="0"
+                android:endX="64" android:endY="64">
+                <item android:offset="0" android:color="#FF4D6D" />
+                <item android:offset="1" android:color="#E50914" />
+            </gradient>
+        </aapt:attr>
+    </path>
+</vector>
