@@ -150,7 +150,7 @@ internal fun ModernHeroScene(
         HeroTopRightCluster(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 36.dp, end = topRightClusterTreatment.endPaddingDp.dp)
+                .padding(top = 56.dp, end = topRightClusterTreatment.endPaddingDp.dp)
         )
     }
 }
