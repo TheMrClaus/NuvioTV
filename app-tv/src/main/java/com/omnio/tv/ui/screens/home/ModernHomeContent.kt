@@ -698,6 +698,7 @@ fun ModernHomeContent(
                     end = 48.dp,
                     bottom = catalogBottomPadding + rowsViewportHeight + heroToCatalogGap
                 )
+                .offset(y = 12.dp)
                 .fillMaxWidth(MODERN_HERO_TEXT_WIDTH_FRACTION)
         )
 
