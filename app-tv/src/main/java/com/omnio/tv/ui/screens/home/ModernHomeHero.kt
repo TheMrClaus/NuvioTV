@@ -93,7 +93,7 @@ internal data class ModernHeroActionButtonTreatment(
 internal fun modernHeroTopRightClusterTreatment(): ModernHeroTopRightClusterTreatment {
     return ModernHeroTopRightClusterTreatment(
         showCastIcon = false,
-        endPaddingDp = 44
+        endPaddingDp = 72
     )
 }
 

@@ -13,7 +13,7 @@ class ModernHomeHeroLayoutTest {
         val treatment = modernHeroTopRightClusterTreatment()
 
         assertFalse(treatment.showCastIcon)
-        assertEquals(44, treatment.endPaddingDp)
+        assertEquals(72, treatment.endPaddingDp)
         assertFalse(heroTopRightClusterShowsCastIcon(treatment))
     }
 
