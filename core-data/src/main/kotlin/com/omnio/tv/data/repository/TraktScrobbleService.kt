@@ -6,8 +6,11 @@ import com.omnio.tv.data.remote.dto.trakt.TraktEpisodeDto
 import com.omnio.tv.data.remote.dto.trakt.TraktIdsDto
 import com.omnio.tv.data.remote.dto.trakt.TraktMovieDto
 import com.omnio.tv.data.remote.dto.trakt.TraktScrobbleRequestDto
+import com.omnio.tv.data.remote.dto.trakt.TraktScrobbleResponseDto
 import com.omnio.tv.data.remote.dto.trakt.TraktShowDto
 import com.omnio.tv.domain.profile.ProfileManager
+import kotlinx.coroutines.delay
+import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
@@ -54,6 +57,7 @@ class TraktScrobbleService @Inject constructor(
     private var lastScrobbleStamp: ScrobbleStamp? = null
     private val minSendIntervalMs = 8_000L
     private val progressWindow = 1.5f
+    private val stopRetryDelaysMs = listOf(500L, 1_500L)
 
     suspend fun scrobbleStart(item: TraktScrobbleItem, progressPercent: Float) {
         sendScrobble(action = "start", item = item, progressPercent = progressPercent)
@@ -82,11 +86,10 @@ class TraktScrobbleService @Inject constructor(
 
         val requestBody = buildRequestBody(item, clampedProgress)
 
-        val response = traktAuthService.executeAuthorizedWriteRequest { authHeader ->
-            when (action) {
-                "start" -> traktApi.scrobbleStart(authHeader, requestBody)
-                else -> traktApi.scrobbleStop(authHeader, requestBody)
-            }
+        val response = if (action == "start") {
+            runCatching { executeScrobbleWrite(action, requestBody) }.getOrNull()
+        } else {
+            executeStopScrobbleWithRetry(action, requestBody)
         } ?: return
 
         if (response.isSuccessful || response.code() == 409) {
@@ -100,6 +103,41 @@ class TraktScrobbleService @Inject constructor(
                 traktProgressService.refreshNow()
             }
         }
+    }
+
+    private suspend fun executeScrobbleWrite(
+        action: String,
+        requestBody: TraktScrobbleRequestDto
+    ): Response<TraktScrobbleResponseDto>? {
+        return traktAuthService.executeAuthorizedWriteRequest { authHeader ->
+            when (action) {
+                "start" -> traktApi.scrobbleStart(authHeader, requestBody)
+                else -> traktApi.scrobbleStop(authHeader, requestBody)
+            }
+        }
+    }
+
+    private suspend fun executeStopScrobbleWithRetry(
+        action: String,
+        requestBody: TraktScrobbleRequestDto
+    ): Response<TraktScrobbleResponseDto>? {
+        var lastResponse: Response<TraktScrobbleResponseDto>? = null
+        val attempts = stopRetryDelaysMs.size + 1
+        repeat(attempts) { attempt ->
+            val response = runCatching { executeScrobbleWrite(action, requestBody) }
+                .getOrNull()
+            lastResponse = response
+            if (!shouldRetryStopScrobble(response) || attempt == attempts - 1) {
+                return response
+            }
+            delay(stopRetryDelaysMs[attempt])
+        }
+        return lastResponse
+    }
+
+    private fun shouldRetryStopScrobble(response: Response<TraktScrobbleResponseDto>?): Boolean {
+        val code = response?.code() ?: return true
+        return code in 500..599
     }
 
     internal fun buildRequestBody(
