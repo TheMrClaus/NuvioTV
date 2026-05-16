@@ -1725,10 +1725,9 @@ class MetaDetailsViewModel @Inject constructor(
         if (currentSeason <= 1) return
         suppressSeasonAutoSwitch = true
         viewModelScope.launch {
-            val state = _uiState.value
             val unwatched = selectPreviousSeasonsEpisodes(meta, currentSeason) { s, e ->
-                state.episodeProgressMap[s to e]?.isCompleted() == true
-                    || state.watchedEpisodes.contains(s to e)
+                _uiState.value.episodeProgressMap[s to e]?.isCompleted() == true
+                    || _uiState.value.watchedEpisodes.contains(s to e)
             }
             if (unwatched.isEmpty()) {
                 showMessage(context.getString(R.string.detail_all_previous_seasons_watched))
@@ -1744,7 +1743,7 @@ class MetaDetailsViewModel @Inject constructor(
                 val progressList = unwatched.map { buildCompletedEpisodeProgress(meta, it) }
                 watchProgressRepository.markAsCompletedBatch(progressList)
             }.onFailure { error ->
-                Log.w(TAG, "Failed to batch mark previous seasons < $currentSeason as watched: ${error.message}")
+                Log.w(TAG, "Failed to batch mark previous seasons before season $currentSeason as watched: ${error.message}")
             }
 
             _uiState.update {
