@@ -6,9 +6,11 @@ import com.omnio.tv.data.local.TraktSettingsDataStore
 import com.omnio.tv.data.remote.api.TraktApi
 import com.omnio.tv.data.remote.dto.trakt.TraktEpisodeDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryAddNotFoundDto
+import com.omnio.tv.data.remote.dto.trakt.TraktHistoryAddRequestDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryAddResponseDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryRemoveCountDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryRemoveNotFoundDto
+import com.omnio.tv.data.remote.dto.trakt.TraktHistoryRemoveRequestDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryRemoveResponseDto
 import com.omnio.tv.data.remote.dto.trakt.TraktIdsDto
 import com.omnio.tv.domain.model.WatchProgress
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
+import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Test
 import retrofit2.Response
@@ -111,6 +114,58 @@ class TraktProgressServiceTest {
         }
     }
 
+    @Test
+    fun `batch add retries with remapped episode numbers when Trakt cannot find original episodes`() = runTest {
+        val service = service()
+        val requests = mutableListOf<TraktHistoryAddRequestDto>()
+        coEvery { traktApi.addHistory(any(), capture(requests)) } returnsMany listOf(
+            Response.success(
+                TraktHistoryAddResponseDto(
+                    added = TraktHistoryRemoveCountDto(episodes = 0),
+                    notFound = TraktHistoryAddNotFoundDto(episodes = listOf(notFoundEpisode()))
+                )
+            ),
+            Response.success(TraktHistoryAddResponseDto(added = TraktHistoryRemoveCountDto(episodes = 2)))
+        )
+        coEvery {
+            traktEpisodeMappingService.resolveEpisodeMapping(any(), any(), any(), 1, 1)
+        } returns EpisodeMappingEntry(season = 2, episode = 5, videoId = "trakt:10:2:5")
+        coEvery {
+            traktEpisodeMappingService.resolveEpisodeMapping(any(), any(), any(), 1, 2)
+        } returns EpisodeMappingEntry(season = 2, episode = 6, videoId = "trakt:10:2:6")
+
+        service.markSeasonWatchedBatch(progressList())
+
+        assertEquals(2, requests.size)
+        assertEquals(listOf(5, 6), requests[1].episodeNumbersForSeason(2))
+    }
+
+    @Test
+    fun `batch remove retries with remapped episode numbers when Trakt cannot find original episodes`() = runTest {
+        val service = service()
+        val requests = mutableListOf<TraktHistoryRemoveRequestDto>()
+        coEvery { traktApi.removeHistory(any(), capture(requests)) } returnsMany listOf(
+            Response.success(
+                TraktHistoryRemoveResponseDto(
+                    deleted = TraktHistoryRemoveCountDto(episodes = 0),
+                    notFound = TraktHistoryRemoveNotFoundDto(episodes = listOf(notFoundEpisode()))
+                )
+            ),
+            Response.success(TraktHistoryRemoveResponseDto(deleted = TraktHistoryRemoveCountDto(episodes = 2)))
+        )
+        coEvery {
+            traktEpisodeMappingService.resolveEpisodeMapping(any(), any(), any(), 1, 1)
+        } returns EpisodeMappingEntry(season = 2, episode = 5, videoId = "trakt:10:2:5")
+        coEvery {
+            traktEpisodeMappingService.resolveEpisodeMapping(any(), any(), any(), 1, 2)
+        } returns EpisodeMappingEntry(season = 2, episode = 6, videoId = "trakt:10:2:6")
+
+        service.removeSeasonFromHistoryBatch("trakt:10", listOf(1 to 1, 1 to 2))
+
+        assertEquals(2, requests.size)
+        assertEquals(listOf(5, 6), requests[1].episodeNumbersForSeason(2))
+    }
+
     private fun service(): TraktProgressService {
         every { traktSettingsDataStore.continueWatchingDaysCap } returns MutableSharedFlow()
         coEvery { traktAuthService.executeAuthorizedWriteRequest<TraktHistoryAddResponseDto>(any()) } coAnswers {
@@ -161,6 +216,22 @@ class TraktProgressServiceTest {
             number = 1,
             ids = TraktIdsDto(trakt = 1001)
         )
+    }
+
+    private fun TraktHistoryAddRequestDto.episodeNumbersForSeason(season: Int): List<Int?> {
+        return shows.orEmpty()
+            .flatMap { it.seasons.orEmpty() }
+            .first { it.number == season }
+            .episodes.orEmpty()
+            .map { it.number }
+    }
+
+    private fun TraktHistoryRemoveRequestDto.episodeNumbersForSeason(season: Int): List<Int> {
+        return shows.orEmpty()
+            .flatMap { it.seasons.orEmpty() }
+            .first { it.number == season }
+            .episodes.orEmpty()
+            .map { it.number }
     }
 
     private suspend fun assertFailsWithIllegalStateException(block: suspend () -> Unit) {

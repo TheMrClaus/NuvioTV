@@ -113,6 +113,16 @@ class TraktProgressService @Inject constructor(
         val remappedEpisode: EpisodeMappingEntry? = null
     )
 
+    private data class BatchHistoryAddAttempt(
+        val response: Response<TraktHistoryAddResponseDto>,
+        val progressList: List<WatchProgress>
+    )
+
+    private data class BatchHistoryRemoveAttempt(
+        val response: Response<TraktHistoryRemoveResponseDto>,
+        val progressList: List<WatchProgress>
+    )
+
     private data class WatchedShowSeedsSnapshot(
         val seeds: List<WatchProgress>,
         val updatedAtMs: Long,
@@ -1820,19 +1830,12 @@ class TraktProgressService @Inject constructor(
             !notFound.ids.isNullOrEmpty()
     }
 
-    /**
-     * Mark multiple episodes as watched on Trakt in a single API call.
-     * Groups episodes by show and sends one POST /sync/history request.
-     */
-    suspend fun markSeasonWatchedBatch(progressList: List<WatchProgress>) {
-        if (progressList.isEmpty()) return
+    private fun buildBatchHistoryAddRequest(
+        progressList: List<WatchProgress>,
+        ids: TraktIdsDto,
+        watchedAt: String
+    ): TraktHistoryAddRequestDto {
         val first = progressList.first()
-        val ids = resolveHistoryIds(first)
-        if (!ids.hasAnyId()) {
-            Log.w(TAG, "markSeasonWatchedBatch: no valid Trakt IDs for ${first.contentId}")
-            return
-        }
-        val watchedAt = toTraktUtcDateTime(System.currentTimeMillis())
         val episodesBySeason = progressList
             .filter { it.season != null && it.episode != null }
             .groupBy { it.season!! }
@@ -1844,7 +1847,7 @@ class TraktProgressService @Inject constructor(
                     )
                 }
             }
-        val body = TraktHistoryAddRequestDto(
+        return TraktHistoryAddRequestDto(
             shows = listOf(
                 TraktHistoryShowAddDto(
                     title = first.name.takeIf { it.isNotBlank() },
@@ -1859,7 +1862,102 @@ class TraktProgressService @Inject constructor(
                 )
             )
         )
-        Log.d(TAG, "markSeasonWatchedBatch: ${progressList.size} episodes in ${episodesBySeason.size} season(s)")
+    }
+
+    private fun buildBatchHistoryRemoveRequest(
+        progressList: List<WatchProgress>,
+        ids: TraktIdsDto
+    ): TraktHistoryRemoveRequestDto {
+        val episodesBySeason = progressList
+            .filter { it.season != null && it.episode != null }
+            .groupBy { it.season!! }
+        return TraktHistoryRemoveRequestDto(
+            shows = listOf(
+                TraktHistoryShowRemoveDto(
+                    ids = ids,
+                    seasons = episodesBySeason.map { (seasonNumber, episodes) ->
+                        TraktHistorySeasonRemoveDto(
+                            number = seasonNumber,
+                            episodes = episodes.map { ep ->
+                                TraktHistoryEpisodeRemoveDto(number = ep.episode!!)
+                            }
+                        )
+                    }
+                )
+            )
+        )
+    }
+
+    private suspend fun remapBatchEpisodes(progressList: List<WatchProgress>): List<WatchProgress> {
+        return progressList.map { progress ->
+            val remapped = resolveCanonicalEpisodeMapping(progress)
+            if (remapped == null) {
+                progress
+            } else {
+                progress.copy(
+                    season = remapped.season,
+                    episode = remapped.episode,
+                    videoId = remapped.videoId ?: progress.videoId
+                )
+            }
+        }
+    }
+
+    private fun hasSameEpisodePairs(
+        original: List<WatchProgress>,
+        remapped: List<WatchProgress>
+    ): Boolean {
+        return original.map { it.season to it.episode } == remapped.map { it.season to it.episode }
+    }
+
+    private suspend fun attemptBatchRemapHistoryAdd(
+        originalProgressList: List<WatchProgress>,
+        ids: TraktIdsDto,
+        watchedAt: String
+    ): BatchHistoryAddAttempt? = runCatching {
+        val remappedList = remapBatchEpisodes(originalProgressList)
+        if (hasSameEpisodePairs(originalProgressList, remappedList)) return@runCatching null
+        val remappedBody = buildBatchHistoryAddRequest(remappedList, ids, watchedAt)
+        val retryResponse = traktAuthService.executeAuthorizedWriteRequest { authHeader ->
+            traktApi.addHistory(authHeader, remappedBody)
+        } ?: return@runCatching null
+        BatchHistoryAddAttempt(response = retryResponse, progressList = remappedList)
+    }.getOrElse { error ->
+        Log.w(TAG, "markSeasonWatchedBatch: episode remap fallback failed", error)
+        null
+    }
+
+    private suspend fun attemptBatchRemapHistoryRemove(
+        originalProgressList: List<WatchProgress>,
+        ids: TraktIdsDto
+    ): BatchHistoryRemoveAttempt? = runCatching {
+        val remappedList = remapBatchEpisodes(originalProgressList)
+        if (hasSameEpisodePairs(originalProgressList, remappedList)) return@runCatching null
+        val remappedBody = buildBatchHistoryRemoveRequest(remappedList, ids)
+        val retryResponse = traktAuthService.executeAuthorizedWriteRequest { authHeader ->
+            traktApi.removeHistory(authHeader, remappedBody)
+        } ?: return@runCatching null
+        BatchHistoryRemoveAttempt(response = retryResponse, progressList = remappedList)
+    }.getOrElse { error ->
+        Log.w(TAG, "removeSeasonFromHistoryBatch: episode remap fallback failed", error)
+        null
+    }
+
+    /**
+     * Mark multiple episodes as watched on Trakt in a single API call.
+     * Groups episodes by show and sends one POST /sync/history request.
+     */
+    suspend fun markSeasonWatchedBatch(progressList: List<WatchProgress>) {
+        if (progressList.isEmpty()) return
+        val first = progressList.first()
+        val ids = resolveHistoryIds(first)
+        if (!ids.hasAnyId()) {
+            Log.w(TAG, "markSeasonWatchedBatch: no valid Trakt IDs for ${first.contentId}")
+            return
+        }
+        val watchedAt = toTraktUtcDateTime(System.currentTimeMillis())
+        val body = buildBatchHistoryAddRequest(progressList, ids, watchedAt)
+        Log.d(TAG, "markSeasonWatchedBatch: ${progressList.size} episodes")
         val response = traktAuthService.executeAuthorizedWriteRequest { authHeader ->
             traktApi.addHistory(authHeader, body)
         }
@@ -1870,7 +1968,18 @@ class TraktProgressService @Inject constructor(
             hasHistoryAddNotFound(responseBody) ||
             !hasSuccessfulHistoryAdd(responseBody)
         ) {
-            throw IllegalStateException("Trakt batch mark watched failed (${response?.code()})")
+            val remappedAttempt = attemptBatchRemapHistoryAdd(
+                originalProgressList = progressList,
+                ids = ids,
+                watchedAt = watchedAt
+            )
+            val remappedBody = remappedAttempt?.response?.body()
+            if (remappedAttempt?.response?.isSuccessful != true ||
+                hasHistoryAddNotFound(remappedBody) ||
+                !hasSuccessfulHistoryAdd(remappedBody)
+            ) {
+                throw IllegalStateException("Trakt batch mark watched failed (${remappedAttempt?.response?.code() ?: response?.code()})")
+            }
         }
         refreshNow()
     }
@@ -1888,23 +1997,25 @@ class TraktProgressService @Inject constructor(
             Log.w(TAG, "removeSeasonFromHistoryBatch: no valid Trakt IDs for $contentId")
             return
         }
-        val episodesBySeason = episodes.groupBy { it.first }
-        val body = TraktHistoryRemoveRequestDto(
-            shows = listOf(
-                TraktHistoryShowRemoveDto(
-                    ids = ids,
-                    seasons = episodesBySeason.map { (seasonNumber, eps) ->
-                        TraktHistorySeasonRemoveDto(
-                            number = seasonNumber,
-                            episodes = eps.map { (_, episodeNumber) ->
-                                TraktHistoryEpisodeRemoveDto(number = episodeNumber)
-                            }
-                        )
-                    }
-                )
+        val progressList = episodes.map { (season, episode) ->
+            WatchProgress(
+                contentId = contentId,
+                contentType = "series",
+                name = "",
+                poster = null,
+                backdrop = null,
+                logo = null,
+                videoId = "$contentId:$season:$episode",
+                season = season,
+                episode = episode,
+                episodeTitle = null,
+                position = 0L,
+                duration = 1L,
+                lastWatched = System.currentTimeMillis()
             )
-        )
-        Log.d(TAG, "removeSeasonFromHistoryBatch: ${episodes.size} episodes in ${episodesBySeason.size} season(s)")
+        }
+        val body = buildBatchHistoryRemoveRequest(progressList, ids)
+        Log.d(TAG, "removeSeasonFromHistoryBatch: ${episodes.size} episodes")
         val response = traktAuthService.executeAuthorizedWriteRequest { authHeader ->
             traktApi.removeHistory(authHeader, body)
         }
@@ -1914,7 +2025,17 @@ class TraktProgressService @Inject constructor(
             hasHistoryRemoveNotFound(responseBody) ||
             !hasSuccessfulHistoryRemove(responseBody)
         ) {
-            throw IllegalStateException("Trakt batch remove watched failed (${response?.code()})")
+            val remappedAttempt = attemptBatchRemapHistoryRemove(
+                originalProgressList = progressList,
+                ids = ids
+            )
+            val remappedBody = remappedAttempt?.response?.body()
+            if (remappedAttempt?.response?.isSuccessful != true ||
+                hasHistoryRemoveNotFound(remappedBody) ||
+                !hasSuccessfulHistoryRemove(remappedBody)
+            ) {
+                throw IllegalStateException("Trakt batch remove watched failed (${remappedAttempt?.response?.code() ?: response?.code()})")
+            }
         }
         refreshNow()
     }
