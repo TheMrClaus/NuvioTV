@@ -55,3 +55,4 @@ avatars/
 infra/aiometadata-selfhost/docker-compose.override.yml
 infra/aiometadata-selfhost/.env
 logs
+.worktrees/
