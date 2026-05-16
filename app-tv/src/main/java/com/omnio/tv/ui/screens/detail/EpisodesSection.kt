@@ -927,9 +927,11 @@ private fun EpisodeOptionsDialog(
 fun SeasonOptionsDialog(
     season: Int,
     isFullyWatched: Boolean,
+    hasPreviousSeasons: Boolean,
     onDismiss: () -> Unit,
     onMarkSeasonWatched: () -> Unit,
-    onMarkSeasonUnwatched: () -> Unit
+    onMarkSeasonUnwatched: () -> Unit,
+    onMarkAllPreviousSeasonsWatched: () -> Unit
 ) {
     val primaryFocusRequester = remember { FocusRequester() }
 
@@ -953,6 +955,19 @@ fun SeasonOptionsDialog(
             )
         ) {
             Text(if (isFullyWatched) stringResource(R.string.episodes_mark_season_unwatched) else stringResource(R.string.episodes_mark_season_watched))
+        }
+
+        if (hasPreviousSeasons) {
+            Button(
+                onClick = onMarkAllPreviousSeasonsWatched,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.colors(
+                    containerColor = OmnioColors.BackgroundCard,
+                    contentColor = OmnioColors.TextPrimary
+                )
+            ) {
+                Text(stringResource(R.string.episodes_mark_all_previous_seasons_watched))
+            }
         }
     }
 }

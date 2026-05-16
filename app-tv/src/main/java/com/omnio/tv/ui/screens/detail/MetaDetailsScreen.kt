@@ -524,6 +524,9 @@ fun MetaDetailsScreen(
                     onMarkSeasonUnwatched = { season ->
                         viewModel.onEvent(MetaDetailsEvent.OnMarkSeasonUnwatched(season))
                     },
+                    onMarkAllPreviousSeasonsWatched = { season ->
+                        viewModel.onEvent(MetaDetailsEvent.OnMarkAllPreviousSeasonsWatched(season))
+                    },
                     onMarkPreviousEpisodesWatched = { video ->
                         viewModel.onEvent(MetaDetailsEvent.OnMarkPreviousEpisodesWatched(video))
                     },
@@ -718,6 +721,7 @@ private fun MetaDetailsContent(
     onToggleEpisodeWatched: (Video) -> Unit,
     onMarkSeasonWatched: (Int) -> Unit,
     onMarkSeasonUnwatched: (Int) -> Unit,
+    onMarkAllPreviousSeasonsWatched: (Int) -> Unit,
     onMarkPreviousEpisodesWatched: (Video) -> Unit,
     isSeasonFullyWatched: (Int) -> Boolean,
     trailerUrl: String?,
@@ -1672,6 +1676,7 @@ private fun MetaDetailsContent(
             SeasonOptionsDialog(
                 season = season,
                 isFullyWatched = isSeasonFullyWatched(season),
+                hasPreviousSeasons = seasons.any { it in 1 until season },
                 onDismiss = { seasonOptionsDialogSeason = null },
                 onMarkSeasonWatched = {
                     onMarkSeasonWatched(season)
@@ -1679,6 +1684,10 @@ private fun MetaDetailsContent(
                 },
                 onMarkSeasonUnwatched = {
                     onMarkSeasonUnwatched(season)
+                    seasonOptionsDialogSeason = null
+                },
+                onMarkAllPreviousSeasonsWatched = {
+                    onMarkAllPreviousSeasonsWatched(season)
                     seasonOptionsDialogSeason = null
                 }
             )
