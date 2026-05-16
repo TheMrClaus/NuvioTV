@@ -83,6 +83,7 @@
     <string name="episodes_play">चलाएँ</string>
     <string name="play_manually">मैन्युअली चलाएँ</string>
     <string name="episodes_season_actions">सीज़न एक्शन</string>
+    <string name="episodes_mark_all_previous_seasons_watched">सभी पिछले सीज़न को देखा हुआ मार्क करें</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">लाइब्रेरी में जोड़ा गया</string>
@@ -95,6 +96,7 @@
     <string name="detail_all_episodes_watched">सभी एपिसोड पहले ही देखे जा चुके हैं</string>
     <string name="detail_no_watched_episodes">इस सीज़न में कोई देखा हुआ एपिसोड नहीं है</string>
     <string name="detail_all_previous_watched">सभी पिछले एपिसोड पहले ही देखे जा चुके हैं</string>
+    <string name="detail_all_previous_seasons_watched">सभी पिछले सीज़न पहले ही देखे जा चुके हैं</string>
     <string name="detail_marked_episodes_watched">देखे हुए मार्क किए गए एपिसोड: %1$d</string>
     <string name="detail_marked_episodes_unwatched">अनदेखे मार्क किए गए एपिसोड: %1$d</string>
     <string name="detail_marked_previous_watched">देखे हुए मार्क किए गए पिछले एपिसोड: %1$d</string>

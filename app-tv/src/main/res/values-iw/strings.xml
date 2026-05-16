@@ -86,6 +86,7 @@
     <string name="episodes_play">הפעל</string>
     <string name="play_manually">הפעל ידנית</string>
     <string name="episodes_season_actions">פעולות עונה</string>
+    <string name="episodes_mark_all_previous_seasons_watched">סמן את כל העונות הקודמות כנצפות</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">נוסף לספרייה</string>
@@ -98,6 +99,7 @@
     <string name="detail_all_episodes_watched">כל הפרקים כבר נצפו</string>
     <string name="detail_no_watched_episodes">אין פרקים שנצפו בעונה זו</string>
     <string name="detail_all_previous_watched">כל הפרקים הקודמים כבר נצפו</string>
+    <string name="detail_all_previous_seasons_watched">כל העונות הקודמות כבר נצפו</string>
     <string name="detail_marked_episodes_watched">פרקים שסומנו כנצפים: %1$d</string>
     <string name="detail_marked_episodes_unwatched">פרקים שסומנו כלא נצפים: %1$d</string>
     <string name="detail_marked_previous_watched">פרקים קודמים שסומנו כנצפים: %1$d</string>

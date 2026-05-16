@@ -58,6 +58,7 @@
     <string name="episodes_play">Odtwórz</string>
     <string name="play_manually">Odtwórz ręcznie</string>
     <string name="episodes_season_actions">Akcje sezonu</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Oznacz wszystkie poprzednie sezony jako obejrzane</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Dodano do biblioteki</string>
@@ -70,6 +71,7 @@
     <string name="detail_all_episodes_watched">Wszystkie odcinki już obejrzane</string>
     <string name="detail_no_watched_episodes">Brak obejrzanych odcinków w tym sezonie</string>
     <string name="detail_all_previous_watched">Wszystkie poprzednie odcinki już obejrzane</string>
+    <string name="detail_all_previous_seasons_watched">Wszystkie poprzednie sezony już obejrzane</string>
     <string name="detail_marked_episodes_watched">Odcinki oznaczone jako obejrzane: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Odcinki oznaczone jako nieobejrzane: %1$d</string>
     <string name="detail_marked_previous_watched">Poprzednie odcinki oznaczone jako obejrzane: %1$d</string>

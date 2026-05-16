@@ -58,6 +58,7 @@
     <string name="episodes_mark_previous_watched">Marchează precedentele din acest sezon ca vizionate</string>
     <string name="episodes_play">Redă</string>
     <string name="episodes_season_actions">Acțiuni sezon</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Marchează toate sezoanele anterioare ca vizionate</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Adăugat în bibliotecă</string>
@@ -70,6 +71,7 @@
     <string name="detail_all_episodes_watched">Toate episoadele sunt deja vizionate</string>
     <string name="detail_no_watched_episodes">Niciun episod vizionat în acest sezon</string>
     <string name="detail_all_previous_watched">Toate episoadele anterioare sunt deja vizionate</string>
+    <string name="detail_all_previous_seasons_watched">Toate sezoanele anterioare sunt deja vizionate</string>
     <string name="detail_marked_episodes_watched">Episoade marcate ca vizionate: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Episoade marcate ca necitite: %1$d</string>
     <string name="detail_marked_previous_watched">Episoadele anterioare marcate ca vizionate: %1$d</string>

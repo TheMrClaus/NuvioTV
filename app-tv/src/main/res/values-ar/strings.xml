@@ -87,6 +87,7 @@
     <string name="episodes_play">تشغيل</string>
     <string name="play_manually">تشغيل يدوي</string>
     <string name="episodes_season_actions">إجراءات الموسم</string>
+    <string name="episodes_mark_all_previous_seasons_watched">تحديد جميع المواسم السابقة كمشاهدة</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">تمت الإضافة للمكتبة</string>
@@ -99,6 +100,7 @@
     <string name="detail_all_episodes_watched">جميع الحلقات تمت مشاهدتها بالفعل</string>
     <string name="detail_no_watched_episodes">لا توجد حلقات مشاهدة في هذا الموسم</string>
     <string name="detail_all_previous_watched">جميع الحلقات السابقة تمت مشاهدتها بالفعل</string>
+    <string name="detail_all_previous_seasons_watched">جميع المواسم السابقة تمت مشاهدتها بالفعل</string>
     <string name="detail_marked_episodes_watched">الحلقات المحددة كمشاهدة: %1$d</string>
     <string name="detail_marked_episodes_unwatched">الحلقات المحددة كغير مشاهدة: %1$d</string>
     <string name="detail_marked_previous_watched">الحلقات السابقة المحددة كمشاهدة: %1$d</string>

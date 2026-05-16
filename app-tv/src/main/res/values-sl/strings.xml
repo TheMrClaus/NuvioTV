@@ -84,6 +84,7 @@
     <string name="episodes_play">Predvajaj</string>
 	<string name="play_manually">Ročna izbira vira</string>															  
     <string name="episodes_season_actions">Upravljanje sezone</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Označi vse prejšnje sezone kot ogledane</string>
 	
 	
 	
@@ -109,7 +110,8 @@
     <string name="detail_movie_marked_unwatched">Označeno kot neogledano</string>
     <string name="detail_all_episodes_watched">Vse epizode so že ogledane</string>
     <string name="detail_no_watched_episodes">V tej sezoni ni ogledanih epizod</string>
-    <string name="detail_all_previous_watched">Vse prejšnje epizode so že ogledane</string>
+    <string name="detail_all_previous_watched">Vse prejšnje epizode so že ogledane</string>
+    <string name="detail_all_previous_seasons_watched">Vse prejšnje sezone so že ogledane</string>
     <string name="detail_marked_episodes_watched">Epizode, označene kot ogledane: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Epizode, označene kot neogledane: %1$d</string>
     <string name="detail_marked_previous_watched">Prejšnje epizode, označene kot ogledane: %1$d</string>																		

@@ -87,6 +87,7 @@
     <string name="episodes_play">Spill av</string>
     <string name="play_manually">Spill av manuelt</string>
     <string name="episodes_season_actions">Sesonghandlinger</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Merk alle tidligere sesonger som sett</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Lagt til i biblioteket</string>
@@ -99,6 +100,7 @@
     <string name="detail_all_episodes_watched">Alle episoder allerede sett</string>
     <string name="detail_no_watched_episodes">Ingen sette episoder i denne sesongen</string>
     <string name="detail_all_previous_watched">Alle tidligere episoder allerede sett</string>
+    <string name="detail_all_previous_seasons_watched">Alle tidligere sesonger allerede sett</string>
     <string name="detail_marked_episodes_watched">Episoder markert som sett: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Episoder markert som usett: %1$d</string>
     <string name="detail_marked_previous_watched">Tidligere episoder markert som sett: %1$d</string>

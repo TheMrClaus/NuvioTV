@@ -87,6 +87,7 @@
     <string name="episodes_play">Assistir</string>
     <string name="play_manually">Assistir manualmente</string>
     <string name="episodes_season_actions">Opções da temporada</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Marcar todas as temporadas anteriores como assistidas</string>
         
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Adicionado à Biblioteca</string>
@@ -99,6 +100,7 @@
     <string name="detail_all_episodes_watched">Todos os episódios já foram assistidos</string>
     <string name="detail_no_watched_episodes">Nenhum episódio assistido nesta temporada</string>
     <string name="detail_all_previous_watched">Todos os episódios anteriores já foram assistidos</string>
+    <string name="detail_all_previous_seasons_watched">Todas as temporadas anteriores já foram assistidas</string>
     <string name="detail_marked_episodes_watched">%1$d episódios marcados como assistidos</string>
     <string name="detail_marked_episodes_unwatched">%1$d episódios desmarcados</string>
     <string name="detail_marked_previous_watched">%1$d episódios anteriores marcados</string>

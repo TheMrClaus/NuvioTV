@@ -87,6 +87,7 @@
     <string name="episodes_play">再生</string>
     <string name="play_manually">手動で再生</string>
     <string name="episodes_season_actions">シーズンの操作</string>
+    <string name="episodes_mark_all_previous_seasons_watched">前のシーズンをすべて視聴済みにする</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">ライブラリに追加しました</string>
@@ -99,6 +100,7 @@
     <string name="detail_all_episodes_watched">すべてのエピソードは視聴済みです</string>
     <string name="detail_no_watched_episodes">このシーズンに視聴済みエピソードはありません</string>
     <string name="detail_all_previous_watched">前のエピソードはすべて視聴済みです</string>
+    <string name="detail_all_previous_seasons_watched">前のシーズンはすべて視聴済みです</string>
     <string name="detail_marked_episodes_watched">視聴済みにしたエピソード: %1$d</string>
     <string name="detail_marked_episodes_unwatched">未視聴にしたエピソード: %1$d</string>
     <string name="detail_marked_previous_watched">視聴済みにした前のエピソード: %1$d</string>

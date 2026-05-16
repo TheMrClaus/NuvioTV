@@ -86,6 +86,7 @@
     <string name="episodes_play">Spela</string>
     <string name="play_manually">Spela manuellt</string>
     <string name="episodes_season_actions">Säsongsåtgärder</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Markera alla föregående säsonger som sedda</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Lagt till i biblioteket</string>
@@ -98,6 +99,7 @@
     <string name="detail_all_episodes_watched">Alla avsnitt redan sedda</string>
     <string name="detail_no_watched_episodes">Inga sedda avsnitt i denna säsong</string>
     <string name="detail_all_previous_watched">Alla föregående avsnitt redan sedda</string>
+    <string name="detail_all_previous_seasons_watched">Alla föregående säsonger redan sedda</string>
     <string name="detail_marked_episodes_watched">Avsnitt markerade som sedda: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Avsnitt markerade som osedda: %1$d</string>
     <string name="detail_marked_previous_watched">Föregående avsnitt markerade som sedda: %1$d</string>

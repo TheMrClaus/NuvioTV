@@ -81,6 +81,7 @@
     <string name="episodes_play">Přehrát</string>
     <string name="play_manually">Přehrát manuálně</string>
     <string name="episodes_season_actions">Akce série</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Označit všechny předchozí série jako zhlédnuté</string>
 
     <string name="detail_added_to_library">Přidáno do knihovny</string>
     <string name="detail_removed_from_library">Odstraněno z knihovny</string>
@@ -92,6 +93,7 @@
     <string name="detail_all_episodes_watched">Všechny epizody již zhlédnuty</string>
     <string name="detail_no_watched_episodes">Žádné zhlédnuté epizody v této sérii</string>
     <string name="detail_all_previous_watched">Všechny předchozí epizody již zhlédnuty</string>
+    <string name="detail_all_previous_seasons_watched">Všechny předchozí série již zhlédnuty</string>
     <string name="detail_marked_episodes_watched">Epizody označené jako zhlédnuté: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Epizody označené jako nezhlédnuté: %1$d</string>
     <string name="detail_marked_previous_watched">Předchozí epizody označené jako zhlédnuté: %1$d</string>

@@ -87,6 +87,7 @@
     <string name="episodes_play">Αναπαραγωγή</string>
     <string name="play_manually">Αναπαραγωγή χειροκίνητα</string>
     <string name="episodes_season_actions">Ενέργειες σεζόν</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Επισήμανση όλων των προηγούμενων σεζόν ως προβληθέντων</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Προστέθηκε στη βιβλιοθήκη</string>
@@ -99,6 +100,7 @@
     <string name="detail_all_episodes_watched">Όλα τα επεισόδια έχουν ήδη προβληθεί</string>
     <string name="detail_no_watched_episodes">Δεν υπάρχουν προβληθέντα επεισόδια σε αυτή τη σεζόν</string>
     <string name="detail_all_previous_watched">Όλα τα προηγούμενα επεισόδια έχουν ήδη προβληθεί</string>
+    <string name="detail_all_previous_seasons_watched">Όλες οι προηγούμενες σεζόν έχουν ήδη προβληθεί</string>
     <string name="detail_marked_episodes_watched">Επισημάνθηκαν ως προβληθέντα επεισόδια: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Επισημάνθηκαν ως μη προβληθέντα επεισόδια: %1$d</string>
     <string name="detail_marked_previous_watched">Επισημάνθηκαν ως προβληθέντα προηγούμενα επεισόδια: %1$d</string>

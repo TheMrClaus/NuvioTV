@@ -87,6 +87,7 @@
     <string name="episodes_play">Riproduci</string>
     <string name="play_manually">Riproduci manualmente</string>
     <string name="episodes_season_actions">Azioni stagione</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Segna tutte le stagioni precedenti come viste</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Aggiunto alla libreria</string>
@@ -99,6 +100,7 @@
     <string name="detail_all_episodes_watched">Hai visto tutti gli episodi</string>
     <string name="detail_no_watched_episodes">Non hai visto alcun episodio di questa stagione</string>
     <string name="detail_all_previous_watched">Hai visto tutti gli episodi precedenti</string>
+    <string name="detail_all_previous_seasons_watched">Hai visto tutte le stagioni precedenti</string>
     <string name="detail_marked_episodes_watched">Episodi segnati come visti: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Episodi segnati come non visti: %1$d</string>
     <string name="detail_marked_previous_watched">Episodi precedenti segnati come visti: %1$d</string>

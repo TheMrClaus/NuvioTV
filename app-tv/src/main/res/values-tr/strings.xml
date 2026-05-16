@@ -124,6 +124,7 @@
     <string name="episodes_play">Oynat</string>
     <string name="play_manually">Manuel oynat</string>
     <string name="episodes_season_actions">Sezon ayarları</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Önceki tüm sezonları izlendi olarak işaretle</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Kütüphaneye eklendi</string>
@@ -136,6 +137,7 @@
     <string name="detail_all_episodes_watched">Tüm bölümler zaten izlenmiş</string>
     <string name="detail_no_watched_episodes">Bu sezonda izlenen bölüm yok</string>
     <string name="detail_all_previous_watched">Önceki tüm bölümler zaten izlenmiş</string>
+    <string name="detail_all_previous_seasons_watched">Önceki tüm sezonlar zaten izlenmiş</string>
     <string name="detail_marked_episodes_watched">İzlendi olarak işaretlenen bölümler: %1$d</string>
     <string name="detail_marked_episodes_unwatched">İzlenmedi olarak işaretlenen bölümler: %1$d</string>
     <string name="detail_marked_previous_watched">İzlendi olarak işaretlenen önceki bölümler: %1$d</string>

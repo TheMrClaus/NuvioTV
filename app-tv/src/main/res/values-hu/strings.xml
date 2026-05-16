@@ -87,6 +87,7 @@
     <string name="episodes_play">Lejátszás</string>
     <string name="play_manually">Lejátszás forrásválasztással</string>
     <string name="episodes_season_actions">Évadműveletek</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Összes korábbi évad megjelölése megnézettként</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Hozzáadva a könyvtárhoz</string>
@@ -99,6 +100,7 @@
     <string name="detail_all_episodes_watched">Minden epizód megnézve</string>
     <string name="detail_no_watched_episodes">Nincsenek megnézett epizódok ebben az évadban</string>
     <string name="detail_all_previous_watched">Minden korábbi epizód megnézve</string>
+    <string name="detail_all_previous_seasons_watched">Minden korábbi évad megnézve</string>
     <string name="detail_marked_episodes_watched">Megnézettként megjelölt epizódok: %1$d</string>
     <string name="detail_marked_episodes_unwatched">Nem látottként megjelölt epizódok: %1$d</string>
     <string name="detail_marked_previous_watched">Megnézettként megjelölt korábbi epizódok: %1$d</string>

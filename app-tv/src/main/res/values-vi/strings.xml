@@ -59,6 +59,7 @@
     <string name="episodes_mark_previous_watched">Đánh dấu các tập trước đã xem</string>
     <string name="episodes_play">Xem</string>
     <string name="episodes_season_actions">Thao tác với phần phim</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Đánh dấu tất cả các phần trước đã xem</string>
 
     <!-- MetaDetailsViewModel -->
     <string name="detail_added_to_library">Đã thêm vào thư viện</string>
@@ -71,6 +72,7 @@
     <string name="detail_all_episodes_watched">Tất cả tập đã được xem</string>
     <string name="detail_no_watched_episodes">Chưa xem tập nào trong phần này</string>
     <string name="detail_all_previous_watched">Tất cả tập trước đã được xem</string>
+    <string name="detail_all_previous_seasons_watched">Tất cả các phần trước đã được xem</string>
     <string name="detail_marked_episodes_watched">Đã đánh dấu %1$d tập đã xem</string>
     <string name="detail_marked_episodes_unwatched">Đã đánh dấu %1$d tập chưa xem</string>
     <string name="detail_marked_previous_watched">Đã đánh dấu %1$d tập trước đã xem</string>

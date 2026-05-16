@@ -52,6 +52,8 @@
     <string name="episodes_mark_previous_watched">Označiť predchádzajúce epizódy ako videné</string>
     <string name="episodes_play">Prehrať</string>
     <string name="episodes_season_actions">Akcie série</string>
+    <string name="episodes_mark_all_previous_seasons_watched">Označiť všetky predchádzajúce série ako videné</string>
+    <string name="detail_all_previous_seasons_watched">Všetky predchádzajúce série už videné</string>
 
     <!-- MetaDetailsScreen -->
     <string name="detail_tab_cast">Tvorcovia a herci</string>
