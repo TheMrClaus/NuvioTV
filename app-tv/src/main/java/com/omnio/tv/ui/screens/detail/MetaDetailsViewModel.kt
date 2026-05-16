@@ -286,6 +286,7 @@ class MetaDetailsViewModel @Inject constructor(
             is MetaDetailsEvent.OnToggleEpisodeWatched -> toggleEpisodeWatched(event.video)
             is MetaDetailsEvent.OnMarkSeasonWatched -> markSeasonWatched(event.season)
             is MetaDetailsEvent.OnMarkSeasonUnwatched -> markSeasonUnwatched(event.season)
+            is MetaDetailsEvent.OnMarkAllPreviousSeasonsWatched -> markAllPreviousSeasonsWatched(event.season)
             is MetaDetailsEvent.OnMarkPreviousEpisodesWatched -> markPreviousEpisodesWatched(event.video)
             MetaDetailsEvent.OnLibraryLongPress -> openListPicker()
             is MetaDetailsEvent.OnPickerMembershipToggled -> togglePickerMembership(event.listKey)
@@ -1716,6 +1717,40 @@ class MetaDetailsViewModel @Inject constructor(
                 it.copy(episodeWatchedPendingKeys = it.episodeWatchedPendingKeys - pendingKeys)
             }
             showMessage(context.getString(R.string.detail_marked_episodes_unwatched, watched.size))
+        }
+    }
+
+    private fun markAllPreviousSeasonsWatched(currentSeason: Int) {
+        val meta = _uiState.value.meta ?: return
+        if (currentSeason <= 1) return
+        suppressSeasonAutoSwitch = true
+        viewModelScope.launch {
+            val state = _uiState.value
+            val unwatched = selectPreviousSeasonsEpisodes(meta, currentSeason) { s, e ->
+                state.episodeProgressMap[s to e]?.isCompleted() == true
+                    || state.watchedEpisodes.contains(s to e)
+            }
+            if (unwatched.isEmpty()) {
+                showMessage(context.getString(R.string.detail_all_previous_seasons_watched))
+                return@launch
+            }
+
+            val pendingKeys = unwatched.map { episodePendingKey(it) }.toSet()
+            _uiState.update {
+                it.copy(episodeWatchedPendingKeys = it.episodeWatchedPendingKeys + pendingKeys)
+            }
+
+            runCatching {
+                val progressList = unwatched.map { buildCompletedEpisodeProgress(meta, it) }
+                watchProgressRepository.markAsCompletedBatch(progressList)
+            }.onFailure { error ->
+                Log.w(TAG, "Failed to batch mark previous seasons < $currentSeason as watched: ${error.message}")
+            }
+
+            _uiState.update {
+                it.copy(episodeWatchedPendingKeys = it.episodeWatchedPendingKeys - pendingKeys)
+            }
+            showMessage(context.getString(R.string.detail_marked_episodes_watched, unwatched.size))
         }
     }
 
