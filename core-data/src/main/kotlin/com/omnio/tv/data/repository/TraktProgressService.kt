@@ -15,6 +15,7 @@ import com.omnio.tv.data.remote.dto.trakt.TraktHistoryShowAddDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryMovieAddDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryEpisodeRemoveDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryRemoveRequestDto
+import com.omnio.tv.data.remote.dto.trakt.TraktHistoryRemoveResponseDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistorySeasonRemoveDto
 import com.omnio.tv.data.remote.dto.trakt.TraktHistoryShowRemoveDto
 import com.omnio.tv.data.remote.dto.trakt.TraktMovieDto
@@ -721,7 +722,14 @@ class TraktProgressService @Inject constructor(
         val response = traktAuthService.executeAuthorizedWriteRequest { authHeader ->
             traktApi.removeHistory(authHeader, removeBody)
         }
-        Log.d(TAG, "removeFromHistory RESPONSE: code=${response?.code()} body=${response?.body()}")
+        val responseBody = response?.body()
+        Log.d(TAG, "removeFromHistory RESPONSE: code=${response?.code()} body=$responseBody")
+        if (response?.isSuccessful != true ||
+            hasHistoryRemoveNotFound(responseBody) ||
+            !hasSuccessfulHistoryRemove(responseBody)
+        ) {
+            throw IllegalStateException("Trakt remove watched failed (${response?.code()})")
+        }
 
         if (!likelySeries) {
             setMovieWatchedInCache(
@@ -1795,6 +1803,23 @@ class TraktProgressService @Inject constructor(
             !notFound.episodes.isNullOrEmpty()
     }
 
+    private fun hasSuccessfulHistoryRemove(body: TraktHistoryRemoveResponseDto?): Boolean {
+        val deleted = body?.deleted ?: return false
+        return (deleted.movies ?: 0) > 0 ||
+            (deleted.episodes ?: 0) > 0 ||
+            (deleted.shows ?: 0) > 0 ||
+            (deleted.seasons ?: 0) > 0
+    }
+
+    private fun hasHistoryRemoveNotFound(body: TraktHistoryRemoveResponseDto?): Boolean {
+        val notFound = body?.notFound ?: return false
+        return !notFound.movies.isNullOrEmpty() ||
+            !notFound.shows.isNullOrEmpty() ||
+            !notFound.seasons.isNullOrEmpty() ||
+            !notFound.episodes.isNullOrEmpty() ||
+            !notFound.ids.isNullOrEmpty()
+    }
+
     /**
      * Mark multiple episodes as watched on Trakt in a single API call.
      * Groups episodes by show and sends one POST /sync/history request.
@@ -1840,7 +1865,11 @@ class TraktProgressService @Inject constructor(
         }
         Log.d(TAG, "markSeasonWatchedBatch RESPONSE: code=${response?.code()} " +
             "added=${response?.body()?.added}")
-        if (response?.isSuccessful != true) {
+        val responseBody = response?.body()
+        if (response?.isSuccessful != true ||
+            hasHistoryAddNotFound(responseBody) ||
+            !hasSuccessfulHistoryAdd(responseBody)
+        ) {
             throw IllegalStateException("Trakt batch mark watched failed (${response?.code()})")
         }
         refreshNow()
@@ -1879,7 +1908,14 @@ class TraktProgressService @Inject constructor(
         val response = traktAuthService.executeAuthorizedWriteRequest { authHeader ->
             traktApi.removeHistory(authHeader, body)
         }
+        val responseBody = response?.body()
         Log.d(TAG, "removeSeasonFromHistoryBatch RESPONSE: code=${response?.code()}")
+        if (response?.isSuccessful != true ||
+            hasHistoryRemoveNotFound(responseBody) ||
+            !hasSuccessfulHistoryRemove(responseBody)
+        ) {
+            throw IllegalStateException("Trakt batch remove watched failed (${response?.code()})")
+        }
         refreshNow()
     }
 
