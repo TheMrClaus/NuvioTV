@@ -166,6 +166,23 @@ class TraktProgressServiceTest {
         assertEquals(listOf(5, 6), requests[1].episodeNumbersForSeason(2))
     }
 
+    @Test
+    fun `single history add accepts TMDB only content ids`() = runTest {
+        val service = service()
+        val requests = mutableListOf<TraktHistoryAddRequestDto>()
+        coEvery { traktApi.addHistory(any(), capture(requests)) } returns Response.success(
+            TraktHistoryAddResponseDto(added = TraktHistoryRemoveCountDto(movies = 1))
+        )
+
+        service.markAsWatched(
+            progress = movieProgress(contentId = "tmdb:123"),
+            title = "Movie",
+            year = 2024
+        )
+
+        assertEquals(123, requests.single().movies?.single()?.ids?.tmdb)
+    }
+
     private fun service(): TraktProgressService {
         every { traktSettingsDataStore.continueWatchingDaysCap } returns MutableSharedFlow()
         coEvery { traktAuthService.executeAuthorizedWriteRequest<TraktHistoryAddResponseDto>(any()) } coAnswers {
@@ -203,6 +220,24 @@ class TraktProgressServiceTest {
             videoId = videoId,
             season = season,
             episode = episode,
+            episodeTitle = null,
+            position = 1L,
+            duration = 1L,
+            lastWatched = 1L
+        )
+    }
+
+    private fun movieProgress(contentId: String): WatchProgress {
+        return WatchProgress(
+            contentId = contentId,
+            contentType = "movie",
+            name = "Movie",
+            poster = null,
+            backdrop = null,
+            logo = null,
+            videoId = contentId,
+            season = null,
+            episode = null,
             episodeTitle = null,
             position = 1L,
             duration = 1L,
