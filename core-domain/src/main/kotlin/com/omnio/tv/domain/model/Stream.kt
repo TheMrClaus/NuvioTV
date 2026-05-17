@@ -18,7 +18,8 @@ data class Stream(
     val addonLogo: String?,
     val sourceProvider: String? = null,
     val providerItemId: String? = null,
-    val providerMediaSourceId: String? = null
+    val providerMediaSourceId: String? = null,
+    val sourceCloudMetadata: SourceCloudStreamMetadata? = null
 ) {
     /**
      * Returns the primary stream source URL

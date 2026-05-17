@@ -7,9 +7,10 @@ import com.omnio.tv.domain.model.Stream
 
 object StreamAutoPlaySelector {
     private val providerPriority = mapOf(
-        "emby" to 0,
-        "jellyfin" to 1,
-        "plex" to 2
+        "source_cloud" to 0,
+        "emby" to 1,
+        "jellyfin" to 2,
+        "plex" to 3
     )
 
     fun orderAddonStreams(
@@ -19,14 +20,13 @@ object StreamAutoPlaySelector {
         if (streams.isEmpty()) return streams
 
         val providerEntries = streams.filter { group ->
-            group.streams.any { !it.sourceProvider.isNullOrBlank() }
+            group.streams.any { it.providerPriority() != null }
         }
         val orderedProviders = providerEntries.sortedWith(
             compareBy<AddonStreams> { group ->
                 group.streams
                     .mapNotNull { stream ->
-                        val provider = stream.sourceProvider?.lowercase() ?: return@mapNotNull null
-                        providerPriority[provider]
+                        stream.providerPriority()
                     }
                     .minOrNull()
                     ?: Int.MAX_VALUE
@@ -34,7 +34,7 @@ object StreamAutoPlaySelector {
         )
 
         val nonProviderEntries = streams.filterNot { group ->
-            group.streams.any { !it.sourceProvider.isNullOrBlank() }
+            group.streams.any { it.providerPriority() != null }
         }
         val (addonEntries, pluginEntries) = nonProviderEntries.partition { it.addonName in installedOrder }
         val orderedAddons = addonEntries.sortedBy { installedOrder.indexOf(it.addonName) }
@@ -45,6 +45,11 @@ object StreamAutoPlaySelector {
         val url = stream.getStreamUrl() ?: return null
 
         return url
+    }
+
+    private fun Stream.providerPriority(): Int? {
+        val provider = sourceProvider?.lowercase() ?: return null
+        return providerPriority[provider]
     }
 
 
@@ -62,21 +67,28 @@ object StreamAutoPlaySelector {
     ): Stream? {
         if (streams.isEmpty()) return null
 
+        val hasSelectedFilters = selectedAddons.isNotEmpty() || selectedPlugins.isNotEmpty()
         val sourceScopedStreams = when (source) {
-            StreamAutoPlaySource.ALL_SOURCES -> streams
+            StreamAutoPlaySource.ALL_SOURCES -> streams.filter { stream ->
+                stream.sourceProvider.isNullOrBlank() || !hasSelectedFilters ||
+                    stream.addonName in selectedAddons || stream.addonName in selectedPlugins
+            }
             StreamAutoPlaySource.INSTALLED_ADDONS_ONLY -> streams.filter { stream ->
-                !stream.sourceProvider.isNullOrBlank() || stream.addonName in installedAddonNames
+                stream.addonName in installedAddonNames
             }
             StreamAutoPlaySource.ENABLED_PLUGINS_ONLY -> streams.filter { stream ->
-                stream.sourceProvider.isNullOrBlank() && stream.addonName !in installedAddonNames
+                if (!stream.sourceProvider.isNullOrBlank()) {
+                    stream.addonName in selectedPlugins
+                } else {
+                    stream.addonName !in installedAddonNames
+                }
             }
         }
         val candidateStreams = sourceScopedStreams.filter { stream ->
-            if (!stream.sourceProvider.isNullOrBlank()) {
-                return@filter true
-            }
             val isAddonStream = stream.addonName in installedAddonNames
-            if (isAddonStream) {
+            if (!stream.sourceProvider.isNullOrBlank()) {
+                !hasSelectedFilters || stream.addonName in selectedAddons || stream.addonName in selectedPlugins
+            } else if (isAddonStream) {
                 selectedAddons.isEmpty() || stream.addonName in selectedAddons
             } else {
                 selectedPlugins.isEmpty() || stream.addonName in selectedPlugins

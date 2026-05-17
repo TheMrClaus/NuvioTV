@@ -19,5 +19,6 @@ dependencies {
     api(libs.coroutines.core)
     api(libs.moshi)
     api(libs.kotlinx.serialization.json)
+    testImplementation(kotlin("test"))
     ksp(libs.moshi.codegen)
 }

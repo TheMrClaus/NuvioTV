@@ -19,6 +19,7 @@ import com.omnio.tv.data.remote.api.ImdbTapframeApi
 import com.omnio.tv.data.remote.api.MDBListApi
 import com.omnio.tv.data.remote.api.ParentalGuideApi
 import com.omnio.tv.data.remote.api.SeriesGraphApi
+import com.omnio.tv.data.remote.api.SourceCloudApi
 import com.omnio.tv.data.remote.api.TmdbApi
 import com.omnio.tv.data.remote.dto.aiometadata.AioConfigInnerDtoJsonAdapter
 import com.squareup.moshi.Moshi
@@ -365,6 +366,28 @@ object NetworkModule {
     @Singleton
     fun provideAioMetadataApi(@Named("aioMetadata") retrofit: Retrofit): AioMetadataApi =
         retrofit.create(AioMetadataApi::class.java)
+
+    @Provides
+    @Singleton
+    @Named("sourceCloud")
+    fun provideSourceCloudRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
+        val raw = BuildConfig.SOURCE_CLOUD_BASE_URL
+        val baseUrl = when {
+            raw.isBlank() -> "http://localhost/"
+            raw.endsWith('/') -> raw
+            else -> "$raw/"
+        }
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSourceCloudApi(@Named("sourceCloud") retrofit: Retrofit): SourceCloudApi =
+        retrofit.create(SourceCloudApi::class.java)
 
     // --- SeriesGraph API ---
 

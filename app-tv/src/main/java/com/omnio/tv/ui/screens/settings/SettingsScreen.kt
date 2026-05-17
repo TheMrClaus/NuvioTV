@@ -107,6 +107,7 @@ internal enum class SettingsCategory {
 
 private enum class IntegrationSettingsSection {
     Hub,
+    SourceCloud,
     Emby,
     Tmdb,
     MdbList,
@@ -277,6 +278,7 @@ fun SettingsScreen(
     }
     val railContainerFocusRequester = remember { FocusRequester() }
     val integrationHubFocusRequester = remember { FocusRequester() }
+    val integrationSourceCloudFocusRequester = remember { FocusRequester() }
     val integrationEmbyFocusRequester = remember { FocusRequester() }
     val integrationTmdbFocusRequester = remember { FocusRequester() }
     val integrationMdbListFocusRequester = remember { FocusRequester() }
@@ -492,6 +494,7 @@ fun SettingsScreen(
                                 null
                             },
                             hubFocusRequester = integrationHubFocusRequester,
+                            sourceCloudFocusRequester = integrationSourceCloudFocusRequester,
                             embyFocusRequester = integrationEmbyFocusRequester,
                             tmdbFocusRequester = integrationTmdbFocusRequester,
                             mdbListFocusRequester = integrationMdbListFocusRequester,
@@ -837,6 +840,7 @@ private fun IntegrationSettingsContent(
     onSelectSection: (IntegrationSettingsSection) -> Unit,
     initialFocusRequester: FocusRequester?,
     hubFocusRequester: FocusRequester,
+    sourceCloudFocusRequester: FocusRequester,
     embyFocusRequester: FocusRequester,
     tmdbFocusRequester: FocusRequester,
     mdbListFocusRequester: FocusRequester,
@@ -853,6 +857,7 @@ private fun IntegrationSettingsContent(
         if (!autoFocusEnabled) return@LaunchedEffect
         val requester = when (selectedSection) {
             IntegrationSettingsSection.Hub -> hubEntryFocusRequester
+            IntegrationSettingsSection.SourceCloud -> sourceCloudFocusRequester
             IntegrationSettingsSection.Emby -> embyFocusRequester
             IntegrationSettingsSection.Tmdb -> tmdbFocusRequester
             IntegrationSettingsSection.MdbList -> mdbListFocusRequester
@@ -883,12 +888,23 @@ private fun IntegrationSettingsContent(
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        item(key = "integration_hub_source_cloud") {
+                            SettingsActionRow(
+                                title = stringResource(R.string.source_cloud_title),
+                                subtitle = stringResource(R.string.source_cloud_subtitle),
+                                onClick = { onSelectSection(IntegrationSettingsSection.SourceCloud) },
+                                modifier = Modifier.focusRequester(hubEntryFocusRequester),
+                                cinematicStyle = true,
+                                kicker = "Sources",
+                                leadingContent = { IntegrationHubGlyph("SC") }
+                            )
+                        }
                         item(key = "integration_hub_emby") {
                             SettingsActionRow(
                                 title = stringResource(R.string.settings_emby_title),
                                 subtitle = stringResource(R.string.settings_emby_subtitle),
                                 onClick = { onSelectSection(IntegrationSettingsSection.Emby) },
-                                modifier = Modifier.focusRequester(hubEntryFocusRequester),
+                                modifier = Modifier,
                                 cinematicStyle = true,
                                 kicker = "Media Server",
                                 leadingContent = { IntegrationHubGlyph("E") }
@@ -938,6 +954,12 @@ private fun IntegrationSettingsContent(
                     }
                 }
             }
+        }
+
+        IntegrationSettingsSection.SourceCloud -> {
+            SourceCloudSettingsContent(
+                initialFocusRequester = sourceCloudFocusRequester
+            )
         }
 
         IntegrationSettingsSection.Emby -> {

@@ -12,9 +12,11 @@ import com.omnio.tv.data.remote.api.AddonApi
 import com.omnio.tv.domain.model.Addon
 import com.omnio.tv.domain.model.AddonStreams
 import com.omnio.tv.domain.model.ProxyHeaders
+import com.omnio.tv.domain.model.SourceCloudSearchRequest
 import com.omnio.tv.domain.model.Stream
 import com.omnio.tv.domain.model.StreamBehaviorHints
 import com.omnio.tv.domain.repository.AddonRepository
+import com.omnio.tv.domain.repository.SourceCloudRepository
 import com.omnio.tv.domain.repository.StreamRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -38,7 +40,8 @@ class StreamRepositoryImpl @Inject constructor(
     private val addonRepository: AddonRepository,
     private val pluginManager: PluginManager,
     private val tmdbService: TmdbService,
-    private val embyMediaService: EmbyMediaService
+    private val embyMediaService: EmbyMediaService,
+    private val sourceCloudRepository: SourceCloudRepository
 ) : StreamRepository {
     private enum class StreamFailureKind {
         MISSING,
@@ -70,7 +73,12 @@ class StreamRepositoryImpl @Inject constructor(
             // Convert IMDB ID to TMDB ID if needed for plugins
             val tmdbId = tmdbService.ensureTmdbId(videoId, type)
             Log.d(TAG, "Video ID: $videoId -> TMDB ID: $tmdbId (type: $type)")
+            val sourceCloudSettings = sourceCloudRepository.settings.first()
+            val sourceCloudJobCount = if (sourceCloudSettings.enabled && sourceCloudSettings.hasConnectedService) 1 else 0
             val attemptedAddonNames = buildList {
+                if (sourceCloudJobCount == 1) {
+                    add("Omnio Source Cloud")
+                }
                 addAll(streamAddons.map { it.displayName })
                 if (embyMediaService.isConfigured()) {
                     add("Emby")
@@ -103,7 +111,7 @@ class StreamRepositoryImpl @Inject constructor(
                 }
 
                 // Track number of pending jobs (Emby + addons + plugins)
-                val totalJobs = 1 + streamAddons.size + (if (tmdbId != null) 1 else 0)
+                val totalJobs = sourceCloudJobCount + 1 + streamAddons.size + (if (tmdbId != null) 1 else 0)
                 val completedJobs = AtomicInteger(0)
                 val closeOnce = AtomicBoolean(false)
 
@@ -165,6 +173,54 @@ class StreamRepositoryImpl @Inject constructor(
                         )
                     } finally {
                         markJobCompleted()
+                    }
+                }
+
+                if (sourceCloudJobCount == 1) {
+                    launch {
+                        try {
+                            val sourceCloudResult = sourceCloudRepository.search(
+                                SourceCloudSearchRequest(
+                                    type = type,
+                                    videoId = videoId,
+                                    tmdbId = tmdbId,
+                                    season = season,
+                                    episode = episode
+                                )
+                            )
+                            when (sourceCloudResult) {
+                                is NetworkResult.Success -> {
+                                    val addonStreams = sourceCloudResult.data
+                                    if (addonStreams != null && addonStreams.streams.isNotEmpty()) {
+                                        resultChannel.send(addonStreams)
+                                    } else {
+                                        attemptedFailures += StreamAttemptFailure(
+                                            addonName = "Omnio Source Cloud",
+                                            kind = StreamFailureKind.MISSING,
+                                            detail = "returned no cached streams for this id"
+                                        )
+                                    }
+                                }
+                                is NetworkResult.Error -> {
+                                    attemptedFailures += StreamAttemptFailure(
+                                        addonName = "Omnio Source Cloud",
+                                        kind = StreamFailureKind.REQUEST_FAILED,
+                                        detail = sourceCloudResult.message.ifBlank { "the provider request failed" }
+                                    )
+                                }
+                                NetworkResult.Loading -> Unit
+                            }
+                        } catch (e: Exception) {
+                            if (e is CancellationException) throw e
+                            Log.e(TAG, "Source Cloud stream lookup failed: ${e.message}")
+                            attemptedFailures += StreamAttemptFailure(
+                                addonName = "Omnio Source Cloud",
+                                kind = StreamFailureKind.REQUEST_FAILED,
+                                detail = e.message ?: "the provider request failed"
+                            )
+                        } finally {
+                            markJobCompleted()
+                        }
                     }
                 }
 

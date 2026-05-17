@@ -2,6 +2,7 @@ package com.omnio.tv.core.player
 
 import com.omnio.tv.data.local.StreamAutoPlayMode
 import com.omnio.tv.data.local.StreamAutoPlaySource
+import com.omnio.tv.domain.model.AddonStreams
 import com.omnio.tv.domain.model.Stream
 import com.omnio.tv.domain.model.StreamBehaviorHints
 import org.junit.Assert.assertEquals
@@ -177,11 +178,170 @@ class StreamAutoPlaySelectorTest {
         assertNull(selected)
     }
 
+    @Test
+    fun `orders source cloud before installed addons and plugins`() {
+        val addon = AddonStreams("Torrentio", null, listOf(stream(addonName = "Torrentio", url = "https://addon.example")))
+        val plugin = AddonStreams("Plugin Scraper", null, listOf(stream(addonName = "Plugin Scraper", url = "https://plugin.example")))
+        val cloud = AddonStreams(
+            "Omnio Source Cloud",
+            null,
+            listOf(stream(addonName = "Omnio Source Cloud", url = "https://cloud.example", sourceProvider = "source_cloud"))
+        )
+
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            streams = listOf(addon, plugin, cloud),
+            installedOrder = listOf("Torrentio")
+        )
+
+        assertEquals(listOf("Omnio Source Cloud", "Torrentio", "Plugin Scraper"), ordered.map { it.addonName })
+    }
+
+    @Test
+    fun `orders source cloud before media server providers`() {
+        val emby = AddonStreams(
+            "Emby",
+            null,
+            listOf(stream(addonName = "Emby", url = "https://emby.example", sourceProvider = "emby"))
+        )
+        val cloud = AddonStreams(
+            "Omnio Source Cloud",
+            null,
+            listOf(stream(addonName = "Omnio Source Cloud", url = "https://cloud.example", sourceProvider = "source_cloud"))
+        )
+
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            streams = listOf(emby, cloud),
+            installedOrder = emptyList()
+        )
+
+        assertEquals(listOf("Omnio Source Cloud", "Emby"), ordered.map { it.addonName })
+    }
+
+    @Test
+    fun `does not promote unknown providers before installed addons`() {
+        val addon = AddonStreams("Torrentio", null, listOf(stream(addonName = "Torrentio", url = "https://addon.example")))
+        val unknownProvider = AddonStreams(
+            "Unknown Provider",
+            null,
+            listOf(stream(addonName = "Unknown Provider", url = "https://unknown.example", sourceProvider = "unknown_provider"))
+        )
+
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            streams = listOf(unknownProvider, addon),
+            installedOrder = listOf("Torrentio")
+        )
+
+        assertEquals(listOf("Torrentio", "Unknown Provider"), ordered.map { it.addonName })
+    }
+
+    @Test
+    fun `selects source cloud in all sources by default`() {
+        val cloud = sourceCloudStream()
+
+        val selected = selectFirstStream(listOf(cloud), source = StreamAutoPlaySource.ALL_SOURCES)
+
+        assertEquals(cloud, selected)
+    }
+
+    @Test
+    fun `filters source cloud from installed addons only when not installed`() {
+        val selected = selectFirstStream(
+            streams = listOf(sourceCloudStream()),
+            source = StreamAutoPlaySource.INSTALLED_ADDONS_ONLY,
+            installedAddonNames = setOf("Torrentio")
+        )
+
+        assertNull(selected)
+    }
+
+    @Test
+    fun `selects source cloud in installed addons only when installed`() {
+        val cloud = sourceCloudStream()
+
+        val selected = selectFirstStream(
+            streams = listOf(cloud),
+            source = StreamAutoPlaySource.INSTALLED_ADDONS_ONLY,
+            installedAddonNames = setOf("Omnio Source Cloud")
+        )
+
+        assertEquals(cloud, selected)
+    }
+
+    @Test
+    fun `filters source cloud from enabled plugins by default`() {
+        val selected = selectFirstStream(
+            streams = listOf(sourceCloudStream()),
+            source = StreamAutoPlaySource.ENABLED_PLUGINS_ONLY
+        )
+
+        assertNull(selected)
+    }
+
+    @Test
+    fun `selects source cloud in enabled plugins when selected`() {
+        val cloud = sourceCloudStream()
+
+        val selected = selectFirstStream(
+            streams = listOf(cloud),
+            source = StreamAutoPlaySource.ENABLED_PLUGINS_ONLY,
+            selectedPlugins = setOf("Omnio Source Cloud")
+        )
+
+        assertEquals(cloud, selected)
+    }
+
+    @Test
+    fun `filters source cloud from all sources when filters exclude it`() {
+        val selected = selectFirstStream(
+            streams = listOf(sourceCloudStream()),
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            selectedAddons = setOf("Torrentio")
+        )
+
+        assertNull(selected)
+    }
+
+    @Test
+    fun `selects source cloud in all sources when filters include it`() {
+        val cloud = sourceCloudStream()
+
+        val selected = selectFirstStream(
+            streams = listOf(cloud),
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            selectedPlugins = setOf("Omnio Source Cloud")
+        )
+
+        assertEquals(cloud, selected)
+    }
+
+    private fun selectFirstStream(
+        streams: List<Stream>,
+        source: StreamAutoPlaySource,
+        installedAddonNames: Set<String> = emptySet(),
+        selectedAddons: Set<String> = emptySet(),
+        selectedPlugins: Set<String> = emptySet()
+    ): Stream? = StreamAutoPlaySelector.selectAutoPlayStream(
+        streams = streams,
+        mode = StreamAutoPlayMode.FIRST_STREAM,
+        regexPattern = "",
+        source = source,
+        installedAddonNames = installedAddonNames,
+        selectedAddons = selectedAddons,
+        selectedPlugins = selectedPlugins
+    )
+
+    private fun sourceCloudStream(): Stream = stream(
+        addonName = "Omnio Source Cloud",
+        url = "https://cloud.example",
+        sourceProvider = "source_cloud"
+    )
+
     private fun stream(
         addonName: String,
         url: String? = null,
         name: String? = null,
-        bingeGroup: String? = null
+        bingeGroup: String? = null,
+        sourceProvider: String? = null
     ): Stream = Stream(
         name = name,
         title = null,
@@ -198,6 +358,7 @@ class StreamAutoPlaySelectorTest {
             proxyHeaders = null
         ),
         addonName = addonName,
-        addonLogo = null
+        addonLogo = null,
+        sourceProvider = sourceProvider
     )
 }

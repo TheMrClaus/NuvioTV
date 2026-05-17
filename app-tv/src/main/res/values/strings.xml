@@ -266,6 +266,15 @@
     <string name="account_stat_watched">watched</string>
     <string name="settings_integrations_section">Integrations</string>
     <string name="settings_integrations_section_subtitle">Choose metadata and media server providers</string>
+    <string name="source_cloud_title">Omnio Source Cloud</string>
+    <string name="source_cloud_subtitle">Built-in source finding with Real-Debrid, Torbox, and future services.</string>
+    <string name="source_cloud_enable_title">Use Omnio Source Cloud</string>
+    <string name="source_cloud_enable_subtitle">Find and resolve streams through Omnio\'s built-in source layer.</string>
+    <string name="source_cloud_backend_missing">Source Cloud backend URL is not configured for this build.</string>
+    <string name="source_cloud_no_services">Connect at least one source service to enable built-in playback sources.</string>
+    <string name="source_cloud_service_connected">Connected</string>
+    <string name="source_cloud_service_disconnected">Not connected</string>
+    <string name="source_cloud_connection_flows_soon">Source service connection flows are coming soon.</string>
     <string name="settings_emby_title">Emby</string>
     <string name="settings_emby_subtitle">Direct streams and playback reporting from your Emby server</string>
     <string name="settings_emby_connected">Connected</string>

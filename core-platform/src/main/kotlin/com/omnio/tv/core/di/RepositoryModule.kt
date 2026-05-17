@@ -5,6 +5,7 @@ import com.omnio.tv.data.repository.AioMetadataRepositoryImpl
 import com.omnio.tv.data.repository.CatalogRepositoryImpl
 import com.omnio.tv.data.repository.LibraryRepositoryImpl
 import com.omnio.tv.data.repository.MetaRepositoryImpl
+import com.omnio.tv.data.repository.SourceCloudRepositoryImpl
 import com.omnio.tv.data.repository.StreamRepositoryImpl
 import com.omnio.tv.data.repository.SubtitleRepositoryImpl
 import com.omnio.tv.data.repository.SyncRepositoryImpl
@@ -14,6 +15,7 @@ import com.omnio.tv.domain.repository.AioMetadataRepository
 import com.omnio.tv.domain.repository.CatalogRepository
 import com.omnio.tv.domain.repository.LibraryRepository
 import com.omnio.tv.domain.repository.MetaRepository
+import com.omnio.tv.domain.repository.SourceCloudRepository
 import com.omnio.tv.domain.repository.StreamRepository
 import com.omnio.tv.domain.repository.SubtitleRepository
 import com.omnio.tv.domain.repository.SyncRepository
@@ -47,6 +49,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindMetaRepository(impl: MetaRepositoryImpl): MetaRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSourceCloudRepository(impl: SourceCloudRepositoryImpl): SourceCloudRepository
 
     @Binds
     @Singleton
