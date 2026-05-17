@@ -35,6 +35,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import com.omnio.tv.core.network.IPv4FirstDns
+import io.github.jan.supabase.auth.Auth
 import java.io.File
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
@@ -370,7 +371,26 @@ object NetworkModule {
     @Provides
     @Singleton
     @Named("sourceCloud")
-    fun provideSourceCloudRetrofit(okHttpClient: OkHttpClient, moshi: Moshi): Retrofit {
+    fun provideSourceCloudOkHttpClient(baseClient: OkHttpClient, auth: Auth): OkHttpClient =
+        baseClient.newBuilder()
+            .addInterceptor { chain ->
+                val token = auth.currentSessionOrNull()?.accessToken
+                    ?: BuildConfig.SUPABASE_ANON_KEY
+                val request = chain.request().newBuilder()
+                    .header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+                    .header("Authorization", "Bearer $token")
+                    .build()
+                chain.proceed(request)
+            }
+            .build()
+
+    @Provides
+    @Singleton
+    @Named("sourceCloud")
+    fun provideSourceCloudRetrofit(
+        @Named("sourceCloud") okHttpClient: OkHttpClient,
+        moshi: Moshi
+    ): Retrofit {
         val raw = BuildConfig.SOURCE_CLOUD_BASE_URL
         val baseUrl = when {
             raw.isBlank() -> "http://localhost/"
