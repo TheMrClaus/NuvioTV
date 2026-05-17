@@ -1,0 +1,49 @@
+app = "omnio-aiostreams"
+primary_region = "lhr"
+
+[build]
+image = "docker.io/viren070/aiostreams@sha256:4b0e529664354382d4a496b168ecfbd1973d4dc33e1de3e652adf79f35ec1285"
+
+[env]
+ADDON_ID = "com.omnio.source-cloud.aiostreams"
+ADDON_NAME = "Omnio Source Cloud AIOStreams"
+DISABLE_SELF_SCRAPING = "true"
+ENABLE_SEARCH_API = "true"
+HOST = "0.0.0.0"
+LOG_FORMAT = "json"
+LOG_LEVEL = "info"
+LOG_SENSITIVE_INFO = "false"
+NODE_ENV = "production"
+PORT = "3000"
+REGEX_FILTER_ACCESS = "trusted"
+SEL_SYNC_ACCESS = "trusted"
+STREAM_CACHE_TTL = "-1"
+
+[http_service]
+auto_start_machines = true
+auto_stop_machines = "suspend"
+force_https = true
+internal_port = 3000
+min_machines_running = 1
+
+  [http_service.concurrency]
+  hard_limit = 250
+  soft_limit = 200
+  type = "requests"
+
+  [[http_service.checks]]
+  grace_period = "30s"
+  interval = "30s"
+  method = "GET"
+  path = "/api/v1/health"
+  timeout = "10s"
+
+[[mounts]]
+destination = "/app/data"
+source = "aiostreams_data"
+
+[[vm]]
+cpus = 1
+memory = "1gb"
+memory_mb = 1024
+size = "shared-cpu-1x"

@@ -1,0 +1,74 @@
+name: Deploy AIOStreams
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'infra/aiostreams/**'
+      - '.github/workflows/deploy-aiostreams.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-aiostreams-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Sync secrets to Fly
+        env:
+          AIOSTREAMS_BASE_URL: ${{ secrets.AIOSTREAMS_BASE_URL }}
+          AIOSTREAMS_DATABASE_URI: ${{ secrets.AIOSTREAMS_DATABASE_URI }}
+          AIOSTREAMS_SECRET_KEY: ${{ secrets.AIOSTREAMS_SECRET_KEY }}
+          AIOSTREAMS_ADDON_PASSWORD: ${{ secrets.AIOSTREAMS_ADDON_PASSWORD }}
+          AIOSTREAMS_REDIS_URI: ${{ secrets.AIOSTREAMS_REDIS_URI }}
+          AIOSTREAMS_TMDB_ACCESS_TOKEN: ${{ secrets.AIOSTREAMS_TMDB_ACCESS_TOKEN }}
+          AIOSTREAMS_TRAKT_CLIENT_ID: ${{ secrets.AIOSTREAMS_TRAKT_CLIENT_ID }}
+          AIOSTREAMS_FORCED_SERVICE_CREDENTIALS: ${{ secrets.AIOSTREAMS_FORCED_SERVICE_CREDENTIALS }}
+        run: |
+          missing=()
+          for name in AIOSTREAMS_BASE_URL AIOSTREAMS_DATABASE_URI AIOSTREAMS_SECRET_KEY AIOSTREAMS_ADDON_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required GitHub secrets: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+          args=(
+            "BASE_URL=$AIOSTREAMS_BASE_URL"
+            "DATABASE_URI=$AIOSTREAMS_DATABASE_URI"
+            "SECRET_KEY=$AIOSTREAMS_SECRET_KEY"
+            "ADDON_PASSWORD=$AIOSTREAMS_ADDON_PASSWORD"
+          )
+
+          if [ -n "$AIOSTREAMS_REDIS_URI" ]; then
+            args+=("REDIS_URI=$AIOSTREAMS_REDIS_URI")
+          fi
+
+          if [ -n "$AIOSTREAMS_TMDB_ACCESS_TOKEN" ]; then
+            args+=("TMDB_ACCESS_TOKEN=$AIOSTREAMS_TMDB_ACCESS_TOKEN")
+          fi
+
+          if [ -n "$AIOSTREAMS_TRAKT_CLIENT_ID" ]; then
+            args+=("TRAKT_CLIENT_ID=$AIOSTREAMS_TRAKT_CLIENT_ID")
+          fi
+
+          if [ -n "$AIOSTREAMS_FORCED_SERVICE_CREDENTIALS" ]; then
+            args+=("FORCED_SERVICE_CREDENTIALS=$AIOSTREAMS_FORCED_SERVICE_CREDENTIALS")
+          fi
+
+          flyctl secrets set "${args[@]}" --app omnio-aiostreams --stage
+
+      - name: Deploy
+        run: flyctl deploy --config infra/aiostreams/fly.toml --app omnio-aiostreams

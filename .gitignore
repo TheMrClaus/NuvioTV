@@ -54,5 +54,7 @@ bugs/
 avatars/
 infra/aiometadata-selfhost/docker-compose.override.yml
 infra/aiometadata-selfhost/.env
+infra/aiostreams-selfhost/docker-compose.override.yml
+infra/aiostreams-selfhost/.env
 logs
 .worktrees/
