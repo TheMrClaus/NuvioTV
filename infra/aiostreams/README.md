@@ -13,12 +13,14 @@ The digest is used in `fly.toml` instead of `latest` or `v2` so deploys are repr
 
 ## Topology
 
-Required Fly.io resources:
+Current deployment:
 
-- AIOStreams app: placeholder `omnio-aiostreams`
-- Postgres: required for production user/config storage via `DATABASE_URI`
-- Volume: required as `/app/data` for AIOStreams runtime data and safe fallback storage
-- Redis: optional for a single Fly Machine, recommended before running multiple Machines or regions via `REDIS_URI`
+- AIOStreams app: `omnio-aiostreams`
+- Primary region: `lhr` (London)
+- Postgres: **Supabase Postgres** via the Supavisor transaction pooler (`aws-1-eu-west-3.pooler.supabase.com:6543`, `sslmode=no-verify`). Not Fly Postgres. The project ref appears in the username as `postgres.<ref>`.
+- Volume: `aiostreams_data` mounted at `/app/data` for AIOStreams runtime data and safe fallback storage
+- Custom domain: `aiostreams.omnio.tv` with dedicated IPv4 (`188.93.151.82`) and IPv6 (`2a09:8280:1::117:273a:0`)
+- Redis: not provisioned. Recommended before running multiple Machines or regions via `REDIS_URI`.
 
 Recommended access model:
 
@@ -55,28 +57,36 @@ cd infra/aiostreams
 fly apps create omnio-aiostreams --org <fly-org>
 
 # Create persistent storage for /app/data. Keep it in the primary region.
-fly volumes create aiostreams_data --app omnio-aiostreams --region iad --size 1
-
-# Create Postgres. Pick a size that matches expected Source Cloud traffic.
-fly postgres create --name omnio-aiostreams-db --org <fly-org> --region iad
-
-# Attach Postgres. This normally sets DATABASE_URL; copy or set it as DATABASE_URI for AIOStreams.
-fly postgres attach --app omnio-aiostreams omnio-aiostreams-db
+fly volumes create aiostreams_data --app omnio-aiostreams --region lhr --size 1
 ```
 
-If `fly postgres attach` only creates `DATABASE_URL`, set `DATABASE_URI` explicitly:
+This deployment shares the Supabase Postgres instance with the rest of OmnioTV
+rather than running Fly Postgres. To wire the `DATABASE_URI`:
+
+1. Grab the exact pooler hostname from **Supabase Dashboard → Connect** for
+   your project. It is regional and may differ from older docs; today it is
+   `aws-1-eu-west-3.pooler.supabase.com`. The username is `postgres.<ref>`,
+   port `6543` (transaction pooler).
+2. Use `sslmode=no-verify` because the pooler presents a chain that fails
+   strict verification.
 
 ```bash
 fly secrets set --app omnio-aiostreams \
-  DATABASE_URI='<postgres-uri-from-fly>'
+  DATABASE_URI='postgresql://postgres.<project-ref>:<db-password>@aws-1-eu-west-3.pooler.supabase.com:6543/postgres?sslmode=no-verify'
 ```
+
+If the pooler returns `(ENOTFOUND) tenant/user postgres.<ref> not found`,
+double-check the hostname (e.g. `aws-0` vs `aws-1`) against the dashboard
+**Connect** dialog — the cluster prefix has drifted before. Same error
+appears for invalid passwords too, so reset the DB password from the
+dashboard if hostname is correct.
 
 ## Optional Redis Setup
 
 AIOStreams can run a single instance without Redis using in-memory cache. Add Redis before horizontal scaling or multi-region deployment.
 
 ```bash
-fly redis create --name omnio-aiostreams-cache --org <fly-org> --region iad
+fly redis create --name omnio-aiostreams-cache --org <fly-org> --region lhr
 
 # Fly prints a redis:// or rediss:// URL. Store it as REDIS_URI.
 fly secrets set --app omnio-aiostreams \
