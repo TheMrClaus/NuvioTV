@@ -64,6 +64,7 @@ fun SourceCloudSettingsContent(
                 .weight(1f)
         ) {
             LazyColumn(
+                modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
