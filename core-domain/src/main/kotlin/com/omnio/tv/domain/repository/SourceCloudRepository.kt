@@ -1,6 +1,7 @@
 package com.omnio.tv.domain.repository
 
 import com.omnio.tv.domain.model.AddonStreams
+import com.omnio.tv.domain.model.SourceCloudAdvancedConfigSession
 import com.omnio.tv.domain.model.SourceCloudSearchRequest
 import com.omnio.tv.domain.model.SourceCloudService
 import com.omnio.tv.domain.model.SourceCloudSettings
@@ -15,4 +16,6 @@ interface SourceCloudRepository {
     suspend fun setEnabled(enabled: Boolean)
     suspend fun setServiceConnected(service: SourceCloudService, connected: Boolean)
     suspend fun search(request: SourceCloudSearchRequest): NetworkResult<AddonStreams?>
+    suspend fun requestAdvancedConfigSession(): NetworkResult<SourceCloudAdvancedConfigSession?>
+    suspend fun resetConfig(): SourceCloudStatus
 }

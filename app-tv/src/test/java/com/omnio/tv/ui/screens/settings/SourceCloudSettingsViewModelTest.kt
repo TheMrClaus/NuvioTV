@@ -2,6 +2,9 @@ package com.omnio.tv.ui.screens.settings
 
 import com.omnio.tv.MainDispatcherRule
 import com.omnio.tv.domain.model.AddonStreams
+import com.omnio.tv.domain.model.SourceCloudAdvancedConfigSession
+import com.omnio.tv.domain.model.SourceCloudConfigState
+import com.omnio.tv.domain.model.SourceCloudConfigStatus
 import com.omnio.tv.domain.model.SourceCloudSearchRequest
 import com.omnio.tv.domain.model.SourceCloudService
 import com.omnio.tv.domain.model.SourceCloudServiceStatus
@@ -119,11 +122,87 @@ class SourceCloudSettingsViewModelTest {
         assertEquals("Source Cloud settings could not be updated.", viewModel.uiState.value.errorMessage)
     }
 
+    @Test
+    fun `request advanced config session stores short lived url state`() = runTest {
+        val repository = FakeSourceCloudRepository(
+            status = SourceCloudStatus(
+                enabled = true,
+                baseUrlConfigured = true,
+                config = SourceCloudConfigState(
+                    status = SourceCloudConfigStatus.READY,
+                    advancedConfigAvailable = true
+                ),
+                services = listOf(SourceCloudServiceStatus(SourceCloudService.REAL_DEBRID, connected = true))
+            ),
+            advancedSession = NetworkResult.Success(
+                SourceCloudAdvancedConfigSession(
+                    url = "https://source.omnio.tv/advanced/session/abc",
+                    expiresAtEpochMillis = 1_770_000_000_000L,
+                    message = "Scan this QR code from your phone."
+                )
+            )
+        )
+        val viewModel = SourceCloudSettingsViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.requestAdvancedConfigSession()
+        advanceUntilIdle()
+
+        assertEquals(listOf("status", "requestAdvancedConfigSession"), repository.events)
+        assertEquals("https://source.omnio.tv/advanced/session/abc", viewModel.uiState.value.advancedConfigSession?.url)
+        assertEquals("Scan this QR code from your phone.", viewModel.uiState.value.advancedConfigSession?.message)
+        assertNull(viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `advanced config failure uses generic retryable error without exposing backend details`() = runTest {
+        val repository = FakeSourceCloudRepository(
+            status = SourceCloudStatus(enabled = true, baseUrlConfigured = true, services = emptyList()),
+            advancedSession = NetworkResult.Success(null)
+        )
+        val viewModel = SourceCloudSettingsViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.requestAdvancedConfigSession()
+        advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.advancedConfigSession)
+        assertEquals("Advanced Source Config is unavailable right now.", viewModel.uiState.value.errorMessage)
+    }
+
+    @Test
+    fun `reset config refreshes status and clears advanced session`() = runTest {
+        val resetStatus = SourceCloudStatus(
+            enabled = true,
+            baseUrlConfigured = true,
+            config = SourceCloudConfigState(status = SourceCloudConfigStatus.NOT_PROVISIONED, canReset = false),
+            services = emptyList()
+        )
+        val repository = FakeSourceCloudRepository(
+            status = SourceCloudStatus(enabled = true, baseUrlConfigured = true, services = emptyList()),
+            resetStatus = resetStatus,
+            advancedSession = NetworkResult.Success(SourceCloudAdvancedConfigSession("https://source.omnio.tv/advanced/session/abc"))
+        )
+        val viewModel = SourceCloudSettingsViewModel(repository)
+        advanceUntilIdle()
+        viewModel.requestAdvancedConfigSession()
+        advanceUntilIdle()
+
+        viewModel.resetConfig()
+        advanceUntilIdle()
+
+        assertEquals(listOf("status", "requestAdvancedConfigSession", "resetConfig"), repository.events)
+        assertEquals(resetStatus, viewModel.uiState.value.status)
+        assertNull(viewModel.uiState.value.advancedConfigSession)
+    }
+
     private class FakeSourceCloudRepository(
         status: SourceCloudStatus,
         private val statusError: Throwable? = null,
         private val setEnabledError: Throwable? = null,
-        private val setServiceConnectedError: Throwable? = null
+        private val setServiceConnectedError: Throwable? = null,
+        private val advancedSession: NetworkResult<SourceCloudAdvancedConfigSession?> = NetworkResult.Success(null),
+        private val resetStatus: SourceCloudStatus? = null
     ) : SourceCloudRepository {
         override val settings: Flow<SourceCloudSettings> = MutableStateFlow(SourceCloudSettings())
         var statusValue = status
@@ -153,5 +232,15 @@ class SourceCloudSettingsViewModelTest {
 
         override suspend fun search(request: SourceCloudSearchRequest): NetworkResult<AddonStreams?> =
             error("search should not be called")
+
+        override suspend fun requestAdvancedConfigSession(): NetworkResult<SourceCloudAdvancedConfigSession?> {
+            events += "requestAdvancedConfigSession"
+            return advancedSession
+        }
+
+        override suspend fun resetConfig(): SourceCloudStatus {
+            events += "resetConfig"
+            return resetStatus ?: statusValue
+        }
     }
 }

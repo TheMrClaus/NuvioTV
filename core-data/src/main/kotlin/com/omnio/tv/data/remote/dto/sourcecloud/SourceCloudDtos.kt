@@ -2,6 +2,9 @@ package com.omnio.tv.data.remote.dto.sourcecloud
 
 import com.omnio.tv.domain.model.AddonStreams
 import com.omnio.tv.domain.model.ProxyHeaders
+import com.omnio.tv.domain.model.SourceCloudAdvancedConfigSession
+import com.omnio.tv.domain.model.SourceCloudConfigState
+import com.omnio.tv.domain.model.SourceCloudConfigStatus
 import com.omnio.tv.domain.model.SourceCloudSearchRequest
 import com.omnio.tv.domain.model.SourceCloudService
 import com.omnio.tv.domain.model.SourceCloudServiceStatus
@@ -30,7 +33,24 @@ data class SourceCloudSearchResponseDto(
 
 @JsonClass(generateAdapter = true)
 data class SourceCloudStatusResponseDto(
+    @param:Json(name = "config") val config: SourceCloudConfigStateDto? = null,
     @param:Json(name = "services") val services: List<SourceCloudServiceStatusDto>? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class SourceCloudConfigStateDto(
+    @param:Json(name = "status") val status: String? = null,
+    @param:Json(name = "label") val label: String? = null,
+    @param:Json(name = "message") val message: String? = null,
+    @param:Json(name = "advancedConfigAvailable") val advancedConfigAvailable: Boolean = false,
+    @param:Json(name = "canReset") val canReset: Boolean = false
+)
+
+@JsonClass(generateAdapter = true)
+data class SourceCloudAdvancedConfigSessionResponseDto(
+    @param:Json(name = "url") val url: String,
+    @param:Json(name = "expiresAtEpochMillis") val expiresAtEpochMillis: Long? = null,
+    @param:Json(name = "message") val message: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -103,7 +123,23 @@ fun SourceCloudStatusResponseDto.toDomain(enabled: Boolean, baseUrlConfigured: B
     SourceCloudStatus(
         enabled = enabled,
         baseUrlConfigured = baseUrlConfigured,
+        config = config?.toDomain() ?: SourceCloudConfigState(),
         services = services.orEmpty().mapNotNull { it.toDomain() }
+    )
+
+fun SourceCloudConfigStateDto.toDomain(): SourceCloudConfigState = SourceCloudConfigState(
+    status = SourceCloudConfigStatus.fromKey(status),
+    label = label,
+    message = message,
+    advancedConfigAvailable = advancedConfigAvailable,
+    canReset = canReset
+)
+
+fun SourceCloudAdvancedConfigSessionResponseDto.toDomain(): SourceCloudAdvancedConfigSession =
+    SourceCloudAdvancedConfigSession(
+        url = url,
+        expiresAtEpochMillis = expiresAtEpochMillis,
+        message = message
     )
 
 fun SourceCloudServiceStatusDto.toDomain(): SourceCloudServiceStatus? {

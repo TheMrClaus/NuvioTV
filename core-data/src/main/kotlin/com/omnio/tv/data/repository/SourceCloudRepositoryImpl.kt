@@ -8,6 +8,8 @@ import com.omnio.tv.data.remote.api.SourceCloudApi
 import com.omnio.tv.data.remote.dto.sourcecloud.toDomain
 import com.omnio.tv.data.remote.dto.sourcecloud.toDto
 import com.omnio.tv.domain.model.AddonStreams
+import com.omnio.tv.domain.model.SourceCloudAdvancedConfigSession
+import com.omnio.tv.domain.model.SourceCloudConfigState
 import com.omnio.tv.domain.model.SourceCloudSearchRequest
 import com.omnio.tv.domain.model.SourceCloudService
 import com.omnio.tv.domain.model.SourceCloudServiceStatus
@@ -23,14 +25,29 @@ import javax.inject.Singleton
 private const val TAG = "SourceCloudRepository"
 
 @Singleton
-class SourceCloudRepositoryImpl @Inject constructor(
+class SourceCloudRepositoryImpl private constructor(
     private val api: SourceCloudApi,
-    private val dataStore: SourceCloudSettingsDataStore
-) : SourceCloudRepository {
-    override val settings: Flow<SourceCloudSettings> = dataStore.settings
-
+    private val dataStore: SourceCloudSettingsDataStore,
     private val baseUrlConfigured: Boolean
-        get() = BuildConfig.SOURCE_CLOUD_BASE_URL.isNotBlank()
+) : SourceCloudRepository {
+    @Inject
+    constructor(
+        api: SourceCloudApi,
+        dataStore: SourceCloudSettingsDataStore
+    ) : this(
+        api = api,
+        dataStore = dataStore,
+        baseUrlConfigured = BuildConfig.SOURCE_CLOUD_BASE_URL.isNotBlank()
+    )
+
+    internal constructor(
+        api: SourceCloudApi,
+        dataStore: SourceCloudSettingsDataStore,
+        baseUrlConfiguredForTests: Boolean,
+        testOnly: Unit = Unit
+    ) : this(api, dataStore, baseUrlConfiguredForTests)
+
+    override val settings: Flow<SourceCloudSettings> = dataStore.settings
 
     override suspend fun status(): SourceCloudStatus {
         val local = settings.first()
@@ -75,9 +92,40 @@ class SourceCloudRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun requestAdvancedConfigSession(): NetworkResult<SourceCloudAdvancedConfigSession?> {
+        if (!baseUrlConfigured) return NetworkResult.Success(null)
+
+        return when (val result = safeApiCall { api.createAdvancedConfigSession() }) {
+            is NetworkResult.Success -> NetworkResult.Success(result.data.toDomain())
+            is NetworkResult.Error -> {
+                Log.w(TAG, "advanced config session failed: ${result.message}")
+                NetworkResult.Success(null)
+            }
+            NetworkResult.Loading -> NetworkResult.Loading
+        }
+    }
+
+    override suspend fun resetConfig(): SourceCloudStatus {
+        val local = settings.first()
+        if (!baseUrlConfigured) return local.toOfflineStatus(baseUrlConfigured = false)
+
+        return when (val result = safeApiCall { api.resetConfig() }) {
+            is NetworkResult.Success -> result.data.toDomain(
+                enabled = local.enabled,
+                baseUrlConfigured = true
+            )
+            is NetworkResult.Error -> {
+                Log.w(TAG, "config reset failed: ${result.message}")
+                local.toOfflineStatus(baseUrlConfigured = true)
+            }
+            NetworkResult.Loading -> local.toOfflineStatus(baseUrlConfigured = true)
+        }
+    }
+
     private fun SourceCloudSettings.toOfflineStatus(baseUrlConfigured: Boolean): SourceCloudStatus = SourceCloudStatus(
         enabled = enabled,
         baseUrlConfigured = baseUrlConfigured,
+        config = SourceCloudConfigState(),
         services = SourceCloudService.entries.map { service ->
             SourceCloudServiceStatus(
                 service = service,

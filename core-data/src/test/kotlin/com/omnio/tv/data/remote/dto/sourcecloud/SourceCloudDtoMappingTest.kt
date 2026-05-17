@@ -1,6 +1,7 @@
 package com.omnio.tv.data.remote.dto.sourcecloud
 
 import com.omnio.tv.domain.model.SourceCloudService
+import com.omnio.tv.domain.model.SourceCloudConfigStatus
 import com.squareup.moshi.Moshi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -41,6 +42,13 @@ class SourceCloudDtoMappingTest {
     fun `drops unknown null and missing service statuses decoded from json`() {
         val json = """
             {
+              "config": {
+                "status": "ready",
+                "label": "Private source config ready",
+                "message": "Configured per profile",
+                "advancedConfigAvailable": true,
+                "canReset": true
+              },
               "services": [
                 { "service": "real_debrid", "connected": true },
                 { "service": "unknown", "connected": true },
@@ -55,6 +63,25 @@ class SourceCloudDtoMappingTest {
 
         assertEquals(1, status.services.size)
         assertEquals(SourceCloudService.REAL_DEBRID, status.services.single().service)
+        assertEquals(SourceCloudConfigStatus.READY, status.config.status)
+        assertEquals("Private source config ready", status.config.label)
+        assertTrue(status.config.advancedConfigAvailable)
+        assertTrue(status.config.canReset)
+    }
+
+    @Test
+    fun `maps advanced config session without exposing secrets beyond short lived url`() {
+        val dto = SourceCloudAdvancedConfigSessionResponseDto(
+            url = "https://source.omnio.tv/advanced/session/abc",
+            expiresAtEpochMillis = 1_770_000_000_000L,
+            message = "Scan to open advanced source config"
+        )
+
+        val session = dto.toDomain()
+
+        assertEquals("https://source.omnio.tv/advanced/session/abc", session.url)
+        assertEquals(1_770_000_000_000L, session.expiresAtEpochMillis)
+        assertEquals("Scan to open advanced source config", session.message)
     }
 
     @Test

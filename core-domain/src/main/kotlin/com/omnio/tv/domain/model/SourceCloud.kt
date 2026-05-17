@@ -20,11 +20,40 @@ data class SourceCloudSettings(
 data class SourceCloudStatus(
     val enabled: Boolean,
     val baseUrlConfigured: Boolean,
+    val config: SourceCloudConfigState = SourceCloudConfigState(),
     val services: List<SourceCloudServiceStatus>
 ) {
     val hasConnectedService: Boolean
         get() = services.any { it.connected }
 }
+
+enum class SourceCloudConfigStatus(val key: String) {
+    UNKNOWN("unknown"),
+    NOT_PROVISIONED("not_provisioned"),
+    READY("ready"),
+    PROVISIONING_FAILED("provisioning_failed"),
+    UNAVAILABLE("unavailable"),
+    INVALID("invalid");
+
+    companion object {
+        fun fromKey(key: String?): SourceCloudConfigStatus =
+            entries.firstOrNull { it.key == key } ?: UNKNOWN
+    }
+}
+
+data class SourceCloudConfigState(
+    val status: SourceCloudConfigStatus = SourceCloudConfigStatus.UNKNOWN,
+    val label: String? = null,
+    val message: String? = null,
+    val advancedConfigAvailable: Boolean = false,
+    val canReset: Boolean = false
+)
+
+data class SourceCloudAdvancedConfigSession(
+    val url: String,
+    val expiresAtEpochMillis: Long? = null,
+    val message: String? = null
+)
 
 data class SourceCloudServiceStatus(
     val service: SourceCloudService,

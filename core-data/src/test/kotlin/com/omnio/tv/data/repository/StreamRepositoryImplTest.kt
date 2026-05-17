@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.omnio.tv.data.remote.api.AddonApi
 import com.omnio.tv.domain.model.AddonStreams
+import com.omnio.tv.domain.model.SourceCloudAdvancedConfigSession
 import com.omnio.tv.domain.model.SourceCloudSearchRequest
 import com.omnio.tv.domain.model.SourceCloudService
 import com.omnio.tv.domain.model.SourceCloudSettings
@@ -140,5 +141,10 @@ class StreamRepositoryImplTest {
             lastSearchRequest = request
             return searchResult
         }
+
+        override suspend fun requestAdvancedConfigSession(): NetworkResult<SourceCloudAdvancedConfigSession?> =
+            NetworkResult.Success(null)
+
+        override suspend fun resetConfig(): SourceCloudStatus = error("resetConfig should not be called")
     }
 }

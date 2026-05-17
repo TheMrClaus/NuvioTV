@@ -8,17 +8,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -27,6 +32,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.omnio.tv.R
+import com.omnio.tv.core.qr.QrCodeGenerator
 import com.omnio.tv.core.uishared.OmnioColors
 import com.omnio.tv.domain.model.SourceCloudService
 
@@ -38,8 +44,10 @@ fun SourceCloudSettingsContent(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val status = uiState.status
     val services = status?.services.orEmpty()
+    val config = status?.config
     val hasConnectedService = services.any { it.connected }
     val sourceCloudEnabled = status?.enabled == true
+    val advancedSession = uiState.advancedConfigSession
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -77,6 +85,15 @@ fun SourceCloudSettingsContent(
                     }
                 }
 
+                if (config != null) {
+                    item(key = "source_cloud_config_state") {
+                        SourceCloudConfigStatusCard(
+                            title = stringResource(R.string.source_cloud_config_status_title),
+                            subtitle = sourceCloudConfigSubtitle(config.label, config.message)
+                        )
+                    }
+                }
+
                 item(key = "source_cloud_enabled") {
                     SettingsToggleRow(
                         title = stringResource(R.string.source_cloud_enable_title),
@@ -106,10 +123,56 @@ fun SourceCloudSettingsContent(
                 item(key = "source_cloud_connection_flows_soon") {
                     SourceCloudInfoCard(message = stringResource(R.string.source_cloud_connection_flows_soon))
                 }
+
+                item(key = "source_cloud_advanced_config") {
+                    SettingsActionRow(
+                        title = stringResource(R.string.source_cloud_advanced_config_title),
+                        subtitle = stringResource(R.string.source_cloud_advanced_config_subtitle),
+                        onClick = { viewModel.requestAdvancedConfigSession() },
+                        enabled = config?.advancedConfigAvailable == true && !uiState.isAdvancedConfigLoading
+                    )
+                }
+
+                if (advancedSession != null) {
+                    item(key = "source_cloud_advanced_qr") {
+                        SourceCloudAdvancedQrCard(
+                            url = advancedSession.url,
+                            message = advancedSession.message ?: stringResource(R.string.source_cloud_advanced_qr_message)
+                        )
+                    }
+                }
+
+                if (advancedSession != null) {
+                    item(key = "source_cloud_regenerate_advanced") {
+                        SettingsActionRow(
+                            title = stringResource(R.string.source_cloud_advanced_regenerate_title),
+                            subtitle = stringResource(R.string.source_cloud_advanced_regenerate_subtitle),
+                            onClick = { viewModel.requestAdvancedConfigSession() },
+                            enabled = !uiState.isAdvancedConfigLoading
+                        )
+                    }
+                }
+
+                if (config?.canReset == true) {
+                    item(key = "source_cloud_reset_config") {
+                        SettingsActionRow(
+                            title = stringResource(R.string.source_cloud_reset_config_title),
+                            subtitle = stringResource(R.string.source_cloud_reset_config_subtitle),
+                            onClick = { viewModel.resetConfig() },
+                            enabled = !uiState.isLoading
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun sourceCloudConfigSubtitle(label: String?, message: String?): String = listOfNotNull(
+    label?.takeIf { it.isNotBlank() },
+    message?.takeIf { it.isNotBlank() }
+).joinToString(" · ").ifBlank { stringResource(R.string.source_cloud_config_status_unknown) }
 
 @Composable
 private fun sourceCloudServiceSubtitle(connected: Boolean): String = if (connected) {
@@ -142,6 +205,57 @@ private fun SourceCloudServiceStatusCard(
             style = MaterialTheme.typography.bodySmall,
             color = OmnioColors.TextSecondary
         )
+    }
+}
+
+@Composable
+private fun SourceCloudConfigStatusCard(
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier
+) {
+    SourceCloudServiceStatusCard(
+        title = title,
+        subtitle = subtitle,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun SourceCloudAdvancedQrCard(
+    url: String,
+    message: String,
+    modifier: Modifier = Modifier
+) {
+    val qrBitmap = remember(url) { runCatching { QrCodeGenerator.generate(url, 360) }.getOrNull() }
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(OmnioColors.Background, RoundedCornerShape(12.dp))
+            .border(1.dp, OmnioColors.Border, RoundedCornerShape(12.dp))
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = stringResource(R.string.source_cloud_advanced_qr_title),
+            style = MaterialTheme.typography.bodyLarge,
+            color = OmnioColors.TextPrimary
+        )
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodySmall,
+            color = OmnioColors.TextSecondary
+        )
+        if (qrBitmap != null) {
+            Image(
+                bitmap = qrBitmap.asImageBitmap(),
+                contentDescription = stringResource(R.string.cd_source_cloud_advanced_qr),
+                modifier = Modifier
+                    .size(220.dp)
+                    .clip(RoundedCornerShape(20.dp))
+            )
+        }
     }
 }
 

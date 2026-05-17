@@ -275,6 +275,17 @@
     <string name="source_cloud_service_connected">Connected</string>
     <string name="source_cloud_service_disconnected">Not connected</string>
     <string name="source_cloud_connection_flows_soon">Source service connection flows are coming soon.</string>
+    <string name="source_cloud_config_status_title">Source config</string>
+    <string name="source_cloud_config_status_unknown">Config status unavailable.</string>
+    <string name="source_cloud_advanced_config_title">Advanced Source Config</string>
+    <string name="source_cloud_advanced_config_subtitle">Open a short-lived, private config page from your phone.</string>
+    <string name="source_cloud_advanced_qr_title">Scan to configure advanced sources</string>
+    <string name="source_cloud_advanced_qr_message">This QR code is short-lived and should be treated like a secret.</string>
+    <string name="source_cloud_advanced_regenerate_title">Regenerate advanced QR</string>
+    <string name="source_cloud_advanced_regenerate_subtitle">Use this if the previous link expired or failed.</string>
+    <string name="source_cloud_reset_config_title">Reset source config</string>
+    <string name="source_cloud_reset_config_subtitle">Recreate your private backend source config for this profile.</string>
+    <string name="cd_source_cloud_advanced_qr">Advanced Source Config QR code</string>
     <string name="settings_emby_title">Emby</string>
     <string name="settings_emby_subtitle">Direct streams and playback reporting from your Emby server</string>
     <string name="settings_emby_connected">Connected</string>

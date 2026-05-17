@@ -23,10 +23,27 @@ class SourceCloudContractTest {
         val status = SourceCloudStatus(
             enabled = true,
             baseUrlConfigured = true,
+            config = SourceCloudConfigState(
+                status = SourceCloudConfigStatus.READY,
+                label = "Ready",
+                advancedConfigAvailable = true
+            ),
             services = listOf(SourceCloudServiceStatus(SourceCloudService.REAL_DEBRID, connected = true))
         )
 
         assertTrue(status.hasConnectedService)
+        assertEquals(SourceCloudConfigStatus.READY, status.config.status)
+        assertTrue(status.config.advancedConfigAvailable)
+    }
+
+    @Test
+    fun `config status is resolved from backend keys`() {
+        assertSame(SourceCloudConfigStatus.NOT_PROVISIONED, SourceCloudConfigStatus.fromKey("not_provisioned"))
+        assertSame(SourceCloudConfigStatus.READY, SourceCloudConfigStatus.fromKey("ready"))
+        assertSame(SourceCloudConfigStatus.PROVISIONING_FAILED, SourceCloudConfigStatus.fromKey("provisioning_failed"))
+        assertSame(SourceCloudConfigStatus.UNAVAILABLE, SourceCloudConfigStatus.fromKey("unavailable"))
+        assertSame(SourceCloudConfigStatus.INVALID, SourceCloudConfigStatus.fromKey("invalid"))
+        assertSame(SourceCloudConfigStatus.UNKNOWN, SourceCloudConfigStatus.fromKey("missing"))
     }
 
     @Test
