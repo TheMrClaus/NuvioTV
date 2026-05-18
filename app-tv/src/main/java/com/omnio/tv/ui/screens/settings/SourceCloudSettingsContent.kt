@@ -4,14 +4,13 @@ package com.omnio.tv.ui.screens.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
@@ -63,57 +62,47 @@ fun SourceCloudSettingsContent(
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 8.dp),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 uiState.errorMessage?.let { message ->
-                    item(key = "source_cloud_error") {
-                        SourceCloudInfoCard(message = message, tone = SourceCloudInfoTone.Error)
-                    }
+                    SourceCloudInfoCard(message = message, tone = SourceCloudInfoTone.Error)
                 }
 
                 if (status?.baseUrlConfigured == false) {
-                    item(key = "source_cloud_backend_missing") {
-                        SourceCloudInfoCard(message = stringResource(R.string.source_cloud_backend_missing))
-                    }
+                    SourceCloudInfoCard(message = stringResource(R.string.source_cloud_backend_missing))
                 }
 
                 if (status != null && !hasConnectedService) {
-                    item(key = "source_cloud_no_services") {
-                        SourceCloudInfoCard(message = stringResource(R.string.source_cloud_no_services))
-                    }
+                    SourceCloudInfoCard(message = stringResource(R.string.source_cloud_no_services))
                 }
 
                 if (config != null) {
-                    item(key = "source_cloud_config_state") {
-                        SourceCloudConfigStatusCard(
-                            title = stringResource(R.string.source_cloud_config_status_title),
-                            subtitle = sourceCloudConfigSubtitle(config.label, config.message)
-                        )
-                    }
-                }
-
-                item(key = "source_cloud_enabled") {
-                    SettingsToggleRow(
-                        title = stringResource(R.string.source_cloud_enable_title),
-                        subtitle = stringResource(R.string.source_cloud_enable_subtitle),
-                        checked = sourceCloudEnabled,
-                        enabled = status != null && !uiState.isLoading,
-                        onToggle = { viewModel.setEnabled(!sourceCloudEnabled) },
-                        modifier = if (initialFocusRequester != null) {
-                            Modifier.focusRequester(initialFocusRequester)
-                        } else {
-                            Modifier
-                        }
+                    SourceCloudConfigStatusCard(
+                        title = stringResource(R.string.source_cloud_config_status_title),
+                        subtitle = sourceCloudConfigSubtitle(config.label, config.message)
                     )
                 }
 
-                items(
-                    items = SourceCloudService.entries,
-                    key = { service -> "source_cloud_service_${service.key}" }
-                ) { service ->
+                SettingsToggleRow(
+                    title = stringResource(R.string.source_cloud_enable_title),
+                    subtitle = stringResource(R.string.source_cloud_enable_subtitle),
+                    checked = sourceCloudEnabled,
+                    enabled = status != null && !uiState.isLoading,
+                    onToggle = { viewModel.setEnabled(!sourceCloudEnabled) },
+                    modifier = if (initialFocusRequester != null) {
+                        Modifier.focusRequester(initialFocusRequester)
+                    } else {
+                        Modifier
+                    }
+                )
+
+                SourceCloudService.entries.forEach { service ->
                     val serviceStatus = services.firstOrNull { it.service == service }
                     SourceCloudServiceStatusCard(
                         title = serviceStatus?.label ?: service.displayName,
@@ -121,48 +110,36 @@ fun SourceCloudSettingsContent(
                     )
                 }
 
-                item(key = "source_cloud_connection_flows_soon") {
-                    SourceCloudInfoCard(message = stringResource(R.string.source_cloud_connection_flows_soon))
-                }
+                SourceCloudInfoCard(message = stringResource(R.string.source_cloud_connection_flows_soon))
 
-                item(key = "source_cloud_advanced_config") {
+                SettingsActionRow(
+                    title = stringResource(R.string.source_cloud_advanced_config_title),
+                    subtitle = stringResource(R.string.source_cloud_advanced_config_subtitle),
+                    onClick = { viewModel.requestAdvancedConfigSession() },
+                    enabled = config?.advancedConfigAvailable == true && !uiState.isAdvancedConfigLoading
+                )
+
+                if (advancedSession != null) {
+                    SourceCloudAdvancedQrCard(
+                        url = advancedSession.url,
+                        message = advancedSession.message ?: stringResource(R.string.source_cloud_advanced_qr_message)
+                    )
+
                     SettingsActionRow(
-                        title = stringResource(R.string.source_cloud_advanced_config_title),
-                        subtitle = stringResource(R.string.source_cloud_advanced_config_subtitle),
+                        title = stringResource(R.string.source_cloud_advanced_regenerate_title),
+                        subtitle = stringResource(R.string.source_cloud_advanced_regenerate_subtitle),
                         onClick = { viewModel.requestAdvancedConfigSession() },
-                        enabled = config?.advancedConfigAvailable == true && !uiState.isAdvancedConfigLoading
+                        enabled = !uiState.isAdvancedConfigLoading
                     )
                 }
 
-                if (advancedSession != null) {
-                    item(key = "source_cloud_advanced_qr") {
-                        SourceCloudAdvancedQrCard(
-                            url = advancedSession.url,
-                            message = advancedSession.message ?: stringResource(R.string.source_cloud_advanced_qr_message)
-                        )
-                    }
-                }
-
-                if (advancedSession != null) {
-                    item(key = "source_cloud_regenerate_advanced") {
-                        SettingsActionRow(
-                            title = stringResource(R.string.source_cloud_advanced_regenerate_title),
-                            subtitle = stringResource(R.string.source_cloud_advanced_regenerate_subtitle),
-                            onClick = { viewModel.requestAdvancedConfigSession() },
-                            enabled = !uiState.isAdvancedConfigLoading
-                        )
-                    }
-                }
-
                 if (config?.canReset == true) {
-                    item(key = "source_cloud_reset_config") {
-                        SettingsActionRow(
-                            title = stringResource(R.string.source_cloud_reset_config_title),
-                            subtitle = stringResource(R.string.source_cloud_reset_config_subtitle),
-                            onClick = { viewModel.resetConfig() },
-                            enabled = !uiState.isLoading
-                        )
-                    }
+                    SettingsActionRow(
+                        title = stringResource(R.string.source_cloud_reset_config_title),
+                        subtitle = stringResource(R.string.source_cloud_reset_config_subtitle),
+                        onClick = { viewModel.resetConfig() },
+                        enabled = !uiState.isLoading
+                    )
                 }
             }
         }
