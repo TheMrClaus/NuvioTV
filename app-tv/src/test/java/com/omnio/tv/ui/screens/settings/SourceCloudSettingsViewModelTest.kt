@@ -138,7 +138,9 @@ class SourceCloudSettingsViewModelTest {
                 SourceCloudAdvancedConfigSession(
                     url = "https://source.omnio.tv/advanced/session/abc",
                     expiresAtEpochMillis = 1_770_000_000_000L,
-                    message = "Scan this QR code from your phone."
+                    message = "Scan this QR code from your phone.",
+                    configurePassword = "secret-password",
+                    directConfigureUrl = "https://account.omnio.tv/source-cloud/configure"
                 )
             )
         )
@@ -151,6 +153,11 @@ class SourceCloudSettingsViewModelTest {
         assertEquals(listOf("status", "requestAdvancedConfigSession"), repository.events)
         assertEquals("https://source.omnio.tv/advanced/session/abc", viewModel.uiState.value.advancedConfigSession?.url)
         assertEquals("Scan this QR code from your phone.", viewModel.uiState.value.advancedConfigSession?.message)
+        assertEquals("secret-password", viewModel.uiState.value.advancedConfigSession?.configurePassword)
+        assertEquals(
+            "https://account.omnio.tv/source-cloud/configure",
+            viewModel.uiState.value.advancedConfigSession?.directConfigureUrl
+        )
         assertNull(viewModel.uiState.value.errorMessage)
     }
 

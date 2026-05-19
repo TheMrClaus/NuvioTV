@@ -32,7 +32,9 @@ class SourceCloudRepositoryImplTest {
             SourceCloudAdvancedConfigSessionResponseDto(
                 url = "https://source.omnio.tv/advanced/session/abc",
                 expiresAtEpochMillis = 1_770_000_000_000L,
-                message = "Scan to open advanced source config"
+                message = "Scan to open advanced source config",
+                configurePassword = "secret-password",
+                directConfigureUrl = "https://account.omnio.tv/aios/configure"
             )
         )
         val repository = repository(api)
@@ -44,7 +46,9 @@ class SourceCloudRepositoryImplTest {
                 SourceCloudAdvancedConfigSession(
                     url = "https://source.omnio.tv/advanced/session/abc",
                     expiresAtEpochMillis = 1_770_000_000_000L,
-                    message = "Scan to open advanced source config"
+                    message = "Scan to open advanced source config",
+                    configurePassword = "secret-password",
+                    directConfigureUrl = "https://account.omnio.tv/aios/configure"
                 )
             ),
             result

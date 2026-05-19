@@ -42,6 +42,13 @@ Deno.serve(async (request) => {
   const client = createServiceClient();
   const ownerId = await resolveOwnerId(client, userId);
 
+  await client
+    .from("source_cloud_advanced_sessions")
+    .update({ status: "revoked" })
+    .eq("user_id", ownerId)
+    .eq("profile_id", profileId)
+    .eq("status", "active");
+
   const tokenBytes = new Uint8Array(ADVANCED_SESSION_TOKEN_BYTES);
   crypto.getRandomValues(tokenBytes);
   const opaqueToken = Array.from(tokenBytes)
@@ -109,8 +116,8 @@ Deno.serve(async (request) => {
     ? `${aioBaseUrl}/stremio/${aioConfigId}/${aioEncryptedPassword}/configure`
     : null;
 
-  const baseUrl = Deno.env.get("SOURCE_CLOUD_ADVANCED_BASE_URL") ?? "https://source.omnio.tv";
-  const url = `${baseUrl.replace(/\/+$/, "")}/advanced/session/${opaqueToken}`;
+  const baseUrl = Deno.env.get("SOURCE_CLOUD_ADVANCED_BASE_URL") ?? "https://account.omnio.tv";
+  const url = `${baseUrl.replace(/\/+$/, "")}/source-cloud/handoff/${opaqueToken}`;
 
   return jsonResponse(200, {
     url,

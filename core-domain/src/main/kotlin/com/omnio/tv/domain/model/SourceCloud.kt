@@ -52,7 +52,9 @@ data class SourceCloudConfigState(
 data class SourceCloudAdvancedConfigSession(
     val url: String,
     val expiresAtEpochMillis: Long? = null,
-    val message: String? = null
+    val message: String? = null,
+    val configurePassword: String? = null,
+    val directConfigureUrl: String? = null
 )
 
 data class SourceCloudServiceStatus(

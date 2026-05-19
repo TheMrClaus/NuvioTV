@@ -69,7 +69,9 @@ data class SourceCloudConfigStateDto(
 data class SourceCloudAdvancedConfigSessionResponseDto(
     @param:Json(name = "url") val url: String,
     @param:Json(name = "expiresAtEpochMillis") val expiresAtEpochMillis: Long? = null,
-    @param:Json(name = "message") val message: String? = null
+    @param:Json(name = "message") val message: String? = null,
+    @param:Json(name = "configurePassword") val configurePassword: String? = null,
+    @param:Json(name = "directConfigureUrl") val directConfigureUrl: String? = null
 )
 
 @JsonClass(generateAdapter = true)
@@ -159,7 +161,9 @@ fun SourceCloudAdvancedConfigSessionResponseDto.toDomain(): SourceCloudAdvancedC
     SourceCloudAdvancedConfigSession(
         url = url,
         expiresAtEpochMillis = expiresAtEpochMillis,
-        message = message
+        message = message,
+        configurePassword = configurePassword,
+        directConfigureUrl = directConfigureUrl
     )
 
 fun SourceCloudServiceStatusDto.toDomain(): SourceCloudServiceStatus? {

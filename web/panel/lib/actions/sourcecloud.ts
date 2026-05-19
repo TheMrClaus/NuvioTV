@@ -54,6 +54,14 @@ export interface SourceCloudAdvancedSessionResponse {
   directConfigureUrl?: string | null;
 }
 
+export interface SourceCloudRedeemedSessionResponse {
+  profileId: number;
+  directConfigureUrl: string | null;
+  configurePassword: string | null;
+  expiresAtEpochMillis: number;
+  sourceCloudSettingsPath: string;
+}
+
 async function callEdge<T>(fn: string, body: unknown): Promise<T | null> {
   const supabase = await createServerSupabase();
   const {
@@ -195,5 +203,15 @@ export async function requestSourceCloudAdvancedSession(
   return callEdge<SourceCloudAdvancedSessionResponse>(
     "source-cloud-advanced-session",
     { profileId },
+  );
+}
+
+export async function redeemSourceCloudAdvancedSession(
+  token: string,
+): Promise<SourceCloudRedeemedSessionResponse | null> {
+  if (!token.trim()) return null;
+  return callEdge<SourceCloudRedeemedSessionResponse>(
+    "source-cloud-redeem-session",
+    { token: token.trim() },
   );
 }
