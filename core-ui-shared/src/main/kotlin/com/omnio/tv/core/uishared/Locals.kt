@@ -5,10 +5,10 @@ import androidx.compose.ui.graphics.Color
 import com.omnio.tv.domain.model.AppTheme
 
 /**
- * Form-factor-neutral extended colors. The TV / phone OmnioTheme wrappers each
- * build one of these from the active [OmnioColorScheme] and provide it through
- * [LocalOmnioExtendedColors] so screens can read non-Material slots
- * (focus ring, rating gold, text tertiary, …) uniformly.
+ * Extended colors. The TV OmnioTheme wrapper builds one of these from the
+ * active [OmnioColorScheme] and exposes it through [LocalOmnioExtendedColors]
+ * so screens can read non-Material slots (focus ring, rating gold, text
+ * tertiary, …).
  */
 data class OmnioExtendedColors(
     val backgroundElevated: Color,

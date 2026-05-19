@@ -21,10 +21,7 @@ APK_DIR = ROOT / APP_MODULE / "build" / "outputs" / "apk" / "release"
 UPDATE_MANIFESTS_DIR = ROOT / "updates"
 GITHUB_OWNER = "TheMrClaus"
 GITHUB_REPO = "OmnioTV"
-MODULE_DISPLAY_NAMES = {
-    "app-tv": "OmnioTV",
-    "app-phone": "Omnio Phone",
-}
+APP_DISPLAY_NAME = "OmnioTV"
 DEFAULT_BETA_NOTICE = (
     "## This is a beta version intended for testing only. Expect breaking changes "
     "in updates. Normal users are advised to wait for the stable release."
@@ -137,16 +134,12 @@ def write_build_file(contents: str) -> None:
     BUILD_FILE.write_text(contents, encoding="utf-8-sig")
 
 
-def module_display_name(app_module: str) -> str:
-    return MODULE_DISPLAY_NAMES.get(app_module, app_module)
-
-
 def default_release_tag(version_name: str) -> str:
     return f"{version_name}-{APP_MODULE}"
 
 
 def default_release_title(version_name: str) -> str:
-    return f"{module_display_name(APP_MODULE)} {version_name}"
+    return f"{APP_DISPLAY_NAME} {version_name}"
 
 
 def last_tag() -> str | None:
@@ -323,7 +316,7 @@ def build_update_manifest(
     )
     return {
         "app_module": APP_MODULE,
-        "app_name": module_display_name(APP_MODULE),
+        "app_name": APP_DISPLAY_NAME,
         "version_name": version_name,
         "release_tag": release_tag,
         "release_title": release_title,
@@ -547,7 +540,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--release-tag",
-        help="Git tag to create for the release. Defaults to <versionName>-<module>.",
+        help="Git tag to create for the release. Defaults to <versionName>-app-tv.",
     )
     parser.add_argument(
         "--release-title",
@@ -607,29 +600,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Build all release APKs, commit the version bump, push tag/branch, and create the GitHub release as a draft.",
     )
-    parser.add_argument(
-        "--module",
-        choices=["app-tv", "app-phone"],
-        default="app-tv",
-        help="App module to release. Defaults to app-tv.",
-    )
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_args()
-
-    global APP_MODULE, BUILD_FILE, APK_DIR, EXPECTED_ASSET_NAMES
-    APP_MODULE = args.module
-    BUILD_FILE = ROOT / APP_MODULE / "build.gradle.kts"
-    APK_DIR = ROOT / APP_MODULE / "build" / "outputs" / "apk" / "release"
-    EXPECTED_ASSET_NAMES = [
-        f"{APP_MODULE}-arm64-v8a-release.apk",
-        f"{APP_MODULE}-armeabi-v7a-release.apk",
-        f"{APP_MODULE}-x86_64-release.apk",
-        f"{APP_MODULE}-x86-release.apk",
-        f"{APP_MODULE}-universal-release.apk",
-    ]
 
     selected_modes = [args.dry_run, args.publish, args.draft]
     if sum(1 for enabled in selected_modes if enabled) > 1:

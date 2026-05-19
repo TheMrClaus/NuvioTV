@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Omnio</string>
-    <string name="catalog_see_all_empty_title">Không có mục nào</string>
-    <string name="catalog_see_all_from">từ %1$s</string>
-    <string name="search_placeholder">Tìm phim &amp; chương trình TV</string>
-    <string name="search_start_subtitle">Nhập ít nhất 2 ký tự</string>
-    <string name="search_start_title">Bắt đầu tìm kiếm</string>
-</resources>

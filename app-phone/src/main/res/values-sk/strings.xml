@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="catalog_see_all_empty_title">Žiadne položky nie sú dostupné</string>
-    <string name="catalog_see_all_from">z %1$s</string>
-    <string name="search_placeholder">Hľadať filmy a seriály</string>
-</resources>
