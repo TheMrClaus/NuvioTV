@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,6 +100,7 @@ internal enum class SettingsCategory {
     PLUGINS,
     INTEGRATION,
     PLAYBACK,
+    STREAM_PREFS,
     ADVANCED,
     TRAKT,
     ABOUT,
@@ -198,6 +200,13 @@ private fun rememberSettingsSectionSpecs() = listOf(
         destination = SettingsSectionDestination.Inline
     ),
     SettingsSectionSpec(
+        category = SettingsCategory.STREAM_PREFS,
+        title = stringResource(R.string.settings_stream_prefs),
+        icon = Icons.Default.Tune,
+        subtitle = stringResource(R.string.settings_stream_prefs_subtitle),
+        destination = SettingsSectionDestination.Inline
+    ),
+    SettingsSectionSpec(
         category = SettingsCategory.TRAKT,
         title = "Trakt",
         rawIconRes = R.raw.trakt_tv_glyph,
@@ -272,6 +281,7 @@ fun SettingsScreen(
                 SettingsCategory.LAYOUT to FocusRequester(),
                 SettingsCategory.INTEGRATION to FocusRequester(),
                 SettingsCategory.PLAYBACK to FocusRequester(),
+                SettingsCategory.STREAM_PREFS to FocusRequester(),
                 SettingsCategory.ADVANCED to FocusRequester(),
                 SettingsCategory.ABOUT to FocusRequester()
             )
@@ -474,6 +484,13 @@ fun SettingsScreen(
                         SettingsCategory.PLAYBACK -> PlaybackSettingsContent(
                             initialFocusRequester = if (allowDetailAutofocus) {
                                 contentFocusRequesters[SettingsCategory.PLAYBACK]
+                            } else {
+                                null
+                            }
+                        )
+                        SettingsCategory.STREAM_PREFS -> StreamPreferencesSettingsContent(
+                            initialFocusRequester = if (allowDetailAutofocus) {
+                                contentFocusRequesters[SettingsCategory.STREAM_PREFS]
                             } else {
                                 null
                             }
