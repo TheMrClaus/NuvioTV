@@ -34,6 +34,40 @@ interface ServiceEntry {
   credentials: Record<string, string>;
 }
 
+function bumpTorrentioTimeout(config: Record<string, unknown>): void {
+  const presets = config.presets;
+  if (!Array.isArray(presets)) return;
+  for (const preset of presets) {
+    if (!preset || typeof preset !== "object") continue;
+    const p = preset as Record<string, unknown>;
+    if (p.type !== "torrentio") continue;
+    const opts = p.options;
+    if (opts && typeof opts === "object") {
+      (opts as Record<string, unknown>).timeout = 15000;
+    }
+  }
+}
+
+function applyTmdbPolicy(config: Record<string, unknown>): void {
+  const tmdbKey = Deno.env.get("AIOSTREAMS_TMDB_API_KEY") ?? "";
+  const tmdbToken = Deno.env.get("AIOSTREAMS_TMDB_ACCESS_TOKEN") ?? "";
+  if (tmdbKey) config.tmdbApiKey = tmdbKey;
+  if (tmdbToken) config.tmdbAccessToken = tmdbToken;
+  if (config.tmdbApiKey === "<template_placeholder>") delete config.tmdbApiKey;
+  if (config.tmdbAccessToken === "<template_placeholder>") delete config.tmdbAccessToken;
+  const hasTmdb = !!(config.tmdbApiKey || config.tmdbAccessToken);
+  if (hasTmdb) return;
+  const disable = (key: string) => {
+    const existing = config[key];
+    if (existing && typeof existing === "object") {
+      config[key] = { ...(existing as Record<string, unknown>), enabled: false };
+    }
+  };
+  disable("titleMatching");
+  disable("yearMatching");
+  disable("digitalReleaseFilter");
+}
+
 Deno.serve(async (request) => {
   const cors = handleCors(request);
   if (cors) return cors;
@@ -131,13 +165,15 @@ Deno.serve(async (request) => {
         provisioningError = "Failed to fetch existing AIOStreams config";
         configStatus = "provisioning_failed";
       } else {
-        const fetchJson = await fetchResponse.json() as { data?: Record<string, unknown> };
-        const current = fetchJson.data ?? null;
+        const fetchJson = await fetchResponse.json() as { data?: { userData?: Record<string, unknown> } };
+        const current = fetchJson.data?.userData ?? null;
         if (!current) {
           provisioningError = "AIOStreams returned empty config";
           configStatus = "provisioning_failed";
         } else {
           const merged: Record<string, unknown> = { ...current, services };
+          applyTmdbPolicy(merged);
+          bumpTorrentioTimeout(merged);
           const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
           if (addonPassword) merged.addonPassword = addonPassword;
           const putResponse = await fetch(`${baseUrl}/api/v1/user`, {

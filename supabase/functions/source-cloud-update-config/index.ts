@@ -1,0 +1,320 @@
+import {
+  CONFIG_STATUS_LABELS,
+  SERVICE_LABELS,
+  SUPPORTED_SERVICES,
+  createServiceClient,
+  decryptAesGcm,
+  errorResponse,
+  handleCors,
+  jsonResponse,
+  parseProfileId,
+  resolveOwnerId,
+  requireAuth,
+  type SupportedService,
+} from "../_shared/source_cloud.ts";
+
+/**
+ * Update the user-configurable bits of their AIOStreams config from the
+ * in-app API Keys section. All body fields are optional — only the
+ * provided ones get applied. Returns status-shaped response so the app
+ * can refresh.
+ *
+ * Body: {
+ *   profileId: number,
+ *   tmdbApiKey?: string | null,        // null clears
+ *   tmdbAccessToken?: string | null,
+ *   tvdbApiKey?: string | null,
+ *   rpdbApiKey?: string | null,
+ *   animeToshoEnabled?: boolean,
+ *   debridioApiKey?: string | null,    // null clears + disables preset
+ * }
+ *
+ * Edge cases:
+ * - No existing AIOStreams config → 400 "Connect a service first"
+ * - GET/PUT failure → returns provisioning_failed in the response
+ */
+
+function bumpTorrentioTimeout(config: Record<string, unknown>): void {
+  const presets = config.presets;
+  if (!Array.isArray(presets)) return;
+  for (const preset of presets) {
+    if (!preset || typeof preset !== "object") continue;
+    const p = preset as Record<string, unknown>;
+    if (p.type !== "torrentio") continue;
+    const opts = p.options;
+    if (opts && typeof opts === "object") {
+      (opts as Record<string, unknown>).timeout = 15000;
+    }
+  }
+}
+
+function applyTmdbPolicy(config: Record<string, unknown>): void {
+  const tmdbKey = Deno.env.get("AIOSTREAMS_TMDB_API_KEY") ?? "";
+  const tmdbToken = Deno.env.get("AIOSTREAMS_TMDB_ACCESS_TOKEN") ?? "";
+  if (tmdbKey) config.tmdbApiKey = tmdbKey;
+  if (tmdbToken) config.tmdbAccessToken = tmdbToken;
+  if (config.tmdbApiKey === "<template_placeholder>") delete config.tmdbApiKey;
+  if (config.tmdbAccessToken === "<template_placeholder>") delete config.tmdbAccessToken;
+  const hasTmdb = !!(config.tmdbApiKey || config.tmdbAccessToken);
+  if (hasTmdb) return;
+  const disable = (key: string) => {
+    const existing = config[key];
+    if (existing && typeof existing === "object") {
+      config[key] = { ...(existing as Record<string, unknown>), enabled: false };
+    }
+  };
+  disable("titleMatching");
+  disable("yearMatching");
+  disable("digitalReleaseFilter");
+}
+
+function randomInstanceId(): string {
+  return Math.random().toString(16).slice(2, 5);
+}
+
+function applyTopLevel(
+  config: Record<string, unknown>,
+  key: string,
+  value: string | null | undefined,
+): void {
+  if (value === undefined) return;
+  if (value === null || value === "") {
+    delete config[key];
+  } else {
+    config[key] = value;
+  }
+}
+
+function applyAnimeToshoToggle(
+  config: Record<string, unknown>,
+  enabled: boolean | undefined,
+): void {
+  if (enabled === undefined) return;
+  const presets = Array.isArray(config.presets) ? config.presets as Array<Record<string, unknown>> : [];
+  const idx = presets.findIndex((p) => p && p.type === "animetosho");
+  if (idx >= 0) {
+    presets[idx] = { ...presets[idx], enabled };
+  } else if (enabled) {
+    presets.push({
+      type: "animetosho",
+      instanceId: randomInstanceId(),
+      enabled: true,
+      options: {
+        name: "AnimeTosho",
+        timeout: 7000,
+        mediaTypes: ["anime"],
+        useMultipleInstances: false,
+      },
+    });
+  }
+  config.presets = presets;
+}
+
+function applyDebridioKey(
+  config: Record<string, unknown>,
+  apiKey: string | null | undefined,
+  servicesList: Array<{ id: string }>,
+): void {
+  if (apiKey === undefined) return;
+  const presets = Array.isArray(config.presets) ? config.presets as Array<Record<string, unknown>> : [];
+  const idx = presets.findIndex((p) => p && p.type === "debridio");
+  if (apiKey === null || apiKey === "") {
+    // Clear key, disable preset (don't delete — preserves user toggle state).
+    if (idx >= 0) {
+      const existing = presets[idx];
+      const opts = (existing.options as Record<string, unknown> | undefined) ?? {};
+      presets[idx] = {
+        ...existing,
+        enabled: false,
+        options: { ...opts, debridioApiKey: "" },
+      };
+    }
+  } else if (idx >= 0) {
+    const existing = presets[idx];
+    const opts = (existing.options as Record<string, unknown> | undefined) ?? {};
+    presets[idx] = {
+      ...existing,
+      enabled: true,
+      options: { ...opts, debridioApiKey: apiKey },
+    };
+  } else {
+    presets.push({
+      type: "debridio",
+      instanceId: randomInstanceId(),
+      enabled: true,
+      options: {
+        name: "Debridio",
+        timeout: 7000,
+        resources: ["stream"],
+        services: servicesList.map((s) => s.id),
+        mediaTypes: [],
+        useMultipleInstances: false,
+        debridioApiKey: apiKey,
+      },
+    });
+  }
+  config.presets = presets;
+}
+
+Deno.serve(async (request) => {
+  const cors = handleCors(request);
+  if (cors) return cors;
+
+  if (request.method !== "POST") return errorResponse(405, "Method not allowed");
+
+  const authResult = requireAuth(request);
+  if (authResult instanceof Response) return authResult;
+  const { userId } = authResult;
+
+  let body: {
+    profileId?: unknown;
+    tmdbApiKey?: unknown;
+    tmdbAccessToken?: unknown;
+    tvdbApiKey?: unknown;
+    rpdbApiKey?: unknown;
+    animeToshoEnabled?: unknown;
+    debridioApiKey?: unknown;
+  };
+  try {
+    body = await request.json();
+  } catch {
+    return errorResponse(400, "Invalid JSON body");
+  }
+
+  const profileId = parseProfileId(
+    typeof body.profileId === "number" ? String(body.profileId)
+      : typeof body.profileId === "string" ? body.profileId
+      : null,
+  );
+  if (profileId === null) return errorResponse(400, "Invalid profileId");
+
+  // Coerce body fields with explicit null vs undefined semantics:
+  // - missing field → undefined → no-op
+  // - null → clear / disable
+  // - string/boolean → apply value
+  const tmdbApiKey = "tmdbApiKey" in body
+    ? (body.tmdbApiKey === null ? null : typeof body.tmdbApiKey === "string" ? body.tmdbApiKey : undefined)
+    : undefined;
+  const tmdbAccessToken = "tmdbAccessToken" in body
+    ? (body.tmdbAccessToken === null ? null : typeof body.tmdbAccessToken === "string" ? body.tmdbAccessToken : undefined)
+    : undefined;
+  const tvdbApiKey = "tvdbApiKey" in body
+    ? (body.tvdbApiKey === null ? null : typeof body.tvdbApiKey === "string" ? body.tvdbApiKey : undefined)
+    : undefined;
+  const rpdbApiKey = "rpdbApiKey" in body
+    ? (body.rpdbApiKey === null ? null : typeof body.rpdbApiKey === "string" ? body.rpdbApiKey : undefined)
+    : undefined;
+  const animeToshoEnabled = typeof body.animeToshoEnabled === "boolean" ? body.animeToshoEnabled : undefined;
+  const debridioApiKey = "debridioApiKey" in body
+    ? (body.debridioApiKey === null ? null : typeof body.debridioApiKey === "string" ? body.debridioApiKey : undefined)
+    : undefined;
+
+  const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
+  const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
+  if (!baseUrl) return errorResponse(500, "AIOSTREAMS_BASE_URL not configured");
+
+  const client = createServiceClient();
+  const ownerId = await resolveOwnerId(client, userId);
+
+  const { data: configRow } = await client
+    .from("source_cloud_configs")
+    .select("aiostreams_config_id, aiostreams_config_secret_ciphertext, aiostreams_config_secret_nonce")
+    .eq("user_id", ownerId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+
+  const aioConfigId = configRow?.aiostreams_config_id as string | null | undefined;
+  if (
+    !aioConfigId ||
+    typeof configRow?.aiostreams_config_secret_ciphertext !== "string" ||
+    typeof configRow?.aiostreams_config_secret_nonce !== "string"
+  ) {
+    return errorResponse(400, "No AIOStreams config yet — connect a service first");
+  }
+
+  const aiostreamsPassword = await decryptAesGcm(
+    configRow.aiostreams_config_secret_ciphertext,
+    configRow.aiostreams_config_secret_nonce,
+  );
+  if (!aiostreamsPassword) return errorResponse(500, "Failed to decrypt AIOStreams password");
+
+  // Fetch current config so we mutate-in-place and don't drop other fields.
+  const fetchUrl = new URL(`${baseUrl}/api/v1/user`);
+  fetchUrl.searchParams.set("uuid", aioConfigId);
+  fetchUrl.searchParams.set("password", aiostreamsPassword);
+  fetchUrl.searchParams.set("raw", "true");
+  const fetchResponse = await fetch(fetchUrl.toString(), { method: "GET" });
+  if (!fetchResponse.ok) {
+    return errorResponse(502, `Failed to fetch existing AIOStreams config: HTTP ${fetchResponse.status}`);
+  }
+  const fetchJson = await fetchResponse.json() as { data?: { userData?: Record<string, unknown> } };
+  const config = fetchJson.data?.userData;
+  if (!config) return errorResponse(502, "AIOStreams returned empty config");
+
+  applyTopLevel(config, "tmdbApiKey", tmdbApiKey);
+  applyTopLevel(config, "tmdbAccessToken", tmdbAccessToken);
+  applyTopLevel(config, "tvdbApiKey", tvdbApiKey);
+  applyTopLevel(config, "rpdbApiKey", rpdbApiKey);
+  applyAnimeToshoToggle(config, animeToshoEnabled);
+  const services = Array.isArray(config.services)
+    ? (config.services as Array<{ id?: string }>).filter((s) => typeof s.id === "string") as Array<{ id: string }>
+    : [];
+  applyDebridioKey(config, debridioApiKey, services);
+
+  applyTmdbPolicy(config);
+  bumpTorrentioTimeout(config);
+  if (addonPassword) config.addonPassword = addonPassword;
+
+  const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ uuid: aioConfigId, password: aiostreamsPassword, config }),
+  });
+
+  let configStatus = "ready";
+  let provisioningError: string | null = null;
+  if (!putResponse.ok) {
+    const text = await putResponse.text().catch(() => "");
+    console.warn(`update-config PUT failed: ${putResponse.status} ${text.slice(0, 500)}`);
+    provisioningError = `HTTP ${putResponse.status}: ${text.slice(0, 300)}`;
+    configStatus = "provisioning_failed";
+  }
+
+  await client
+    .from("source_cloud_configs")
+    .update({
+      config_status: configStatus,
+      last_validated_at: new Date().toISOString(),
+    })
+    .eq("user_id", ownerId)
+    .eq("profile_id", profileId);
+
+  const { data: refreshedTokens } = await client
+    .from("source_cloud_service_tokens")
+    .select("service, status, label")
+    .eq("user_id", ownerId)
+    .eq("profile_id", profileId);
+
+  const statusInfo = CONFIG_STATUS_LABELS[configStatus] ?? CONFIG_STATUS_LABELS.unknown;
+  const servicesPayload = SUPPORTED_SERVICES.map((s: SupportedService) => {
+    const tokenRow = (refreshedTokens ?? []).find((t: { service: string }) => t.service === s);
+    const connected = tokenRow?.status === "connected";
+    return {
+      service: s,
+      connected,
+      label: tokenRow?.label ?? SERVICE_LABELS[s],
+      message: connected ? null : tokenRow?.status === "error" ? (provisioningError ?? "Connection error") : null,
+    };
+  });
+
+  return jsonResponse(200, {
+    config: {
+      status: configStatus,
+      label: statusInfo.label,
+      message: provisioningError ?? statusInfo.message,
+      advancedConfigAvailable: true,
+      canReset: true,
+    },
+    services: servicesPayload,
+  });
+});

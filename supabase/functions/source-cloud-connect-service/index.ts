@@ -44,18 +44,69 @@ function randomHex(byteLength: number): string {
     .join("");
 }
 
+// Pull AIOStreams' built-in "Debrid Starter" template (the equivalent of
+// the Stremio Perfect Setup guide) so new users start with the curated
+// preset list — Torrentio, Comet, StremThru Torz, AnimeTosho, Knaben,
+// MediaFusion — plus filters, sort, dedup, etc. Fetched at provision
+// time so a template update on AIOStreams' side is picked up
+// automatically. Falls back to a minimal config if the fetch fails.
+const STARTER_TEMPLATE_ID = "builtin.debrid-starter";
+
+async function fetchStarterConfig(baseUrl: string): Promise<Record<string, unknown> | null> {
+  try {
+    const response = await fetch(`${baseUrl}/api/v1/templates`);
+    if (!response.ok) return null;
+    const json = await response.json() as { data?: Array<{ metadata?: { id?: string }; config?: Record<string, unknown> }> };
+    const tpl = (json.data ?? []).find((t) => t.metadata?.id === STARTER_TEMPLATE_ID);
+    return tpl?.config ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * AIOStreams rejects configs that enable titleMatching / yearMatching /
+ * digitalReleaseFilter without a TMDB API key. If we have a key (env
+ * var AIOSTREAMS_TMDB_API_KEY) plumb it through; otherwise disable
+ * those features so validation passes.
+ */
+function applyTmdbPolicy(config: Record<string, unknown>): void {
+  const tmdbKey = Deno.env.get("AIOSTREAMS_TMDB_API_KEY") ?? "";
+  const tmdbToken = Deno.env.get("AIOSTREAMS_TMDB_ACCESS_TOKEN") ?? "";
+  if (tmdbKey) config.tmdbApiKey = tmdbKey;
+  if (tmdbToken) config.tmdbAccessToken = tmdbToken;
+  if (config.tmdbApiKey === "<template_placeholder>") delete config.tmdbApiKey;
+  if (config.tmdbAccessToken === "<template_placeholder>") delete config.tmdbAccessToken;
+  const hasTmdb = !!(config.tmdbApiKey || config.tmdbAccessToken);
+  if (hasTmdb) return;
+  const disable = (key: string) => {
+    const existing = config[key];
+    if (existing && typeof existing === "object") {
+      config[key] = { ...(existing as Record<string, unknown>), enabled: false };
+    }
+  };
+  disable("titleMatching");
+  disable("yearMatching");
+  disable("digitalReleaseFilter");
+}
+
 async function aioCreateUser(
   baseUrl: string,
   services: ServiceEntry[],
   password: string,
   addonPassword: string,
 ): Promise<{ uuid: string; encryptedPassword?: string; error?: string }> {
-  const config: Record<string, unknown> = {
-    services,
-    presets: [],
-    sortCriteria: { global: [] },
-    formatter: { id: "gdrive" },
-  };
+  const starter = await fetchStarterConfig(baseUrl);
+  const config: Record<string, unknown> = starter
+    ? { ...starter, services }
+    : {
+        services,
+        presets: [],
+        sortCriteria: { global: [] },
+        formatter: { id: "gdrive" },
+      };
+  applyTmdbPolicy(config);
+  bumpTorrentioTimeout(config);
   if (addonPassword) config.addonPassword = addonPassword;
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
@@ -84,8 +135,10 @@ async function aioFetchConfig(
   url.searchParams.set("raw", "true");
   const response = await fetch(url.toString(), { method: "GET" });
   if (!response.ok) return null;
-  const json = await response.json() as { data?: Record<string, unknown> };
-  return json.data ?? null;
+  // AIOStreams returns {data: {userData, encryptedPassword}}; the actual
+  // config we want to merge into lives under data.userData.
+  const json = await response.json() as { data?: { userData?: Record<string, unknown> } };
+  return json.data?.userData ?? null;
 }
 
 async function aioUpdateUser(
@@ -93,13 +146,37 @@ async function aioUpdateUser(
   uuid: string,
   password: string,
   config: Record<string, unknown>,
-): Promise<boolean> {
+): Promise<{ ok: boolean; error?: string }> {
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ uuid, password, config }),
   });
-  return response.ok;
+  if (response.ok) return { ok: true };
+  const text = await response.text().catch(() => "");
+  console.warn(`aioUpdateUser failed: ${response.status} ${text.slice(0, 500)}`);
+  return { ok: false, error: `HTTP ${response.status}: ${text.slice(0, 300)}` };
+}
+
+/**
+ * The Debrid Starter template ships Torrentio with a 5000ms timeout, but
+ * AIOStreams' manifest validation enforces a 10000ms floor for the
+ * Torrentio-Torbox lookup which is regularly slower than that under
+ * load. Bump it to 15000ms on every provision so the PUT/POST stops
+ * flaking out during AIOStreams' validation.
+ */
+function bumpTorrentioTimeout(config: Record<string, unknown>): void {
+  const presets = config.presets;
+  if (!Array.isArray(presets)) return;
+  for (const preset of presets) {
+    if (!preset || typeof preset !== "object") continue;
+    const p = preset as Record<string, unknown>;
+    if (p.type !== "torrentio") continue;
+    const opts = p.options;
+    if (opts && typeof opts === "object") {
+      (opts as Record<string, unknown>).timeout = 15000;
+    }
+  }
 }
 
 Deno.serve(async (request) => {
@@ -161,7 +238,7 @@ Deno.serve(async (request) => {
   for (const row of existingTokens ?? []) {
     const rowService = row.service as SupportedService | null;
     if (!rowService || rowService === service) continue; // skip the row we're overwriting
-    if (row.status !== "connected") continue;
+    if (row.status !== "connected" && row.status !== "error") continue;
     if (typeof row.access_token_ciphertext !== "string" || typeof row.token_nonce !== "string") continue;
     const plain = await decryptAesGcm(row.access_token_ciphertext, row.token_nonce);
     if (!plain) continue;
@@ -212,10 +289,12 @@ Deno.serve(async (request) => {
       configStatus = "provisioning_failed";
     } else {
       const merged: Record<string, unknown> = { ...current, services };
+      applyTmdbPolicy(merged);
+      bumpTorrentioTimeout(merged);
       if (addonPassword) merged.addonPassword = addonPassword;
-      const ok = await aioUpdateUser(baseUrl, aiostreamsConfigId, aiostreamsPassword, merged);
-      if (!ok) {
-        provisioningError = "Failed to update AIOStreams config";
+      const updateResult = await aioUpdateUser(baseUrl, aiostreamsConfigId, aiostreamsPassword, merged);
+      if (!updateResult.ok) {
+        provisioningError = `Failed to update AIOStreams config${updateResult.error ? `: ${updateResult.error}` : ""}`;
         configStatus = "provisioning_failed";
       }
     }
@@ -284,6 +363,17 @@ Deno.serve(async (request) => {
         },
         { onConflict: "user_id,profile_id" },
       );
+  } else {
+    // Successful save — heal any other service rows that had been left in
+    // "error" state by a previous failed attempt, since their credentials
+    // were just re-applied as part of this PUT/POST.
+    await client
+      .from("source_cloud_service_tokens")
+      .update({ status: "connected", last_checked_at: new Date().toISOString() })
+      .eq("user_id", ownerId)
+      .eq("profile_id", profileId)
+      .eq("status", "error")
+      .neq("service", service);
   }
 
   // Build the status-shaped response so the app can refresh in one round trip.
