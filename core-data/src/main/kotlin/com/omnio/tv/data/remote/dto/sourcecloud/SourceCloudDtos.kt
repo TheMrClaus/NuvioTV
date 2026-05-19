@@ -19,11 +19,17 @@ const val SOURCE_CLOUD_GROUP_NAME = "Omnio Source Cloud"
 
 @JsonClass(generateAdapter = true)
 data class SourceCloudSearchRequestDto(
+    @param:Json(name = "profileId") val profileId: Int,
     @param:Json(name = "type") val type: String,
     @param:Json(name = "videoId") val videoId: String,
     @param:Json(name = "tmdbId") val tmdbId: String? = null,
     @param:Json(name = "season") val season: Int? = null,
     @param:Json(name = "episode") val episode: Int? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class SourceCloudProfileScopedRequestDto(
+    @param:Json(name = "profileId") val profileId: Int
 )
 
 @JsonClass(generateAdapter = true)
@@ -100,7 +106,8 @@ data class SourceCloudStreamMetadataDto(
     @param:Json(name = "sourceService") val sourceService: String? = null
 )
 
-fun SourceCloudSearchRequest.toDto(): SourceCloudSearchRequestDto = SourceCloudSearchRequestDto(
+fun SourceCloudSearchRequest.toDto(profileId: Int): SourceCloudSearchRequestDto = SourceCloudSearchRequestDto(
+    profileId = profileId,
     type = type,
     videoId = videoId,
     tmdbId = tmdbId,

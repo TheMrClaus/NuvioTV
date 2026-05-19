@@ -4,10 +4,12 @@ import android.util.Log
 import com.omnio.tv.data.local.SourceCloudSettingsDataStore
 import com.omnio.tv.data.remote.api.SourceCloudApi
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudAdvancedConfigSessionResponseDto
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProfileScopedRequestDto
 import com.omnio.tv.domain.model.SourceCloudAdvancedConfigSession
 import com.omnio.tv.domain.model.SourceCloudConfigStatus
 import com.omnio.tv.domain.model.SourceCloudService
 import com.omnio.tv.domain.model.SourceCloudSettings
+import com.omnio.tv.domain.profile.ProfileManager
 import com.omnio.tv.domain.result.NetworkResult
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -26,7 +28,7 @@ class SourceCloudRepositoryImplTest {
     @Test
     fun `advanced config session request maps successful backend response`() = runTest {
         val api = mockk<SourceCloudApi>()
-        coEvery { api.createAdvancedConfigSession() } returns Response.success(
+        coEvery { api.createAdvancedConfigSession(any()) } returns Response.success(
             SourceCloudAdvancedConfigSessionResponseDto(
                 url = "https://source.omnio.tv/advanced/session/abc",
                 expiresAtEpochMillis = 1_770_000_000_000L,
@@ -47,13 +49,16 @@ class SourceCloudRepositoryImplTest {
             ),
             result
         )
+        coVerify(exactly = 1) {
+            api.createAdvancedConfigSession(SourceCloudProfileScopedRequestDto(profileId = 1))
+        }
     }
 
     @Test
     fun `advanced config failure is optional and returns null`() = runTest {
         mockAndroidLog()
         val api = mockk<SourceCloudApi>()
-        coEvery { api.createAdvancedConfigSession() } returns Response.error(503, "unavailable".toResponseBody())
+        coEvery { api.createAdvancedConfigSession(any()) } returns Response.error(503, "unavailable".toResponseBody())
         val repository = repository(api)
 
         val result = repository.requestAdvancedConfigSession()
@@ -65,14 +70,16 @@ class SourceCloudRepositoryImplTest {
     fun `reset source config ignores backend failure and refreshes local status shape`() = runTest {
         mockAndroidLog()
         val api = mockk<SourceCloudApi>()
-        coEvery { api.resetConfig() } returns Response.error(500, "failed".toResponseBody())
+        coEvery { api.resetConfig(any()) } returns Response.error(500, "failed".toResponseBody())
         val repository = repository(api)
 
         val status = repository.resetConfig()
 
         assertEquals(SourceCloudConfigStatus.UNKNOWN, status.config.status)
         assertNull(status.config.message)
-        coVerify(exactly = 1) { api.resetConfig() }
+        coVerify(exactly = 1) {
+            api.resetConfig(SourceCloudProfileScopedRequestDto(profileId = 1))
+        }
     }
 
     private fun repository(
@@ -80,11 +87,20 @@ class SourceCloudRepositoryImplTest {
         settings: SourceCloudSettings = SourceCloudSettings(
             enabled = true,
             connectedServices = setOf(SourceCloudService.REAL_DEBRID)
-        )
+        ),
+        profileId: Int = 1
     ): SourceCloudRepositoryImpl {
         val dataStore = mockk<SourceCloudSettingsDataStore>(relaxed = true)
         every { dataStore.settings } returns MutableStateFlow(settings)
-        return SourceCloudRepositoryImpl(api, dataStore, baseUrlConfiguredForTests = true, testOnly = Unit)
+        val profileManager = mockk<ProfileManager>()
+        every { profileManager.activeProfileId } returns MutableStateFlow(profileId)
+        return SourceCloudRepositoryImpl(
+            api,
+            dataStore,
+            profileManager,
+            baseUrlConfiguredForTests = true,
+            testOnly = Unit
+        )
     }
 
     private fun mockAndroidLog() {

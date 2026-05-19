@@ -5,6 +5,7 @@ import com.omnio.tv.core.network.safeApiCall
 import com.omnio.tv.data.BuildConfig
 import com.omnio.tv.data.local.SourceCloudSettingsDataStore
 import com.omnio.tv.data.remote.api.SourceCloudApi
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProfileScopedRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.toDomain
 import com.omnio.tv.data.remote.dto.sourcecloud.toDto
 import com.omnio.tv.domain.model.AddonStreams
@@ -15,6 +16,7 @@ import com.omnio.tv.domain.model.SourceCloudService
 import com.omnio.tv.domain.model.SourceCloudServiceStatus
 import com.omnio.tv.domain.model.SourceCloudSettings
 import com.omnio.tv.domain.model.SourceCloudStatus
+import com.omnio.tv.domain.profile.ProfileManager
 import com.omnio.tv.domain.repository.SourceCloudRepository
 import com.omnio.tv.domain.result.NetworkResult
 import kotlinx.coroutines.flow.Flow
@@ -28,24 +30,30 @@ private const val TAG = "SourceCloudRepository"
 class SourceCloudRepositoryImpl private constructor(
     private val api: SourceCloudApi,
     private val dataStore: SourceCloudSettingsDataStore,
+    private val profileManager: ProfileManager,
     private val baseUrlConfigured: Boolean
 ) : SourceCloudRepository {
     @Inject
     constructor(
         api: SourceCloudApi,
-        dataStore: SourceCloudSettingsDataStore
+        dataStore: SourceCloudSettingsDataStore,
+        profileManager: ProfileManager
     ) : this(
         api = api,
         dataStore = dataStore,
+        profileManager = profileManager,
         baseUrlConfigured = BuildConfig.SOURCE_CLOUD_BASE_URL.isNotBlank()
     )
 
     internal constructor(
         api: SourceCloudApi,
         dataStore: SourceCloudSettingsDataStore,
+        profileManager: ProfileManager,
         baseUrlConfiguredForTests: Boolean,
         testOnly: Unit = Unit
-    ) : this(api, dataStore, baseUrlConfiguredForTests)
+    ) : this(api, dataStore, profileManager, baseUrlConfiguredForTests)
+
+    private fun currentProfileId(): Int = profileManager.activeProfileId.value
 
     override val settings: Flow<SourceCloudSettings> = dataStore.settings
 
@@ -55,7 +63,7 @@ class SourceCloudRepositoryImpl private constructor(
             return local.toOfflineStatus(baseUrlConfigured = false)
         }
 
-        return when (val result = safeApiCall { api.status() }) {
+        return when (val result = safeApiCall { api.status(currentProfileId()) }) {
             is NetworkResult.Success -> result.data.toDomain(
                 enabled = local.enabled,
                 baseUrlConfigured = true
@@ -82,7 +90,7 @@ class SourceCloudRepositoryImpl private constructor(
             return NetworkResult.Success(null)
         }
 
-        return when (val result = safeApiCall { api.search(request.toDto()) }) {
+        return when (val result = safeApiCall { api.search(request.toDto(currentProfileId())) }) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toDomain())
             is NetworkResult.Error -> {
                 Log.w(TAG, "search failed: ${result.message}")
@@ -95,7 +103,8 @@ class SourceCloudRepositoryImpl private constructor(
     override suspend fun requestAdvancedConfigSession(): NetworkResult<SourceCloudAdvancedConfigSession?> {
         if (!baseUrlConfigured) return NetworkResult.Success(null)
 
-        return when (val result = safeApiCall { api.createAdvancedConfigSession() }) {
+        val body = SourceCloudProfileScopedRequestDto(profileId = currentProfileId())
+        return when (val result = safeApiCall { api.createAdvancedConfigSession(body) }) {
             is NetworkResult.Success -> NetworkResult.Success(result.data.toDomain())
             is NetworkResult.Error -> {
                 Log.w(TAG, "advanced config session failed: ${result.message}")
@@ -109,7 +118,8 @@ class SourceCloudRepositoryImpl private constructor(
         val local = settings.first()
         if (!baseUrlConfigured) return local.toOfflineStatus(baseUrlConfigured = false)
 
-        return when (val result = safeApiCall { api.resetConfig() }) {
+        val body = SourceCloudProfileScopedRequestDto(profileId = currentProfileId())
+        return when (val result = safeApiCall { api.resetConfig(body) }) {
             is NetworkResult.Success -> result.data.toDomain(
                 enabled = local.enabled,
                 baseUrlConfigured = true
