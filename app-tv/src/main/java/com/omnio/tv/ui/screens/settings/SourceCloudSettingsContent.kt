@@ -47,6 +47,9 @@ fun SourceCloudSettingsContent(
     val hasConnectedService = services.any { it.connected }
     val sourceCloudEnabled = status?.enabled == true
     val advancedSession = uiState.advancedConfigSession
+    val canRequestAdvancedSession = status?.baseUrlConfigured == true &&
+        !uiState.isAdvancedConfigLoading &&
+        !uiState.isLoading
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -104,9 +107,11 @@ fun SourceCloudSettingsContent(
 
                 SourceCloudService.entries.forEach { service ->
                     val serviceStatus = services.firstOrNull { it.service == service }
-                    SourceCloudServiceStatusCard(
+                    SettingsActionRow(
                         title = serviceStatus?.label ?: service.displayName,
-                        subtitle = sourceCloudServiceSubtitle(serviceStatus?.connected == true)
+                        subtitle = sourceCloudServiceSubtitle(serviceStatus?.connected == true),
+                        onClick = { viewModel.requestAdvancedConfigSession() },
+                        enabled = canRequestAdvancedSession
                     )
                 }
 
@@ -116,7 +121,7 @@ fun SourceCloudSettingsContent(
                     title = stringResource(R.string.source_cloud_advanced_config_title),
                     subtitle = stringResource(R.string.source_cloud_advanced_config_subtitle),
                     onClick = { viewModel.requestAdvancedConfigSession() },
-                    enabled = config?.advancedConfigAvailable == true && !uiState.isAdvancedConfigLoading
+                    enabled = canRequestAdvancedSession
                 )
 
                 if (advancedSession != null) {
