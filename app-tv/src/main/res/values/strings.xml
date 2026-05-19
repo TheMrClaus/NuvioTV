@@ -318,10 +318,9 @@
     <string name="source_cloud_apikey_field_label">API key</string>
     <string name="source_cloud_apikey_paste">Paste from clipboard</string>
     <string name="source_cloud_connect_submit">Connect</string>
-    <string name="source_cloud_connection_flows_soon">Source service connection flows are coming soon.</string>
     <string name="source_cloud_config_status_title">Source config</string>
     <string name="source_cloud_config_status_unknown">Config status unavailable.</string>
-    <string name="source_cloud_advanced_config_title">Advanced Source Config</string>
+    <string name="source_cloud_advanced_config_title">Open advanced configuration</string>
     <string name="source_cloud_advanced_config_subtitle">Open a short-lived, private config page from your phone.</string>
     <string name="source_cloud_advanced_qr_title">Scan to configure advanced sources</string>
     <string name="source_cloud_advanced_qr_message">This QR code is short-lived and should be treated like a secret.</string>

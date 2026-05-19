@@ -154,8 +154,6 @@ fun SourceCloudSettingsContent(
                     )
                 }
 
-                SourceCloudInfoCard(message = stringResource(R.string.source_cloud_connection_flows_soon))
-
                 SettingsActionRow(
                     title = stringResource(R.string.source_cloud_advanced_config_title),
                     subtitle = stringResource(R.string.source_cloud_advanced_config_subtitle),
