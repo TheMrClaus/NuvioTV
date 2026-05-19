@@ -48,22 +48,29 @@ async function aioCreateUser(
   baseUrl: string,
   services: ServiceEntry[],
   password: string,
-): Promise<{ uuid: string } | null> {
-  const config = {
+  addonPassword: string,
+): Promise<{ uuid: string; encryptedPassword?: string; error?: string }> {
+  const config: Record<string, unknown> = {
     services,
     presets: [],
     sortCriteria: { global: [] },
     formatter: { id: "gdrive" },
   };
+  if (addonPassword) config.addonPassword = addonPassword;
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ config, password }),
   });
-  if (!response.ok) return null;
-  const json = await response.json() as { data?: { uuid?: string } };
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    console.warn(`aioCreateUser failed: ${response.status} ${text.slice(0, 500)}`);
+    return { uuid: "", error: `HTTP ${response.status}: ${text.slice(0, 300)}` };
+  }
+  const json = await response.json() as { data?: { uuid?: string; encryptedPassword?: string } };
   const uuid = json.data?.uuid;
-  return uuid ? { uuid } : null;
+  if (!uuid) return { uuid: "", error: "No uuid in response" };
+  return { uuid, encryptedPassword: json.data?.encryptedPassword };
 }
 
 async function aioFetchConfig(
@@ -130,6 +137,7 @@ Deno.serve(async (request) => {
 
   const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
   if (!baseUrl) return errorResponse(500, "AIOSTREAMS_BASE_URL not configured");
+  const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
 
   const client = createServiceClient();
   const ownerId = await resolveOwnerId(client, userId);
@@ -170,7 +178,7 @@ Deno.serve(async (request) => {
   // Look up the existing AIOStreams config (if any) so we can update vs create.
   const { data: configRow } = await client
     .from("source_cloud_configs")
-    .select("aiostreams_config_id, aiostreams_config_secret_ciphertext, aiostreams_config_secret_nonce")
+    .select("aiostreams_config_id, aiostreams_config_secret_ciphertext, aiostreams_config_secret_nonce, aiostreams_encrypted_password")
     .eq("user_id", ownerId)
     .eq("profile_id", profileId)
     .maybeSingle();
@@ -187,18 +195,24 @@ Deno.serve(async (request) => {
       configRow.aiostreams_config_secret_nonce,
     );
   }
+  const existingEncryptedPassword: string | null =
+    (configRow?.aiostreams_encrypted_password as string | null) ?? null;
 
   let provisioningError: string | null = null;
   let configStatus: string = "ready";
 
-  if (aiostreamsConfigId && aiostreamsPassword) {
+  // PUT updates lose us the encryptedPassword the configure UI needs. If we
+  // don't have one stored (older provision or a fresh table without the
+  // column populated), force a re-create via POST so we capture it.
+  if (aiostreamsConfigId && aiostreamsPassword && existingEncryptedPassword) {
     // Update existing user: fetch their config, splice our services array in, PUT back.
     const current = await aioFetchConfig(baseUrl, aiostreamsConfigId, aiostreamsPassword);
     if (!current) {
       provisioningError = "Failed to fetch existing AIOStreams config";
       configStatus = "provisioning_failed";
     } else {
-      const merged = { ...current, services };
+      const merged: Record<string, unknown> = { ...current, services };
+      if (addonPassword) merged.addonPassword = addonPassword;
       const ok = await aioUpdateUser(baseUrl, aiostreamsConfigId, aiostreamsPassword, merged);
       if (!ok) {
         provisioningError = "Failed to update AIOStreams config";
@@ -208,9 +222,9 @@ Deno.serve(async (request) => {
   } else {
     // First-time provision.
     const newPassword = randomHex(32);
-    const created = await aioCreateUser(baseUrl, services, newPassword);
-    if (!created) {
-      provisioningError = "Failed to create AIOStreams user";
+    const created = await aioCreateUser(baseUrl, services, newPassword, addonPassword);
+    if (!created.uuid) {
+      provisioningError = `Failed to create AIOStreams user${created.error ? `: ${created.error}` : ""}`;
       configStatus = "provisioning_failed";
     } else {
       aiostreamsConfigId = created.uuid;
@@ -228,6 +242,7 @@ Deno.serve(async (request) => {
               aiostreams_config_id: aiostreamsConfigId,
               aiostreams_config_secret_ciphertext: encPassword.ciphertext,
               aiostreams_config_secret_nonce: encPassword.nonce,
+              aiostreams_encrypted_password: created.encryptedPassword ?? null,
               config_status: "ready",
               last_provisioned_at: new Date().toISOString(),
               last_validated_at: new Date().toISOString(),
@@ -295,7 +310,7 @@ Deno.serve(async (request) => {
     config: {
       status: configStatus,
       label: statusInfo.label,
-      message: statusInfo.message,
+      message: provisioningError ?? statusInfo.message,
       advancedConfigAvailable: true,
       canReset: configStatus !== "unknown",
     },

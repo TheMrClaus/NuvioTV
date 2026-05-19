@@ -2,6 +2,7 @@ import {
   ADVANCED_SESSION_TTL_MS,
   ADVANCED_SESSION_TOKEN_BYTES,
   createServiceClient,
+  decryptAesGcm,
   errorResponse,
   handleCors,
   jsonResponse,
@@ -76,6 +77,29 @@ Deno.serve(async (request) => {
       { onConflict: "user_id,profile_id" },
     );
 
+  // Decrypt the AIOStreams account password so the app can surface it to
+  // the user for paste-in on the configure page. The encryptedPassword in
+  // the URL only authorizes view; the raw password is what AIOStreams' web
+  // UI asks for to authorize save operations.
+  const { data: configRow } = await client
+    .from("source_cloud_configs")
+    .select("aiostreams_config_secret_ciphertext, aiostreams_config_secret_nonce")
+    .eq("user_id", ownerId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+
+  let configurePassword: string | null = null;
+  if (
+    configRow &&
+    typeof configRow.aiostreams_config_secret_ciphertext === "string" &&
+    typeof configRow.aiostreams_config_secret_nonce === "string"
+  ) {
+    configurePassword = await decryptAesGcm(
+      configRow.aiostreams_config_secret_ciphertext,
+      configRow.aiostreams_config_secret_nonce,
+    );
+  }
+
   const baseUrl = Deno.env.get("SOURCE_CLOUD_ADVANCED_BASE_URL") ?? "https://source.omnio.tv";
   const url = `${baseUrl.replace(/\/+$/, "")}/advanced/session/${opaqueToken}`;
 
@@ -83,5 +107,6 @@ Deno.serve(async (request) => {
     url,
     expiresAtEpochMillis: expiresAt.getTime(),
     message: "Scan to open advanced source config",
+    configurePassword,
   });
 });

@@ -137,7 +137,9 @@ Deno.serve(async (request) => {
           provisioningError = "AIOStreams returned empty config";
           configStatus = "provisioning_failed";
         } else {
-          const merged = { ...current, services };
+          const merged: Record<string, unknown> = { ...current, services };
+          const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
+          if (addonPassword) merged.addonPassword = addonPassword;
           const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },

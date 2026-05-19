@@ -1,2 +1,5 @@
 [functions.tv-logins-exchange]
 verify_jwt = false
+
+[functions.source-cloud-redeem-session]
+verify_jwt = false
