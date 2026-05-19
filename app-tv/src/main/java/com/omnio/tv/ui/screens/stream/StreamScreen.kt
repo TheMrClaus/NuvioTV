@@ -242,6 +242,7 @@ fun StreamScreen(
                     availableAddons = uiState.availableAddons,
                     sourceChips = uiState.sourceChips,
                     selectedAddonFilter = uiState.selectedAddonFilter,
+                    prefsFilteredCount = uiState.prefsFilteredCount,
                     onAddonFilterSelected = { viewModel.onEvent(StreamScreenEvent.OnAddonFilterSelected(it)) },
                     onStreamSelected = { stream ->
                         val currentIndex = uiState.filteredStreams.indexOfFirst {
@@ -490,6 +491,7 @@ private fun RightStreamSection(
     availableAddons: List<String>,
     sourceChips: List<SourceChipItem>,
     selectedAddonFilter: String?,
+    prefsFilteredCount: Int,
     onAddonFilterSelected: (String?) -> Unit,
     onStreamSelected: (Stream) -> Unit,
     focusedStreamIndex: Int,
@@ -551,6 +553,16 @@ private fun RightStreamSection(
             )
         )
         Spacer(modifier = Modifier.height(16.dp))
+
+        // Stream preferences filter badge
+        if (prefsFilteredCount > 0) {
+            Text(
+                text = stringResource(R.string.stream_prefs_filter_active, prefsFilteredCount),
+                style = MaterialTheme.typography.labelMedium,
+                color = OmnioColors.TextSecondary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+        }
 
         val chipRowHeight = 56.dp
 

@@ -26,13 +26,15 @@ data class StreamScreenUiState(
     val year: String? = null,
     val addonStreams: List<AddonStreams> = emptyList(),
     val allStreams: List<Stream> = emptyList(),
+    val prefFilteredAllStreams: List<Stream> = emptyList(),
     val selectedAddonFilter: String? = null, // null means "All"
     val filteredStreams: List<Stream> = emptyList(),
     val availableAddons: List<String> = emptyList(),
     val sourceChips: List<SourceChipItem> = emptyList(),
     val autoPlayStream: Stream? = null,
     val autoPlayPlaybackInfo: StreamPlaybackInfo? = null,
-    val error: String? = null
+    val error: String? = null,
+    val prefsFilteredCount: Int = 0
 ) {
     val isEpisode: Boolean get() = season != null && episode != null
 }

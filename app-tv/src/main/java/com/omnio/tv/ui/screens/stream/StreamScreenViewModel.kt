@@ -14,9 +14,12 @@ import com.omnio.tv.data.local.PlayerPreference
 import com.omnio.tv.data.local.PlayerSettingsDataStore
 import com.omnio.tv.data.local.StreamAutoPlayMode
 import com.omnio.tv.data.local.StreamLinkCacheDataStore
+import com.omnio.tv.data.local.StreamPreferencesDataStore
+import com.omnio.tv.data.stream.StreamPrefFilter
 import com.omnio.tv.domain.model.AddonStreams
 import com.omnio.tv.domain.model.Meta
 import com.omnio.tv.domain.model.Stream
+import com.omnio.tv.domain.model.StreamPreferences
 import com.omnio.tv.domain.repository.AddonRepository
 import com.omnio.tv.domain.repository.MetaRepository
 import com.omnio.tv.domain.repository.StreamRepository
@@ -50,6 +53,7 @@ class StreamScreenViewModel @Inject constructor(
     private val metaRepository: MetaRepository,
     private val playerSettingsDataStore: PlayerSettingsDataStore,
     private val streamLinkCacheDataStore: StreamLinkCacheDataStore,
+    private val streamPreferencesDataStore: StreamPreferencesDataStore,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private var autoPlayHandledForSession = false
@@ -57,6 +61,7 @@ class StreamScreenViewModel @Inject constructor(
     private var directAutoPlayFlowEnabledForSession = false
     private var streamLoadJob: Job? = null
     private var sourceChipErrorDismissJob: Job? = null
+    private var currentStreamPrefs: StreamPreferences = StreamPreferences.DEFAULT
 
     private val videoId: String = savedStateHandle["videoId"] ?: ""
     private val contentType: String = savedStateHandle["contentType"] ?: ""
@@ -126,6 +131,16 @@ class StreamScreenViewModel @Inject constructor(
         }
         loadMissingMetaDetailsIfNeeded()
         loadStreams()
+        viewModelScope.launch {
+            streamPreferencesDataStore.preferences.collectLatest { prefs ->
+                currentStreamPrefs = prefs
+                // If streams are already loaded, re-apply filters
+                val state = _uiState.value
+                if (state.allStreams.isNotEmpty()) {
+                    reapplyPrefFilter(state, prefs)
+                }
+            }
+        }
     }
 
     private fun SavedStateHandle.getOptionalString(key: String): String? {
@@ -287,10 +302,12 @@ class StreamScreenViewModel @Inject constructor(
                 }
 
                 val currentFilter = _uiState.value.selectedAddonFilter
+                val prefFiltered = StreamPrefFilter.apply(allStreams, currentStreamPrefs)
+                val prefFilteredCount = allStreams.size - prefFiltered.size
                 val filteredStreams = if (currentFilter == null) {
-                    allStreams
+                    prefFiltered
                 } else {
-                    allStreams.filter { it.addonName == currentFilter }
+                    prefFiltered.filter { it.addonName == currentFilter }
                 }
 
                 updateUiStateIfChanged {
@@ -298,6 +315,7 @@ class StreamScreenViewModel @Inject constructor(
                         isLoading = false,
                         addonStreams = orderedAddonStreams,
                         allStreams = allStreams,
+                        prefFilteredAllStreams = prefFiltered,
                         filteredStreams = filteredStreams,
                         availableAddons = availableAddons,
                         sourceChips = mergeSourceChipStatuses(
@@ -310,7 +328,8 @@ class StreamScreenViewModel @Inject constructor(
                             true
                         } else {
                             false
-                        }
+                        },
+                        prefsFilteredCount = prefFilteredCount
                     )
                 }
             }
@@ -624,16 +643,35 @@ class StreamScreenViewModel @Inject constructor(
             if (state.selectedAddonFilter == addonName) {
                 state
             } else {
+                val baseStreams = state.prefFilteredAllStreams
                 val filteredStreams = if (addonName == null) {
-                    state.allStreams
+                    baseStreams
                 } else {
-                    state.allStreams.filter { it.addonName == addonName }
+                    baseStreams.filter { it.addonName == addonName }
                 }
                 state.copy(
                     selectedAddonFilter = addonName,
                     filteredStreams = filteredStreams
                 )
             }
+        }
+    }
+
+    private fun reapplyPrefFilter(state: StreamScreenUiState, prefs: StreamPreferences) {
+        val prefFiltered = StreamPrefFilter.apply(state.allStreams, prefs)
+        val prefFilteredCount = state.allStreams.size - prefFiltered.size
+        val currentFilter = state.selectedAddonFilter
+        val filteredStreams = if (currentFilter == null) {
+            prefFiltered
+        } else {
+            prefFiltered.filter { it.addonName == currentFilter }
+        }
+        updateUiStateIfChanged {
+            it.copy(
+                prefFilteredAllStreams = prefFiltered,
+                filteredStreams = filteredStreams,
+                prefsFilteredCount = prefFilteredCount
+            )
         }
     }
 
