@@ -70,6 +70,13 @@ interface TmdbApi {
         @Query("language") language: String? = null
     ): Response<TmdbCreditsResponse>
 
+    @GET("tv/{tv_id}/aggregate_credits")
+    suspend fun getTvAggregateCredits(
+        @Path("tv_id") tvId: Int,
+        @Query("api_key") apiKey: String,
+        @Query("language") language: String? = null,
+    ): Response<TmdbAggregateCreditsResponse>
+
     @GET("movie/{movie_id}/images")
     suspend fun getMovieImages(
         @Path("movie_id") movieId: Int,
@@ -293,6 +300,42 @@ data class TmdbCrewMember(
     @Json(name = "job") val job: String? = null,
     @Json(name = "department") val department: String? = null,
     @Json(name = "profile_path") val profilePath: String? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbAggregateCreditsResponse(
+    @Json(name = "cast") val cast: List<TmdbAggregateCastMember>? = null,
+    @Json(name = "crew") val crew: List<TmdbAggregateCrewMember>? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbAggregateCastMember(
+    @Json(name = "id") val id: Int? = null,
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "profile_path") val profilePath: String? = null,
+    @Json(name = "total_episode_count") val totalEpisodeCount: Int? = null,
+    @Json(name = "roles") val roles: List<TmdbAggregateRole>? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbAggregateCrewMember(
+    @Json(name = "id") val id: Int? = null,
+    @Json(name = "name") val name: String? = null,
+    @Json(name = "profile_path") val profilePath: String? = null,
+    @Json(name = "department") val department: String? = null,
+    @Json(name = "jobs") val jobs: List<TmdbAggregateJob>? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbAggregateRole(
+    @Json(name = "character") val character: String? = null,
+    @Json(name = "episode_count") val episodeCount: Int? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class TmdbAggregateJob(
+    @Json(name = "job") val job: String? = null,
+    @Json(name = "episode_count") val episodeCount: Int? = null,
 )
 
 @JsonClass(generateAdapter = true)

@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.omnio.tv.R
 import com.omnio.tv.data.local.AVAILABLE_SUBTITLE_LANGUAGES
+import com.omnio.tv.data.local.AVAILABLE_TMDB_LANGUAGES
 import com.omnio.tv.data.local.displayName
 
 @Composable
@@ -240,6 +241,7 @@ fun TmdbSettingsContent(
             title = stringResource(R.string.tmdb_language_dialog_title),
             selectedLanguage = uiState.language,
             showNoneOption = false,
+            languages = AVAILABLE_TMDB_LANGUAGES,
             onLanguageSelected = { language ->
                 viewModel.onEvent(TmdbSettingsEvent.SetLanguage(language ?: "en"))
                 showLanguageDialog = false

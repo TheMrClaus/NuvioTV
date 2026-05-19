@@ -89,6 +89,7 @@ import androidx.tv.material3.Switch
 import androidx.tv.material3.SwitchDefaults
 import androidx.tv.material3.Text
 import com.omnio.tv.data.local.AVAILABLE_SUBTITLE_LANGUAGES
+import com.omnio.tv.data.local.SubtitleLanguage
 import com.omnio.tv.data.local.displayName
 import com.omnio.tv.data.local.AudioLanguageOption
 import com.omnio.tv.data.local.LibassRenderType
@@ -967,11 +968,12 @@ internal fun LanguageSelectionDialog(
     selectedLanguage: String?,
     showNoneOption: Boolean,
     extraOptions: List<Pair<String, String>> = emptyList(),
+    languages: List<SubtitleLanguage> = AVAILABLE_SUBTITLE_LANGUAGES,
     onLanguageSelected: (String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     val focusRequester = remember { FocusRequester() }
-    val sortedLanguages = remember { AVAILABLE_SUBTITLE_LANGUAGES.sortedBy { it.displayName.lowercase() } }
+    val sortedLanguages = remember(languages) { languages.sortedBy { it.displayName.lowercase() } }
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()

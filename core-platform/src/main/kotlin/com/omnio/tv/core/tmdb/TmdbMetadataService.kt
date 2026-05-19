@@ -2,7 +2,11 @@ package com.omnio.tv.core.tmdb
 
 import android.util.Log
 import com.omnio.tv.core.platform.BuildConfig
+import com.omnio.tv.data.remote.api.TmdbAggregateCreditsResponse
 import com.omnio.tv.data.remote.api.TmdbApi
+import com.omnio.tv.data.remote.api.TmdbCastMember
+import com.omnio.tv.data.remote.api.TmdbCreditsResponse
+import com.omnio.tv.data.remote.api.TmdbCrewMember
 import com.omnio.tv.data.remote.api.TmdbDiscoverResult
 import com.omnio.tv.data.remote.api.TmdbEpisode
 import com.omnio.tv.data.remote.api.TmdbImage
@@ -76,9 +80,11 @@ class TmdbMetadataService @Inject constructor(
                     }
                     val creditsDeferred = async {
                         when (tmdbType) {
-                            "tv" -> tmdbApi.getTvCredits(numericId, TMDB_API_KEY, normalizedLanguage)
-                            else -> tmdbApi.getMovieCredits(numericId, TMDB_API_KEY, normalizedLanguage)
-                        }.body()
+                            "tv" -> tmdbApi.getTvAggregateCredits(numericId, TMDB_API_KEY, normalizedLanguage)
+                                .body()
+                                ?.toCreditsResponse()
+                            else -> tmdbApi.getMovieCredits(numericId, TMDB_API_KEY, normalizedLanguage).body()
+                        }
                     }
                     val imagesDeferred = async {
                         when (tmdbType) {
@@ -109,7 +115,15 @@ class TmdbMetadataService @Inject constructor(
                 val genres = details?.genres?.mapNotNull { genre ->
                     genre.name.trim().takeIf { name -> name.isNotBlank() }
                 } ?: emptyList()
-                val description = details?.overview?.takeIf { it.isNotBlank() }
+                val description = (details?.overview?.takeIf { it.isNotBlank() })
+                    ?: if (normalizedLanguage != "en") {
+                        runCatching {
+                            when (tmdbType) {
+                                "tv" -> tmdbApi.getTvDetails(numericId, TMDB_API_KEY, "en").body()?.overview
+                                else -> tmdbApi.getMovieDetails(numericId, TMDB_API_KEY, "en").body()?.overview
+                            }
+                        }.getOrNull()?.takeIf { it.isNotBlank() }
+                    } else null
                 val releaseInfo = details?.releaseDate
                     ?: details?.firstAirDate
                 val status = details?.status?.trim()?.takeIf { it.isNotBlank() }
@@ -1190,4 +1204,35 @@ private fun TmdbEpisode.toEnrichment(): TmdbEpisodeEnrichment {
         airDate = airDate,
         runtimeMinutes = runtime
     )
+}
+
+private fun TmdbAggregateCreditsResponse.toCreditsResponse(): TmdbCreditsResponse {
+    val cast = this.cast
+        ?.sortedByDescending { it.totalEpisodeCount ?: 0 }
+        ?.map { agg ->
+            val topRole = agg.roles?.maxByOrNull { it.episodeCount ?: 0 }
+            TmdbCastMember(
+                id = agg.id,
+                name = agg.name,
+                character = topRole?.character,
+                profilePath = agg.profilePath,
+            )
+        }
+        .orEmpty()
+
+    val crew = this.crew
+        ?.flatMap { agg ->
+            agg.jobs.orEmpty().map { job ->
+                TmdbCrewMember(
+                    id = agg.id,
+                    name = agg.name,
+                    job = job.job,
+                    department = agg.department,
+                    profilePath = agg.profilePath,
+                )
+            }
+        }
+        .orEmpty()
+
+    return TmdbCreditsResponse(cast = cast, crew = crew)
 }

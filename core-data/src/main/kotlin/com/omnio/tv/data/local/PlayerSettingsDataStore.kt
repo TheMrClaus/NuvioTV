@@ -113,6 +113,15 @@ val AVAILABLE_SUBTITLE_LANGUAGES = listOf(
     SubtitleLanguage("zu", "Zulu")
 )
 
+val AVAILABLE_TMDB_LANGUAGES: List<SubtitleLanguage> = buildList {
+    add(SubtitleLanguage("en", "English"))
+    add(SubtitleLanguage("en-US", "English (US)"))
+    add(SubtitleLanguage("en-GB", "English (UK)"))
+    add(SubtitleLanguage("en-AU", "English (Australia)"))
+    add(SubtitleLanguage("en-CA", "English (Canada)"))
+    addAll(AVAILABLE_SUBTITLE_LANGUAGES.filter { it.code != "en" })
+}
+
 private const val ARGB_WHITE: Int = -0x1
 private const val ARGB_BLACK: Int = -0x1000000
 private const val ARGB_TRANSPARENT: Int = 0
