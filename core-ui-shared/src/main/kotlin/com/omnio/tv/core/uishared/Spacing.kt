@@ -4,7 +4,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
- * Spacing token scale shared by phone + TV layouts.
+ * Spacing token scale used across TV layouts.
  * 4dp grid: xs=4, s=8, m=16, l=24, xl=32. Anything outside this scale should
  * be a one-off literal at the call site, not a new token.
  */

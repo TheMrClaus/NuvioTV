@@ -42,10 +42,7 @@ fun getFontFamily(appFont: AppFont): FontFamily = when (appFont) {
 }
 
 /**
- * Form-factor-neutral typography filled with TV-tuned sizes.
- * The phone variant uses :core-ui-shared#phoneTypography. Both produce the
- * same [OmnioTypography] shape; the per-app-module adapter below converts
- * each into its respective MaterialTheme typography type.
+ * TV-tuned typography filling the [OmnioTypography] shape.
  *
  * Sizes match the pre-extraction TV scale verbatim (10-foot-distance tuned).
  * displaySmall and headlineSmall are intentionally placeholder values here

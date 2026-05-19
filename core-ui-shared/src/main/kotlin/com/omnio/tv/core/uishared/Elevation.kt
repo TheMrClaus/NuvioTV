@@ -5,8 +5,8 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Elevation token scale aligned to Material3 default elevations.
- * level0 = surface flat, level5 = highest dialogs/menus. Used by both phone
- * (Material3 cards/sheets) and TV (focus-state lift).
+ * level0 = surface flat, level5 = highest dialogs/menus. Used by TV surfaces
+ * (focus-state lift, card/dialog tiers).
  */
 data object Elevation {
     val level0: Dp = 0.dp
