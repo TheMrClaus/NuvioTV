@@ -366,7 +366,8 @@ class WatchProgressRepositoryImpl @Inject constructor(
     ): Boolean {
         if (!progress.contentType.equals("series", ignoreCase = true)) return false
         if (!progress.isCompleted()) return false
-        if (progress.source != WatchProgress.SOURCE_TRAKT_PLAYBACK) return false
+        if (progress.source != WatchProgress.SOURCE_TRAKT_PLAYBACK &&
+            progress.source != WatchProgress.SOURCE_TRAKT_HISTORY) return false
         if (progress.season == null || progress.episode == null || progress.season == 0) return false
         val ageMs = nowMs - progress.lastWatched
         return ageMs in 0..OPTIMISTIC_NEXT_UP_SEED_WINDOW_MS
@@ -530,6 +531,29 @@ class WatchProgressRepositoryImpl @Inject constructor(
         if (shouldUseTraktProgress()) {
             traktProgressService.applyOptimisticProgress(progress)
             watchProgressPreferences.saveProgress(progress)
+            if (progress.isCompleted()) {
+                watchedItemsPreferences.markAsWatched(
+                    WatchedItem(
+                        contentId = progress.contentId,
+                        contentType = progress.contentType,
+                        title = progress.name,
+                        season = progress.season,
+                        episode = progress.episode,
+                        watchedAt = System.currentTimeMillis()
+                    )
+                )
+            }
+            if (syncRemote && authManager.isAuthenticated) {
+                syncScope.launch {
+                    watchProgressSyncService.pushSingleToRemote(progressKey(progress), progress)
+                        .onFailure { error ->
+                            Log.w(TAG, "Failed single progress push (Trakt mirror); falling back to full sync next cycle", error)
+                        }
+                }
+                if (progress.isCompleted()) {
+                    triggerWatchedItemsSync()
+                }
+            }
             return
         }
         watchProgressPreferences.saveProgress(progress)
@@ -565,6 +589,9 @@ class WatchProgressRepositoryImpl @Inject constructor(
                 traktProgressService.applyOptimisticProgress(progress)
             }
             watchProgressPreferences.saveProgressBatch(progressList)
+            if (syncRemote && authManager.isAuthenticated) {
+                triggerRemoteSync()
+            }
             return
         }
 
