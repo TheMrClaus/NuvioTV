@@ -28,6 +28,8 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
+import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MergingMediaSource
 import com.omnio.tv.data.trailer.YoutubeChunkedDataSourceFactory
@@ -85,8 +87,18 @@ fun TrailerPlayer(
                     /* bufferForPlaybackAfterRebufferMs = */ 10_000
                 )
                 .build()
+            val bandwidthMeter = DefaultBandwidthMeter.Builder(context)
+                .setInitialBitrateEstimate(50_000_000L) // 50 Mbps — bias HLS toward highest variant from first segment
+                .build()
+            val trackSelector = DefaultTrackSelector(context).apply {
+                parameters = buildUponParameters()
+                    .setForceHighestSupportedBitrate(true)
+                    .build()
+            }
             ExoPlayer.Builder(context)
                 .setLoadControl(loadControl)
+                .setBandwidthMeter(bandwidthMeter)
+                .setTrackSelector(trackSelector)
                 .setVideoChangeFrameRateStrategy(C.VIDEO_CHANGE_FRAME_RATE_STRATEGY_OFF)
                 .build()
                 .apply {
