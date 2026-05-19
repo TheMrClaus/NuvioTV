@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CheckCircle2, MinusCircle, AlertTriangle, ChevronRight } from "lucide-react";
 import { getSettingsSnapshot } from "@/lib/data/settings";
+import { fetchSourceCloudStatus } from "@/lib/actions/sourcecloud";
 
 interface Props {
   params: Promise<{ profileId: string }>;
@@ -24,9 +25,38 @@ function rowFromBoolean(
   return { state: "connected", detail };
 }
 
+function sourceCloudRow(
+  status: Awaited<ReturnType<typeof fetchSourceCloudStatus>>,
+  profileId: string,
+): IntegrationRow {
+  const services = status?.services ?? [];
+  const connectedServices = services.filter((s) => s.connected);
+  const configStatus = status?.config?.status;
+  let state: IntegrationRow["state"] = "missing";
+  if (connectedServices.length > 0 && configStatus === "ready") state = "connected";
+  else if (configStatus === "provisioning_failed") state = "disabled";
+  const detail =
+    connectedServices.length > 0
+      ? connectedServices.map((s) => s.label ?? s.service).join(", ")
+      : configStatus === "provisioning_failed"
+        ? "Provisioning failed — open to retry"
+        : undefined;
+  return {
+    name: "Omnio Source Cloud",
+    blurb: "Curated AIOStreams config with Torrentio, Comet, MediaFusion, etc.",
+    state,
+    detail,
+    manageHref: `/p/${profileId}/integrations/source-cloud`,
+  };
+}
+
 export default async function IntegrationsPage({ params }: Props) {
   const { profileId } = await params;
-  const snap = await getSettingsSnapshot(Number.parseInt(profileId, 10));
+  const id = Number.parseInt(profileId, 10);
+  const [snap, sourceCloud] = await Promise.all([
+    getSettingsSnapshot(id),
+    fetchSourceCloudStatus(id),
+  ]);
 
   const tmdb = snap.features.tmdb_settings ?? {};
   const mdblist = snap.features.mdblist_settings ?? {};
@@ -95,6 +125,7 @@ export default async function IntegrationsPage({ params }: Props) {
           : undefined,
       manageHref: `/p/${profileId}/integrations/emby`,
     },
+    sourceCloudRow(sourceCloud, profileId),
   ];
 
   return (
