@@ -2,19 +2,32 @@
 
 package com.omnio.tv.ui.screens.settings
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.view.KeyEvent as AndroidKeyEvent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,12 +36,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.Border
+import androidx.tv.material3.Button
+import androidx.tv.material3.ButtonDefaults
+import androidx.tv.material3.Card
+import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
@@ -36,6 +60,7 @@ import com.omnio.tv.R
 import com.omnio.tv.core.qr.QrCodeGenerator
 import com.omnio.tv.core.uishared.OmnioColors
 import com.omnio.tv.domain.model.SourceCloudService
+import com.omnio.tv.ui.components.OmnioDialog
 
 @Composable
 fun SourceCloudSettingsContent(
@@ -53,6 +78,8 @@ fun SourceCloudSettingsContent(
         !uiState.isAdvancedConfigLoading &&
         !uiState.isLoading
     var disconnectConfirmService by remember { mutableStateOf<SourceCloudService?>(null) }
+    var connectChooserService by remember { mutableStateOf<SourceCloudService?>(null) }
+    var connectApiKeyService by remember { mutableStateOf<SourceCloudService?>(null) }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -120,7 +147,7 @@ fun SourceCloudSettingsContent(
                             if (isConnected) {
                                 disconnectConfirmService = service
                             } else {
-                                viewModel.requestAdvancedConfigSession()
+                                connectChooserService = service
                             }
                         },
                         enabled = rowEnabled
@@ -183,6 +210,50 @@ fun SourceCloudSettingsContent(
                     disconnectConfirmService = null
                 },
                 onDismiss = { disconnectConfirmService = null }
+            )
+        }
+
+        if (connectChooserService != null) {
+            val service = connectChooserService!!
+            SettingsSingleChoiceDialog(
+                title = stringResource(R.string.source_cloud_connect_choose_title),
+                options = listOf(
+                    SettingsPickerOption(
+                        value = "phone",
+                        title = stringResource(R.string.source_cloud_connect_via_phone),
+                        description = stringResource(R.string.source_cloud_connect_via_phone_desc)
+                    ),
+                    SettingsPickerOption(
+                        value = "apikey",
+                        title = stringResource(R.string.source_cloud_connect_via_apikey),
+                        description = stringResource(R.string.source_cloud_connect_via_apikey_desc)
+                    )
+                ),
+                selected = "phone",
+                onSelected = { selection ->
+                    if (selection == "phone") {
+                        viewModel.requestAdvancedConfigSession()
+                    } else {
+                        connectApiKeyService = service
+                    }
+                    connectChooserService = null
+                },
+                onDismiss = { connectChooserService = null }
+            )
+        }
+
+        if (connectApiKeyService != null) {
+            SourceCloudApiKeyDialog(
+                service = connectApiKeyService!!,
+                isConnecting = uiState.connectingService == connectApiKeyService,
+                error = uiState.connectError,
+                onDismiss = {
+                    connectApiKeyService = null
+                    viewModel.clearConnectError()
+                },
+                onSubmit = { apiKey ->
+                    viewModel.connectService(connectApiKeyService!!, apiKey)
+                }
             )
         }
     }
@@ -309,4 +380,140 @@ private fun SourceCloudInfoCard(
 private enum class SourceCloudInfoTone {
     Neutral,
     Error
+}
+
+@Composable
+private fun SourceCloudApiKeyDialog(
+    service: SourceCloudService,
+    isConnecting: Boolean,
+    error: String?,
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit
+) {
+    var value by remember { mutableStateOf("") }
+    var isInputFocused by remember { mutableStateOf(false) }
+    val inputFocusRequester = remember { FocusRequester() }
+    val context = LocalContext.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(Unit) { runCatching { inputFocusRequester.requestFocus() } }
+
+    OmnioDialog(
+        onDismiss = onDismiss,
+        title = stringResource(R.string.source_cloud_apikey_dialog_title, service.displayName),
+        width = 600.dp
+    ) {
+        Card(
+            onClick = { inputFocusRequester.requestFocus() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { isInputFocused = it.isFocused || it.hasFocus },
+            colors = CardDefaults.colors(
+                containerColor = OmnioColors.BackgroundElevated,
+                focusedContainerColor = OmnioColors.BackgroundElevated
+            ),
+            border = CardDefaults.border(
+                border = Border(
+                    border = BorderStroke(1.dp, OmnioColors.Border),
+                    shape = RoundedCornerShape(10.dp)
+                ),
+                focusedBorder = Border(
+                    border = BorderStroke(2.dp, OmnioColors.FocusRing),
+                    shape = RoundedCornerShape(10.dp)
+                )
+            ),
+            shape = CardDefaults.shape(RoundedCornerShape(10.dp)),
+            scale = CardDefaults.scale(focusedScale = 1f)
+        ) {
+            Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+                BasicTextField(
+                    value = value,
+                    onValueChange = { value = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(inputFocusRequester)
+                        .onKeyEvent { event ->
+                            event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_DPAD_CENTER &&
+                                event.nativeKeyEvent.action == AndroidKeyEvent.ACTION_DOWN
+                        },
+                    singleLine = true,
+                    keyboardActions = KeyboardActions(onDone = {
+                        keyboardController?.hide()
+                        if (value.isNotBlank() && !isConnecting) onSubmit(value.trim())
+                    }),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = OmnioColors.TextPrimary),
+                    cursorBrush = SolidColor(
+                        if (isInputFocused) OmnioColors.Primary
+                        else Color.Transparent
+                    ),
+                    visualTransformation = PasswordVisualTransformation(),
+                    enabled = !isConnecting,
+                    decorationBox = { innerTextField ->
+                        if (value.isBlank()) {
+                            Text(
+                                text = stringResource(R.string.source_cloud_apikey_field_label),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = OmnioColors.TextTertiary
+                            )
+                        }
+                        innerTextField()
+                    }
+                )
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SettingsChoiceChip(
+                label = stringResource(R.string.source_cloud_apikey_paste),
+                selected = false,
+                onClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+                    clipboard?.primaryClip?.getItemAt(0)?.text?.toString()?.let { text -> value = text }
+                },
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        if (error != null) {
+            Text(
+                text = error,
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.Error
+            )
+        }
+
+        Spacer(modifier = Modifier.height(4.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End
+        ) {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.colors(
+                    containerColor = OmnioColors.BackgroundElevated,
+                    contentColor = OmnioColors.TextPrimary
+                )
+            ) {
+                Text(stringResource(R.string.action_cancel))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    val trimmed = value.trim()
+                    if (trimmed.isNotBlank()) onSubmit(trimmed)
+                },
+                enabled = value.isNotBlank() && !isConnecting,
+                colors = ButtonDefaults.colors(
+                    containerColor = OmnioColors.BackgroundCard,
+                    contentColor = OmnioColors.TextPrimary
+                )
+            ) {
+                Text(stringResource(R.string.source_cloud_connect_submit))
+            }
+        }
+    }
 }

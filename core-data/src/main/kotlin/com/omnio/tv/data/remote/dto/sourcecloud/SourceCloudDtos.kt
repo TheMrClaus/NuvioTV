@@ -39,6 +39,13 @@ data class SourceCloudDisconnectRequestDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class SourceCloudConnectRequestDto(
+    @param:Json(name = "profileId") val profileId: Int,
+    @param:Json(name = "service") val service: String,
+    @param:Json(name = "apiKey") val apiKey: String
+)
+
+@JsonClass(generateAdapter = true)
 data class SourceCloudSearchResponseDto(
     @param:Json(name = "streams") val streams: List<SourceCloudStreamDto>? = null
 )

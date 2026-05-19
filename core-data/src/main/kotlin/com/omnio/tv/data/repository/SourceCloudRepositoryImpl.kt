@@ -5,6 +5,7 @@ import com.omnio.tv.core.network.safeApiCall
 import com.omnio.tv.data.BuildConfig
 import com.omnio.tv.data.local.SourceCloudSettingsDataStore
 import com.omnio.tv.data.remote.api.SourceCloudApi
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudConnectRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudDisconnectRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProfileScopedRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.toDomain
@@ -130,6 +131,33 @@ class SourceCloudRepositoryImpl private constructor(
             )
             is NetworkResult.Error -> {
                 Log.w(TAG, "disconnect failed: ${result.message}")
+                result
+            }
+            NetworkResult.Loading -> NetworkResult.Loading
+        }
+    }
+
+    override suspend fun connectService(service: SourceCloudService, apiKey: String): NetworkResult<SourceCloudStatus> {
+        if (!baseUrlConfigured) return NetworkResult.Error("Source Cloud backend is not configured.")
+
+        val trimmedKey = apiKey.trim()
+        if (trimmedKey.isBlank()) {
+            return NetworkResult.Error("API key cannot be empty")
+        }
+
+        val local = settings.first()
+        val body = SourceCloudConnectRequestDto(
+            profileId = currentProfileId(),
+            service = service.key,
+            apiKey = trimmedKey
+        )
+
+        return when (val result = safeApiCall { api.connectService(body) }) {
+            is NetworkResult.Success -> NetworkResult.Success(
+                result.data.toDomain(enabled = local.enabled, baseUrlConfigured = true)
+            )
+            is NetworkResult.Error -> {
+                Log.w(TAG, "connect failed: ${result.message}")
                 result
             }
             NetworkResult.Loading -> NetworkResult.Loading

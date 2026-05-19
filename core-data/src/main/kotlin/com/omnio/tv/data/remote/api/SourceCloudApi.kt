@@ -5,6 +5,7 @@ import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudSearchRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudSearchResponseDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudAdvancedConfigSessionResponseDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudDisconnectRequestDto
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudConnectRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudStatusResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -32,5 +33,10 @@ interface SourceCloudApi {
     @POST("source-cloud-disconnect-service")
     suspend fun disconnectService(
         @Body request: SourceCloudDisconnectRequestDto
+    ): Response<SourceCloudStatusResponseDto>
+
+    @POST("source-cloud-connect-service")
+    suspend fun connectService(
+        @Body request: SourceCloudConnectRequestDto
     ): Response<SourceCloudStatusResponseDto>
 }

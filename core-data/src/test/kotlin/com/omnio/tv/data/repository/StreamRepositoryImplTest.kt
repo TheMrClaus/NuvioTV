@@ -148,6 +148,9 @@ class StreamRepositoryImplTest {
         override suspend fun disconnectService(service: SourceCloudService): NetworkResult<SourceCloudStatus> =
             error("disconnectService should not be called")
 
+        override suspend fun connectService(service: SourceCloudService, apiKey: String): NetworkResult<SourceCloudStatus> =
+            error("connectService should not be called")
+
         override suspend fun resetConfig(): SourceCloudStatus = error("resetConfig should not be called")
     }
 }

@@ -238,6 +238,16 @@ class SourceCloudSettingsViewModelTest {
             return advancedSession
         }
 
+        override suspend fun disconnectService(service: SourceCloudService): NetworkResult<SourceCloudStatus> {
+            events += "disconnectService:${service.key}"
+            return NetworkResult.Success(statusValue)
+        }
+
+        override suspend fun connectService(service: SourceCloudService, apiKey: String): NetworkResult<SourceCloudStatus> {
+            events += "connectService:${service.key}"
+            return NetworkResult.Success(statusValue)
+        }
+
         override suspend fun resetConfig(): SourceCloudStatus {
             events += "resetConfig"
             return resetStatus ?: statusValue

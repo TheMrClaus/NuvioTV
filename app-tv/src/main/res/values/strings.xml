@@ -309,6 +309,15 @@
     <string name="source_cloud_service_disconnected">Not connected</string>
     <string name="source_cloud_disconnect_confirm_title">Disconnect %s?</string>
     <string name="source_cloud_disconnect_confirm_action">Disconnect</string>
+    <string name="source_cloud_connect_choose_title">How do you want to connect?</string>
+    <string name="source_cloud_connect_via_phone">Use phone (recommended)</string>
+    <string name="source_cloud_connect_via_phone_desc">Scan a QR code to set up on your phone</string>
+    <string name="source_cloud_connect_via_apikey">Enter API key</string>
+    <string name="source_cloud_connect_via_apikey_desc">Type or paste the key from your debrid account</string>
+    <string name="source_cloud_apikey_dialog_title">Enter %s API key</string>
+    <string name="source_cloud_apikey_field_label">API key</string>
+    <string name="source_cloud_apikey_paste">Paste from clipboard</string>
+    <string name="source_cloud_connect_submit">Connect</string>
     <string name="source_cloud_connection_flows_soon">Source service connection flows are coming soon.</string>
     <string name="source_cloud_config_status_title">Source config</string>
     <string name="source_cloud_config_status_unknown">Config status unavailable.</string>
