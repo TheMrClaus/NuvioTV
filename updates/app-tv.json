@@ -1,41 +1,41 @@
 {
   "app_module": "app-tv",
   "app_name": "OmnioTV",
-  "version_name": "0.5.50-beta",
-  "release_tag": "0.5.50-beta-app-tv",
-  "release_title": "OmnioTV 0.5.50-beta",
-  "release_notes": "## This is a beta version intended for testing only. Expect breaking changes in updates. Normal users are advised to wait for the stable release.\n\n### Source Cloud Connect & Disconnect\n- In-app disconnect with confirmation dialog for Real-Debrid and TorBox\n- In-app API-key connect path alongside QR fallback (paste from clipboard support)\n- Per-service row shows Connected/Disconnected state and offers appropriate action\n- Removed \"coming soon\" placeholder; renamed advanced config to \"Open advanced configuration\"\n\n### Stream Preferences\n- Profile-scoped DataStore for stream resolution, codec, HDR, and audio preferences\n- Pure filter+sort engine over Stream sourceCloudMetadata\n- Stream preferences settings screen with picker dialogs\n- Autoplay selector now consults stream preferences\n- Stream picker applies filter+sort prefs with quick toggles\n\n### Other Fixes\n- Push unsynced local changes immediately after remote pull\n- Guard cached enrichment by season+episode to clear stale thumbnails\n- Compute remaining time from progress percent when position missing\n- Accept Trakt history entries as Continue Watching seeds; mirror progress to sync\n- Regional English TMDB locales, aggregate TV credits, English fallback\n- Force highest HLS bitrate from first segment in trailers\n- Shared single/multi-choice picker dialogs for settings",
-  "release_url": "https://github.com/TheMrClaus/OmnioTV/releases/tag/0.5.50-beta-app-tv",
-  "published_at_utc": "2026-05-19T18:45:00Z",
+  "version_name": "0.5.51-beta",
+  "release_tag": "0.5.51-beta-app-tv",
+  "release_title": "OmnioTV 0.5.51-beta",
+  "release_notes": "## This is a beta version intended for testing only. Expect breaking changes in updates. Normal users are advised to wait for the stable release.\n\n### Improvements & Fixes\n- Debrid Starter template + in-app API keys form\n- Source Cloud integration page",
+  "release_url": "https://github.com/TheMrClaus/OmnioTV/releases/tag/0.5.51-beta-app-tv",
+  "published_at_utc": "2026-05-19T21:11:08Z",
   "assets": [
     {
       "name": "app-tv-arm64-v8a-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.49-beta-app-tv/app-tv-arm64-v8a-release.apk",
-      "size_bytes": 76219301,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.51-beta-app-tv/app-tv-arm64-v8a-release.apk",
+      "size_bytes": 76223393,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-armeabi-v7a-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.49-beta-app-tv/app-tv-armeabi-v7a-release.apk",
-      "size_bytes": 68491275,
-      "content_type": "application/vnd.android.package-archive"
-    },
-    {
-      "name": "app-tv-universal-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.49-beta-app-tv/app-tv-universal-release.apk",
-      "size_bytes": 262399393,
-      "content_type": "application/vnd.android.package-archive"
-    },
-    {
-      "name": "app-tv-x86-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.49-beta-app-tv/app-tv-x86-release.apk",
-      "size_bytes": 79087875,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.51-beta-app-tv/app-tv-armeabi-v7a-release.apk",
+      "size_bytes": 68495367,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-x86_64-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.49-beta-app-tv/app-tv-x86_64-release.apk",
-      "size_bytes": 84579230,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.51-beta-app-tv/app-tv-x86_64-release.apk",
+      "size_bytes": 84583322,
+      "content_type": "application/vnd.android.package-archive"
+    },
+    {
+      "name": "app-tv-x86-release.apk",
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.51-beta-app-tv/app-tv-x86-release.apk",
+      "size_bytes": 79091967,
+      "content_type": "application/vnd.android.package-archive"
+    },
+    {
+      "name": "app-tv-universal-release.apk",
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.51-beta-app-tv/app-tv-universal-release.apk",
+      "size_bytes": 262403485,
       "content_type": "application/vnd.android.package-archive"
     }
   ]
