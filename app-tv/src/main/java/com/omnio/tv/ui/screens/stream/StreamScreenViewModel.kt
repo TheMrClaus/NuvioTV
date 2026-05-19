@@ -284,11 +284,20 @@ class StreamScreenViewModel @Inject constructor(
                 )
                 val allStreams = orderedAddonStreams.flatMap { it.streams }
                 val availableAddons = orderedAddonStreams.map { it.addonName }
+
+                // Pre-apply stream preferences filter for sort-aware auto-play
+                val prefFiltered = StreamPrefFilter.apply(allStreams, currentStreamPrefs)
+                val prefFilteredCount = allStreams.size - prefFiltered.size
+
                 val selectedAutoPlayStream = if (autoPlayHandledForSession || !isAllLoaded) {
                     null
                 } else {
                     StreamAutoPlaySelector.selectAutoPlayStream(
-                        streams = allStreams,
+                        streams = if (currentStreamPrefs.enabled && currentStreamPrefs.sortCriteria.isNotEmpty()) {
+                            prefFiltered
+                        } else {
+                            allStreams
+                        },
                         mode = playerSettings.streamAutoPlayMode,
                         regexPattern = playerSettings.streamAutoPlayRegex,
                         source = playerSettings.streamAutoPlaySource,
@@ -302,8 +311,6 @@ class StreamScreenViewModel @Inject constructor(
                 }
 
                 val currentFilter = _uiState.value.selectedAddonFilter
-                val prefFiltered = StreamPrefFilter.apply(allStreams, currentStreamPrefs)
-                val prefFilteredCount = allStreams.size - prefFiltered.size
                 val filteredStreams = if (currentFilter == null) {
                     prefFiltered
                 } else {
