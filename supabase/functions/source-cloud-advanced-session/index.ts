@@ -80,10 +80,12 @@ Deno.serve(async (request) => {
   // Decrypt the AIOStreams account password so the app can surface it to
   // the user for paste-in on the configure page. The encryptedPassword in
   // the URL only authorizes view; the raw password is what AIOStreams' web
-  // UI asks for to authorize save operations.
+  // UI asks for to authorize save operations. Also expose the persistent
+  // configure URL so the user can bookmark it in a password manager and
+  // open AIOStreams directly from any device without going through the app.
   const { data: configRow } = await client
     .from("source_cloud_configs")
-    .select("aiostreams_config_secret_ciphertext, aiostreams_config_secret_nonce")
+    .select("aiostreams_config_id, aiostreams_encrypted_password, aiostreams_config_secret_ciphertext, aiostreams_config_secret_nonce")
     .eq("user_id", ownerId)
     .eq("profile_id", profileId)
     .maybeSingle();
@@ -100,6 +102,13 @@ Deno.serve(async (request) => {
     );
   }
 
+  const aioBaseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
+  const aioConfigId = configRow?.aiostreams_config_id as string | null | undefined;
+  const aioEncryptedPassword = configRow?.aiostreams_encrypted_password as string | null | undefined;
+  const directConfigureUrl = (aioBaseUrl && aioConfigId && aioEncryptedPassword)
+    ? `${aioBaseUrl}/stremio/${aioConfigId}/${aioEncryptedPassword}/configure`
+    : null;
+
   const baseUrl = Deno.env.get("SOURCE_CLOUD_ADVANCED_BASE_URL") ?? "https://source.omnio.tv";
   const url = `${baseUrl.replace(/\/+$/, "")}/advanced/session/${opaqueToken}`;
 
@@ -108,5 +117,6 @@ Deno.serve(async (request) => {
     expiresAtEpochMillis: expiresAt.getTime(),
     message: "Scan to open advanced source config",
     configurePassword,
+    directConfigureUrl,
   });
 });
