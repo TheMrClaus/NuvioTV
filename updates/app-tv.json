@@ -1,41 +1,41 @@
 {
   "app_module": "app-tv",
   "app_name": "OmnioTV",
-  "version_name": "0.5.47-beta",
-  "release_tag": "0.5.47-beta-app-tv",
-  "release_title": "OmnioTV 0.5.47-beta",
-  "release_notes": "## This is a beta version intended for testing only. Expect breaking changes in updates. Normal users are advised to wait for the stable release.\n\n### Improvements & Fixes\n- Release: update app-tv manifest for 0.5.46-beta-app-tv\n- make Real-Debrid, Torbox and Advanced Source Config actionable\n- Source Cloud: Real-Debrid, Torbox and Advanced Source Config rows are now reachable and actionable; pressing any of them opens the QR session flow.",
-  "release_url": "https://github.com/TheMrClaus/OmnioTV/releases/tag/0.5.47-beta-app-tv",
-  "published_at_utc": "2026-05-19T08:42:42Z",
+  "version_name": "0.5.48-beta",
+  "release_tag": "0.5.48-beta-app-tv",
+  "release_title": "OmnioTV 0.5.48-beta",
+  "release_notes": "## This is a beta version intended for testing only. Expect breaking changes in updates. Normal users are advised to wait for the stable release.\n\n### Improvements & Fixes\n- Release: update app-tv manifest for 0.5.47-beta-app-tv\n- send profileId on every edge function call\n- Source Cloud: pressing Real-Debrid, Torbox or Advanced Source Config now actually opens the QR session (the TV client was POSTing with no body, which the edge function rejected before any logic ran).",
+  "release_url": "https://github.com/TheMrClaus/OmnioTV/releases/tag/0.5.48-beta-app-tv",
+  "published_at_utc": "2026-05-19T10:14:55Z",
   "assets": [
     {
       "name": "app-tv-arm64-v8a-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.47-beta-app-tv/app-tv-arm64-v8a-release.apk",
-      "size_bytes": 76155173,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.48-beta-app-tv/app-tv-arm64-v8a-release.apk",
+      "size_bytes": 76171553,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-armeabi-v7a-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.47-beta-app-tv/app-tv-armeabi-v7a-release.apk",
-      "size_bytes": 68427147,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.48-beta-app-tv/app-tv-armeabi-v7a-release.apk",
+      "size_bytes": 68443527,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-x86_64-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.47-beta-app-tv/app-tv-x86_64-release.apk",
-      "size_bytes": 84515102,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.48-beta-app-tv/app-tv-x86_64-release.apk",
+      "size_bytes": 84531482,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-x86-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.47-beta-app-tv/app-tv-x86-release.apk",
-      "size_bytes": 79023747,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.48-beta-app-tv/app-tv-x86-release.apk",
+      "size_bytes": 79040127,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-universal-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.47-beta-app-tv/app-tv-universal-release.apk",
-      "size_bytes": 262335265,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.48-beta-app-tv/app-tv-universal-release.apk",
+      "size_bytes": 262351645,
       "content_type": "application/vnd.android.package-archive"
     }
   ]
