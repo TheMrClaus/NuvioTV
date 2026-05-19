@@ -5,6 +5,7 @@ import com.omnio.tv.core.network.safeApiCall
 import com.omnio.tv.data.BuildConfig
 import com.omnio.tv.data.local.SourceCloudSettingsDataStore
 import com.omnio.tv.data.remote.api.SourceCloudApi
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudDisconnectRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProfileScopedRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.toDomain
 import com.omnio.tv.data.remote.dto.sourcecloud.toDto
@@ -109,6 +110,27 @@ class SourceCloudRepositoryImpl private constructor(
             is NetworkResult.Error -> {
                 Log.w(TAG, "advanced config session failed: ${result.message}")
                 NetworkResult.Success(null)
+            }
+            NetworkResult.Loading -> NetworkResult.Loading
+        }
+    }
+
+    override suspend fun disconnectService(service: SourceCloudService): NetworkResult<SourceCloudStatus> {
+        if (!baseUrlConfigured) return NetworkResult.Error("Source Cloud backend is not configured.")
+
+        val local = settings.first()
+        val body = SourceCloudDisconnectRequestDto(
+            profileId = currentProfileId(),
+            service = service.key
+        )
+
+        return when (val result = safeApiCall { api.disconnectService(body) }) {
+            is NetworkResult.Success -> NetworkResult.Success(
+                result.data.toDomain(enabled = local.enabled, baseUrlConfigured = true)
+            )
+            is NetworkResult.Error -> {
+                Log.w(TAG, "disconnect failed: ${result.message}")
+                result
             }
             NetworkResult.Loading -> NetworkResult.Loading
         }

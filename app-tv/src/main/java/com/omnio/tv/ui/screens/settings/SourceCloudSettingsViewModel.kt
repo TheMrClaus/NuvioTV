@@ -29,7 +29,8 @@ class SourceCloudSettingsViewModel @Inject constructor(
         val isAdvancedConfigLoading: Boolean = false,
         val status: SourceCloudStatus? = null,
         val advancedConfigSession: SourceCloudAdvancedConfigSession? = null,
-        val errorMessage: String? = null
+        val errorMessage: String? = null,
+        val disconnectingService: SourceCloudService? = null
     )
 
     private val _uiState = MutableStateFlow(UiState(isLoading = true))
@@ -72,6 +73,34 @@ class SourceCloudSettingsViewModel @Inject constructor(
     fun setServiceConnected(service: SourceCloudService, connected: Boolean) {
         viewModelScope.launch {
             mutateAndRefresh { repository.setServiceConnected(service, connected) }
+        }
+    }
+
+    fun disconnectService(service: SourceCloudService) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(disconnectingService = service, errorMessage = null)
+            }
+            when (val result = repository.disconnectService(service)) {
+                is NetworkResult.Success -> {
+                    _uiState.update {
+                        it.copy(
+                            disconnectingService = null,
+                            status = result.data,
+                            errorMessage = null
+                        )
+                    }
+                }
+                is NetworkResult.Error -> {
+                    _uiState.update {
+                        it.copy(
+                            disconnectingService = null,
+                            errorMessage = SOURCE_CLOUD_UPDATE_FAILED_MESSAGE
+                        )
+                    }
+                }
+                NetworkResult.Loading -> Unit
+            }
         }
     }
 

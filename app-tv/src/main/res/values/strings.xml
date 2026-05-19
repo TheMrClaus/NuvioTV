@@ -307,6 +307,8 @@
     <string name="source_cloud_no_services">Connect at least one source service to enable built-in playback sources.</string>
     <string name="source_cloud_service_connected">Connected</string>
     <string name="source_cloud_service_disconnected">Not connected</string>
+    <string name="source_cloud_disconnect_confirm_title">Disconnect %s?</string>
+    <string name="source_cloud_disconnect_confirm_action">Disconnect</string>
     <string name="source_cloud_connection_flows_soon">Source service connection flows are coming soon.</string>
     <string name="source_cloud_config_status_title">Source config</string>
     <string name="source_cloud_config_status_unknown">Config status unavailable.</string>

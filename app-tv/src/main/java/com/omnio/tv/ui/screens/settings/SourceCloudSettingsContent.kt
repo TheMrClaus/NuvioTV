@@ -16,7 +16,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
@@ -50,6 +52,7 @@ fun SourceCloudSettingsContent(
     val canRequestAdvancedSession = status?.baseUrlConfigured == true &&
         !uiState.isAdvancedConfigLoading &&
         !uiState.isLoading
+    var disconnectConfirmService by remember { mutableStateOf<SourceCloudService?>(null) }
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -107,11 +110,20 @@ fun SourceCloudSettingsContent(
 
                 SourceCloudService.entries.forEach { service ->
                     val serviceStatus = services.firstOrNull { it.service == service }
+                    val isConnected = serviceStatus?.connected == true
+                    val isDisconnecting = uiState.disconnectingService == service
+                    val rowEnabled = status != null && !isDisconnecting && !uiState.isLoading
                     SettingsActionRow(
                         title = serviceStatus?.label ?: service.displayName,
-                        subtitle = sourceCloudServiceSubtitle(serviceStatus?.connected == true),
-                        onClick = { viewModel.requestAdvancedConfigSession() },
-                        enabled = canRequestAdvancedSession
+                        subtitle = sourceCloudServiceSubtitle(isConnected),
+                        onClick = {
+                            if (isConnected) {
+                                disconnectConfirmService = service
+                            } else {
+                                viewModel.requestAdvancedConfigSession()
+                            }
+                        },
+                        enabled = rowEnabled
                     )
                 }
 
@@ -147,6 +159,31 @@ fun SourceCloudSettingsContent(
                     )
                 }
             }
+        }
+
+        if (disconnectConfirmService != null) {
+            val service = disconnectConfirmService!!
+            SettingsSingleChoiceDialog(
+                title = stringResource(R.string.source_cloud_disconnect_confirm_title, service.displayName),
+                options = listOf(
+                    SettingsPickerOption(
+                        value = "cancel",
+                        title = stringResource(R.string.action_cancel)
+                    ),
+                    SettingsPickerOption(
+                        value = "disconnect",
+                        title = stringResource(R.string.source_cloud_disconnect_confirm_action)
+                    )
+                ),
+                selected = "cancel",
+                onSelected = { selection ->
+                    if (selection == "disconnect") {
+                        viewModel.disconnectService(service)
+                    }
+                    disconnectConfirmService = null
+                },
+                onDismiss = { disconnectConfirmService = null }
+            )
         }
     }
 }

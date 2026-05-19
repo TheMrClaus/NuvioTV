@@ -4,6 +4,7 @@ import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProfileScopedRequestD
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudSearchRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudSearchResponseDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudAdvancedConfigSessionResponseDto
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudDisconnectRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudStatusResponseDto
 import retrofit2.Response
 import retrofit2.http.Body
@@ -26,5 +27,10 @@ interface SourceCloudApi {
     @POST("source-cloud-reset")
     suspend fun resetConfig(
         @Body request: SourceCloudProfileScopedRequestDto
+    ): Response<SourceCloudStatusResponseDto>
+
+    @POST("source-cloud-disconnect-service")
+    suspend fun disconnectService(
+        @Body request: SourceCloudDisconnectRequestDto
     ): Response<SourceCloudStatusResponseDto>
 }

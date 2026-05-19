@@ -17,5 +17,6 @@ interface SourceCloudRepository {
     suspend fun setServiceConnected(service: SourceCloudService, connected: Boolean)
     suspend fun search(request: SourceCloudSearchRequest): NetworkResult<AddonStreams?>
     suspend fun requestAdvancedConfigSession(): NetworkResult<SourceCloudAdvancedConfigSession?>
+    suspend fun disconnectService(service: SourceCloudService): NetworkResult<SourceCloudStatus>
     suspend fun resetConfig(): SourceCloudStatus
 }

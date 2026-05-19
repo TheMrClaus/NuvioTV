@@ -145,6 +145,9 @@ class StreamRepositoryImplTest {
         override suspend fun requestAdvancedConfigSession(): NetworkResult<SourceCloudAdvancedConfigSession?> =
             NetworkResult.Success(null)
 
+        override suspend fun disconnectService(service: SourceCloudService): NetworkResult<SourceCloudStatus> =
+            error("disconnectService should not be called")
+
         override suspend fun resetConfig(): SourceCloudStatus = error("resetConfig should not be called")
     }
 }
