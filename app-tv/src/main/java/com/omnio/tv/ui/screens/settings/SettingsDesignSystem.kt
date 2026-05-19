@@ -20,13 +20,18 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,6 +49,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.painterResource
@@ -60,6 +66,7 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.omnio.tv.R
 import com.omnio.tv.core.uishared.OmnioColors
+import com.omnio.tv.ui.components.OmnioDialog
 
 internal val SettingsContainerRadius = 28.dp
 internal val SettingsPillRadius = 999.dp
@@ -650,4 +657,240 @@ private fun rememberRawSvgPainter(rawIconRes: Int): Painter {
             .build()
     }
     return rememberAsyncImagePainter(model = request)
+}
+
+internal data class SettingsPickerOption<T>(
+    val value: T,
+    val title: String,
+    val description: String? = null,
+    val trailing: String? = null,
+)
+
+@Composable
+internal fun <T> SettingsSingleChoiceDialog(
+    title: String,
+    options: List<SettingsPickerOption<T>>,
+    selected: T,
+    onSelected: (T) -> Unit,
+    onDismiss: () -> Unit,
+    subtitle: String? = null,
+    width: Dp = 420.dp,
+    maxHeight: Dp = 320.dp,
+) {
+    val focusRequester = remember { FocusRequester() }
+    val selectedIndex = options.indexOfFirst { it.value == selected }
+    val firstFocusIndex = if (selectedIndex >= 0) selectedIndex else 0
+
+    OmnioDialog(
+        onDismiss = onDismiss,
+        title = title,
+        subtitle = subtitle,
+        width = width,
+        suppressFirstKeyUp = true
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight)
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(
+                    count = options.size,
+                    key = { options[it].value.toString() }
+                ) { index ->
+                    val option = options[index]
+                    val isSelected = option.value == selected
+                    SettingsPickerOptionItem(
+                        title = option.title,
+                        description = option.description,
+                        trailing = option.trailing,
+                        isSelected = isSelected,
+                        onClick = {
+                            onSelected(option.value)
+                            onDismiss()
+                        },
+                        modifier = if (index == firstFocusIndex) {
+                            Modifier.focusRequester(focusRequester)
+                        } else {
+                            Modifier
+                        }
+                    )
+                }
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
+    }
+}
+
+@Composable
+internal fun <T> SettingsMultiChoiceDialog(
+    title: String,
+    options: List<SettingsPickerOption<T>>,
+    initiallySelected: List<T>,
+    onSave: (List<T>) -> Unit,
+    onDismiss: () -> Unit,
+    subtitle: String? = null,
+    onClear: (() -> Unit)? = null,
+    saveLabel: String? = null,
+    clearLabel: String? = null,
+    width: Dp = 520.dp,
+    maxHeight: Dp = 420.dp,
+) {
+    val focusRequester = remember { FocusRequester() }
+    val selectedList = remember { mutableStateListOf<T>().apply { addAll(initiallySelected) } }
+    val effectiveSaveLabel = saveLabel ?: stringResource(R.string.action_save)
+    val effectiveClearLabel = clearLabel ?: stringResource(R.string.action_clear)
+
+    OmnioDialog(
+        onDismiss = onDismiss,
+        title = title,
+        subtitle = subtitle,
+        width = width,
+        suppressFirstKeyUp = true
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = maxHeight)
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                items(
+                    count = options.size,
+                    key = { options[it].value.toString() }
+                ) { index ->
+                    val option = options[index]
+                    val isSelected = option.value in selectedList
+                    SettingsPickerOptionItem(
+                        title = option.title,
+                        description = option.description,
+                        trailing = option.trailing,
+                        isSelected = isSelected,
+                        onClick = {
+                            if (isSelected) {
+                                selectedList.remove(option.value)
+                            } else {
+                                selectedList.add(option.value)
+                            }
+                        },
+                        modifier = if (index == 0) {
+                            Modifier.focusRequester(focusRequester)
+                        } else {
+                            Modifier
+                        }
+                    )
+                }
+
+                item(key = "multi_choice_footer") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SettingsChoiceChip(
+                            label = effectiveSaveLabel,
+                            selected = true,
+                            onClick = {
+                                onSave(selectedList.toList())
+                                onDismiss()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        if (onClear != null) {
+                            SettingsChoiceChip(
+                                label = effectiveClearLabel,
+                                selected = false,
+                                onClick = { selectedList.clear() },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
+    }
+}
+
+@Composable
+private fun SettingsPickerOptionItem(
+    title: String,
+    description: String?,
+    trailing: String?,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(modifier)
+            .onFocusChanged { isFocused = it.isFocused },
+        colors = CardDefaults.colors(
+            containerColor = if (isSelected) OmnioColors.FocusBackground else OmnioColors.BackgroundCard,
+            focusedContainerColor = OmnioColors.FocusBackground
+        ),
+        shape = CardDefaults.shape(shape = RoundedCornerShape(10.dp)),
+        scale = CardDefaults.scale(focusedScale = 1f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isSelected) OmnioColors.Primary else OmnioColors.TextPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (!description.isNullOrBlank()) {
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OmnioColors.TextSecondary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            if (!trailing.isNullOrBlank()) {
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = trailing,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = OmnioColors.TextSecondary
+                )
+            }
+
+            if (isSelected) {
+                Spacer(modifier = Modifier.width(12.dp))
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = stringResource(R.string.cd_selected),
+                    tint = OmnioColors.Primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+    }
 }
