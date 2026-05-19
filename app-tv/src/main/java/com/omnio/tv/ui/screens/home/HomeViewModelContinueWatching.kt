@@ -410,7 +410,7 @@ internal fun HomeViewModel.loadContinueWatchingPipeline() {
                                 publishedPartialNextUpCount.set(partialCount)
                                 val cachedPartialNextUp = partialNextUpItems.map { nextUp ->
                                     val cached = cachedEnrichmentFromNextUp[nextUp.info.contentId]
-                                    if (cached != null) {
+                                    if (cached != null && cached.season == nextUp.info.season && cached.episode == nextUp.info.episode) {
                                         nextUp.copy(info = nextUp.info.copy(
                                             thumbnail = cached.thumbnail ?: nextUp.info.thumbnail,
                                             backdrop = cached.backdrop ?: nextUp.info.backdrop,
@@ -653,7 +653,7 @@ internal fun HomeViewModel.loadContinueWatchingPipeline() {
                     inProgressItems = inProgressOnly,
                     nextUpItems = allNextUpItems.map { nextUp ->
                         val cached = cachedEnrichmentFromNextUp[nextUp.info.contentId]
-                        if (cached != null) {
+                        if (cached != null && cached.season == nextUp.info.season && cached.episode == nextUp.info.episode) {
                             nextUp.copy(info = nextUp.info.copy(
                                 thumbnail = cached.thumbnail ?: nextUp.info.thumbnail,
                                 backdrop = cached.backdrop ?: nextUp.info.backdrop,
