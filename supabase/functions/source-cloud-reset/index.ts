@@ -85,7 +85,7 @@ Deno.serve(async (request) => {
       status: configStatus,
       label: statusInfo.label,
       message: statusInfo.message,
-      advancedConfigAvailable: false,
+      advancedConfigAvailable: true,
       canReset: false,
     },
     services,

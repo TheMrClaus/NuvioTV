@@ -44,7 +44,7 @@ Deno.serve(async (request) => {
       .maybeSingle(),
     client
       .from("source_cloud_configs")
-      .select("config_status, advanced_config_url_expires_at")
+      .select("config_status")
       .eq("user_id", ownerId)
       .eq("profile_id", profileId)
       .maybeSingle(),
@@ -78,9 +78,11 @@ Deno.serve(async (request) => {
 
   const statusInfo = CONFIG_STATUS_LABELS[configStatus] ?? CONFIG_STATUS_LABELS.unknown;
 
-  const advancedConfigAvailable =
-    configRow?.advanced_config_url_expires_at != null &&
-    new Date(configRow.advanced_config_url_expires_at as string).getTime() > Date.now();
+  // The advanced-session endpoint only requires auth + valid profileId, both
+  // already validated above. Reporting "available" here means "the client may
+  // press the button to create a new short-lived session"; it does not mean a
+  // session URL is currently cached.
+  const advancedConfigAvailable = true;
 
   const canReset = configRow != null && configStatus !== "unknown";
 
