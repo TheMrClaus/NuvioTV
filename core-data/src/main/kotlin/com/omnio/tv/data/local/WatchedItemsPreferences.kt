@@ -2,6 +2,7 @@ package com.omnio.tv.data.local
 
 import android.util.Log
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.omnio.tv.domain.profile.ProfileManager
 import com.google.gson.Gson
@@ -28,6 +29,7 @@ class WatchedItemsPreferences @Inject constructor(
 
     private val gson = Gson()
     private val watchedItemsKey = stringSetPreferencesKey("watched_items")
+    private val lastSuccessfulPushMsKey = longPreferencesKey("last_successful_push_ms")
 
     val allItems: Flow<List<WatchedItem>> = profileManager.activeProfileId.flatMapLatest { pid ->
         factory.get(pid, FEATURE).data.map { preferences ->
@@ -131,6 +133,16 @@ class WatchedItemsPreferences @Inject constructor(
         return allItems.first()
     }
 
+    suspend fun getLastSuccessfulPushMs(): Long {
+        return store().data.first()[lastSuccessfulPushMsKey] ?: 0L
+    }
+
+    suspend fun setLastSuccessfulPushMs(value: Long) {
+        store().edit { preferences ->
+            preferences[lastSuccessfulPushMsKey] = value
+        }
+    }
+
     suspend fun mergeRemoteItems(remoteItems: List<WatchedItem>) {
         store().edit { preferences ->
             val current = preferences[watchedItemsKey] ?: emptySet()
@@ -149,7 +161,8 @@ class WatchedItemsPreferences @Inject constructor(
         }
     }
 
-    suspend fun replaceWithRemoteItems(remoteItems: List<WatchedItem>) {
+    suspend fun replaceWithRemoteItems(remoteItems: List<WatchedItem>, lastSuccessfulPushMs: Long = 0L): Boolean {
+        var preservedLocalItems = false
         store().edit { preferences ->
             val current = preferences[watchedItemsKey] ?: emptySet()
             if (remoteItems.isEmpty() && current.isNotEmpty()) {
@@ -160,10 +173,22 @@ class WatchedItemsPreferences @Inject constructor(
             remoteItems.forEach { item ->
                 deduped[Triple(item.contentId, item.season, item.episode)] = item
             }
+            val localItems = current.mapNotNull { json ->
+                runCatching { gson.fromJson(json, WatchedItem::class.java) }.getOrNull()
+            }
+            localItems.forEach { localItem ->
+                val key = Triple(localItem.contentId, localItem.season, localItem.episode)
+                if (key !in deduped && localItem.watchedAt > lastSuccessfulPushMs) {
+                    deduped[key] = localItem
+                    preservedLocalItems = true
+                    Log.d(TAG, "replaceWithRemoteItems: preserved local item ${localItem.contentId} s${localItem.season}e${localItem.episode} (watchedAt=${localItem.watchedAt} > lastPush=$lastSuccessfulPushMs)")
+                }
+            }
             preferences[watchedItemsKey] = deduped.values
                 .map { gson.toJson(it) }
                 .toSet()
         }
+        return preservedLocalItems
     }
 
     suspend fun clearAll() {

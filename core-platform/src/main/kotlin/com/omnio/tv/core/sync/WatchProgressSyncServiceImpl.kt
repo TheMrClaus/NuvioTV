@@ -11,8 +11,11 @@ import com.omnio.tv.data.local.WatchProgressPreferences
 import com.omnio.tv.data.remote.supabase.SupabaseWatchProgress
 import com.omnio.tv.domain.model.WatchProgress
 import io.github.jan.supabase.postgrest.Postgrest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
@@ -33,6 +36,26 @@ class WatchProgressSyncServiceImpl @Inject constructor(
     private val traktSettingsDataStore: TraktSettingsDataStore,
     private val profileManager: ProfileManager
 ) : WatchProgressSyncService {
+    @Volatile
+    override var lastSuccessfulPushMs: Long = 0L
+        private set
+
+    private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        initScope.launch {
+            lastSuccessfulPushMs = watchProgressPreferences.getLastSuccessfulPushMs()
+        }
+    }
+
+    fun markPushSucceeded() {
+        val now = System.currentTimeMillis()
+        lastSuccessfulPushMs = now
+        initScope.launch {
+            watchProgressPreferences.setLastSuccessfulPushMs(now)
+        }
+    }
+
     private suspend fun <T> withJwtRefreshRetry(block: suspend () -> T): T {
         return try {
             block()
@@ -124,6 +147,7 @@ class WatchProgressSyncServiceImpl @Inject constructor(
             }
 
             Log.d(TAG, "Pushed ${entries.size} watch progress entries to remote for profile $profileId")
+            markPushSucceeded()
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to push watch progress to remote", e)

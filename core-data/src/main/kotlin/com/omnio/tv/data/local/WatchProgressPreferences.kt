@@ -2,6 +2,7 @@ package com.omnio.tv.data.local
 
 import android.util.Log
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.omnio.tv.domain.profile.ProfileManager
 import com.google.gson.Gson
@@ -31,6 +32,7 @@ class WatchProgressPreferences @Inject constructor(
 
     private val gson = Gson()
     private val watchProgressKey = stringPreferencesKey("watch_progress_map")
+    private val lastSuccessfulPushMsKey = longPreferencesKey("last_successful_push_ms")
 
     /**
      * Get all watch progress items, sorted by last watched (most recent first)
@@ -247,22 +249,41 @@ class WatchProgressPreferences @Inject constructor(
         return parseProgressMap(json)
     }
 
+    suspend fun getLastSuccessfulPushMs(): Long {
+        return store().data.first()[lastSuccessfulPushMsKey] ?: 0L
+    }
+
+    suspend fun setLastSuccessfulPushMs(value: Long) {
+        store().edit { preferences ->
+            preferences[lastSuccessfulPushMsKey] = value
+        }
+    }
+
     /**
      * Merges remote entries into local storage. Newer lastWatched wins per key.
      */
-    suspend fun mergeRemoteEntries(remoteEntries: Map<String, WatchProgress>) {
-        Log.d("WatchProgressPrefs", "mergeRemoteEntries: ${remoteEntries.size} remote entries")
+    suspend fun mergeRemoteEntries(remoteEntries: Map<String, WatchProgress>, lastSuccessfulPushMs: Long = 0L): Boolean {
+        var preservedLocalItems = false
+        Log.d("WatchProgressPrefs", "mergeRemoteEntries: ${remoteEntries.size} remote entries, lastPushMs=$lastSuccessfulPushMs")
         store().edit { preferences ->
             val json = preferences[watchProgressKey] ?: "{}"
             val local = parseProgressMap(json).toMutableMap()
             Log.d("WatchProgressPrefs", "mergeRemoteEntries: ${local.size} existing local entries")
 
-            // Remove local entries that no longer exist on remote
+            // Remove local entries that no longer exist on remote - but protect
+            // entries created after the last successful push (they haven't reached
+            // remote yet, so their absence doesn't mean deletion on another device).
             if (remoteEntries.isNotEmpty()) {
                 val removedKeys = local.keys - remoteEntries.keys
                 removedKeys.forEach { key ->
-                    local.remove(key)
-                    Log.d("WatchProgressPrefs", "  removed key=$key (not in remote)")
+                    val localEntry = local[key]
+                    if (localEntry != null && localEntry.lastWatched > lastSuccessfulPushMs) {
+                        preservedLocalItems = true
+                        Log.d("WatchProgressPrefs", "  preserved key=$key (lastWatched=${localEntry.lastWatched} > lastPush=$lastSuccessfulPushMs)")
+                    } else {
+                        local.remove(key)
+                        Log.d("WatchProgressPrefs", "  removed key=$key (not in remote)")
+                    }
                 }
             }
 
@@ -280,6 +301,7 @@ class WatchProgressPreferences @Inject constructor(
             Log.d("WatchProgressPrefs", "mergeRemoteEntries: ${pruned.size} entries after prune, writing to DataStore")
             preferences[watchProgressKey] = gson.toJson(pruned)
         }
+        return preservedLocalItems
     }
 
     suspend fun replaceWithRemoteEntries(remoteEntries: Map<String, WatchProgress>) {
