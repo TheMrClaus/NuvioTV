@@ -28,6 +28,12 @@ import {
  *   animeToshoEnabled?: boolean,
  *   debridioApiKey?: string | null,    // null clears + disables preset
  *   presetToggles?: Record<string, boolean>,  // instanceId → enabled
+ *   presetOptions?: Record<string, {           // instanceId → option overrides
+ *     name?: string,
+ *     timeout?: number,
+ *     mediaTypes?: string[],
+ *     useMultipleInstances?: boolean,
+ *   }>,
  *   excludedResolutions?: string[],
  *   preferredResolutions?: string[],
  *   excludedQualities?: string[],
@@ -125,6 +131,11 @@ const VALID_QUALITIES = new Set([
   "BluRay REMUX", "BluRay", "WEB-DL", "WEBRip", "HDRip", "HC HD-Rip",
   "DVDRip", "HDTV", "CAM", "TS", "TC", "SCR", "Unknown",
 ]);
+const VALID_MEDIA_TYPES = new Set(["movie", "series", "channel", "tv", "anime"]);
+const MIN_TIMEOUT_MS = 1000;
+const MAX_TIMEOUT_MS = 300_000;
+const MAX_PRESET_NAME_LEN = 200;
+
 const VALID_SORT_KEYS = new Set([
   "quality", "resolution", "language", "subtitle", "visualTag", "audioTag",
   "audioChannel", "streamType", "encode", "size", "service", "seeders",
@@ -172,6 +183,54 @@ function applySortCriteria(
     ? config.sortCriteria as Record<string, unknown>
     : {};
   config.sortCriteria = { ...existing, global: sanitised };
+}
+
+interface PresetOptionOverride {
+  name?: string;
+  timeout?: number;
+  mediaTypes?: string[];
+  useMultipleInstances?: boolean;
+}
+
+function applyPresetOptions(
+  config: Record<string, unknown>,
+  overrides: Record<string, PresetOptionOverride> | undefined,
+): void {
+  if (!overrides) return;
+  const presets = Array.isArray(config.presets) ? config.presets as Array<Record<string, unknown>> : [];
+  let changed = false;
+  for (let i = 0; i < presets.length; i++) {
+    const preset = presets[i];
+    if (!preset || typeof preset !== "object") continue;
+    const instanceId = typeof preset.instanceId === "string" ? preset.instanceId : null;
+    if (!instanceId || !(instanceId in overrides)) continue;
+    const patch = overrides[instanceId];
+    const existingOptions = (preset.options && typeof preset.options === "object")
+      ? preset.options as Record<string, unknown>
+      : {};
+    const nextOptions: Record<string, unknown> = { ...existingOptions };
+    if (typeof patch.name === "string") {
+      const trimmed = patch.name.trim().slice(0, MAX_PRESET_NAME_LEN);
+      if (trimmed.length > 0) nextOptions.name = trimmed;
+    }
+    if (typeof patch.timeout === "number" && Number.isFinite(patch.timeout)) {
+      const t = Math.max(MIN_TIMEOUT_MS, Math.min(MAX_TIMEOUT_MS, Math.round(patch.timeout)));
+      nextOptions.timeout = t;
+    }
+    if (Array.isArray(patch.mediaTypes)) {
+      nextOptions.mediaTypes = Array.from(
+        new Set(
+          patch.mediaTypes.filter((v): v is string => typeof v === "string" && VALID_MEDIA_TYPES.has(v)),
+        ),
+      );
+    }
+    if (typeof patch.useMultipleInstances === "boolean") {
+      nextOptions.useMultipleInstances = patch.useMultipleInstances;
+    }
+    presets[i] = { ...preset, options: nextOptions };
+    changed = true;
+  }
+  if (changed) config.presets = presets;
 }
 
 function applyPresetToggles(
@@ -259,6 +318,7 @@ Deno.serve(async (request) => {
     animeToshoEnabled?: unknown;
     debridioApiKey?: unknown;
     presetToggles?: unknown;
+    presetOptions?: unknown;
     excludedResolutions?: unknown;
     preferredResolutions?: unknown;
     excludedQualities?: unknown;
@@ -306,6 +366,29 @@ Deno.serve(async (request) => {
       if (typeof v === "boolean" && typeof k === "string" && k.length > 0) sanitised[k] = v;
     }
     if (Object.keys(sanitised).length > 0) presetToggles = sanitised;
+  }
+
+  let presetOptions: Record<string, PresetOptionOverride> | undefined;
+  if (body.presetOptions && typeof body.presetOptions === "object" && !Array.isArray(body.presetOptions)) {
+    const sanitised: Record<string, PresetOptionOverride> = {};
+    for (const [k, raw] of Object.entries(body.presetOptions as Record<string, unknown>)) {
+      if (typeof k !== "string" || k.length === 0) continue;
+      if (!raw || typeof raw !== "object") continue;
+      const patch = raw as Record<string, unknown>;
+      const override: PresetOptionOverride = {};
+      if (typeof patch.name === "string") override.name = patch.name;
+      if (typeof patch.timeout === "number") override.timeout = patch.timeout;
+      if (Array.isArray(patch.mediaTypes)) {
+        override.mediaTypes = (patch.mediaTypes as unknown[]).filter(
+          (v): v is string => typeof v === "string",
+        );
+      }
+      if (typeof patch.useMultipleInstances === "boolean") {
+        override.useMultipleInstances = patch.useMultipleInstances;
+      }
+      if (Object.keys(override).length > 0) sanitised[k] = override;
+    }
+    if (Object.keys(sanitised).length > 0) presetOptions = sanitised;
   }
 
   const readStrArr = (raw: unknown): string[] | undefined =>
@@ -379,6 +462,7 @@ Deno.serve(async (request) => {
     : [];
   applyDebridioKey(config, debridioApiKey, services);
   applyPresetToggles(config, presetToggles);
+  applyPresetOptions(config, presetOptions);
   applyStringArray(config, "excludedResolutions", excludedResolutions, VALID_RESOLUTIONS);
   applyStringArray(config, "preferredResolutions", preferredResolutions, VALID_RESOLUTIONS);
   applyStringArray(config, "excludedQualities", excludedQualities, VALID_QUALITIES);

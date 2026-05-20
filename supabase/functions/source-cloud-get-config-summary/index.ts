@@ -40,6 +40,9 @@ interface PresetSummary {
   type: string;
   name: string;
   enabled: boolean;
+  timeout: number | null;
+  mediaTypes: string[];
+  useMultipleInstances: boolean;
 }
 
 function stringArray(raw: unknown): string[] {
@@ -85,11 +88,20 @@ function summarisePresets(raw: unknown): PresetSummary[] {
     const name = typeof options.name === "string" && options.name.length > 0
       ? options.name
       : type;
+    const timeout = typeof options.timeout === "number" && Number.isFinite(options.timeout)
+      ? options.timeout
+      : null;
+    const mediaTypes = Array.isArray(options.mediaTypes)
+      ? (options.mediaTypes as unknown[]).filter((v): v is string => typeof v === "string")
+      : [];
     out.push({
       instanceId,
       type,
       name,
       enabled: p.enabled === true,
+      timeout,
+      mediaTypes,
+      useMultipleInstances: options.useMultipleInstances === true,
     });
   }
   return out;

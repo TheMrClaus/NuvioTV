@@ -41,6 +41,16 @@ export interface SourceCloudPresetSummary {
   type: string;
   name: string;
   enabled: boolean;
+  timeout: number | null;
+  mediaTypes: string[];
+  useMultipleInstances: boolean;
+}
+
+export interface SourceCloudPresetOptionPatch {
+  name?: string;
+  timeout?: number;
+  mediaTypes?: string[];
+  useMultipleInstances?: boolean;
 }
 
 export interface SourceCloudSortCriterion {
@@ -187,6 +197,7 @@ export interface UpdateConfigInput {
   animeToshoEnabled?: boolean;
   debridioApiKey?: string | null;
   presetToggles?: Record<string, boolean>;
+  presetOptions?: Record<string, SourceCloudPresetOptionPatch>;
   excludedResolutions?: string[];
   preferredResolutions?: string[];
   excludedQualities?: string[];

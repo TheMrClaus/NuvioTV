@@ -25,6 +25,16 @@ export const SORT_CRITERIA = [
   "bitrate", "releaseGroup",
 ] as const;
 
+export const MEDIA_TYPES = ["movie", "series", "channel", "tv", "anime"] as const;
+
+export const MEDIA_TYPE_LABELS: Record<(typeof MEDIA_TYPES)[number], string> = {
+  movie: "Movie",
+  series: "Series",
+  channel: "Channel",
+  tv: "TV",
+  anime: "Anime",
+};
+
 export const SORT_CRITERION_LABELS: Record<(typeof SORT_CRITERIA)[number], string> = {
   quality: "Quality",
   resolution: "Resolution",
