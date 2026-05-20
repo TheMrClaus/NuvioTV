@@ -212,7 +212,7 @@ internal fun PlayerRuntimeController.showStreamSourceIndicator(stream: Stream) {
     }
     hideStreamSourceIndicatorJob = scope.launch {
         delay(2200)
-        _uiState.update { it.copy(showStreamSourceIndicator = false) }
+        _uiState.update { it.hideStreamSourceIndicator() }
     }
 }
 

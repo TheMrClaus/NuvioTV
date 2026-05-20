@@ -270,3 +270,8 @@ data class StreamInfoData(
     val subtitleLanguage: String? = null,
     val subtitleSource: String? = null
 )
+
+internal fun PlayerUiState.hideStreamSourceIndicator(): PlayerUiState = copy(
+    showStreamSourceIndicator = false,
+    streamSourceIndicatorText = ""
+)
