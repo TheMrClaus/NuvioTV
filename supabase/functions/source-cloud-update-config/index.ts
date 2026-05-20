@@ -28,6 +28,11 @@ import {
  *   animeToshoEnabled?: boolean,
  *   debridioApiKey?: string | null,    // null clears + disables preset
  *   presetToggles?: Record<string, boolean>,  // instanceId → enabled
+ *   excludedResolutions?: string[],
+ *   preferredResolutions?: string[],
+ *   excludedQualities?: string[],
+ *   preferredQualities?: string[],
+ *   sortCriteria?: Array<{ key: string, direction: "asc"|"desc" }>,
  * }
  *
  * Edge cases:
@@ -109,6 +114,64 @@ function applyAnimeToshoToggle(
     });
   }
   config.presets = presets;
+}
+
+// Allowlists mirror AIOStreams' constants. Updating these requires bumping
+// when AIOStreams adds new enum values upstream.
+const VALID_RESOLUTIONS = new Set([
+  "2160p", "1440p", "1080p", "720p", "576p", "480p", "360p", "240p", "144p", "Unknown",
+]);
+const VALID_QUALITIES = new Set([
+  "BluRay REMUX", "BluRay", "WEB-DL", "WEBRip", "HDRip", "HC HD-Rip",
+  "DVDRip", "HDTV", "CAM", "TS", "TC", "SCR", "Unknown",
+]);
+const VALID_SORT_KEYS = new Set([
+  "quality", "resolution", "language", "subtitle", "visualTag", "audioTag",
+  "audioChannel", "streamType", "encode", "size", "service", "seeders",
+  "private", "age", "addon", "regexPatterns", "cached", "library", "keyword",
+  "streamExpressionMatched", "streamExpressionScore", "regexScore", "seadex",
+  "bitrate", "releaseGroup",
+]);
+
+function applyStringArray(
+  config: Record<string, unknown>,
+  key: string,
+  value: string[] | undefined,
+  allowed: Set<string>,
+): void {
+  if (value === undefined) return;
+  const sanitised = value.filter((v) => typeof v === "string" && allowed.has(v));
+  if (sanitised.length === 0) {
+    delete config[key];
+  } else {
+    config[key] = Array.from(new Set(sanitised));
+  }
+}
+
+interface SortCriterionInput {
+  key: string;
+  direction: "asc" | "desc";
+}
+
+function applySortCriteria(
+  config: Record<string, unknown>,
+  criteria: SortCriterionInput[] | undefined,
+): void {
+  if (criteria === undefined) return;
+  const sanitised: SortCriterionInput[] = [];
+  const seen = new Set<string>();
+  for (const c of criteria) {
+    if (!c || typeof c !== "object") continue;
+    if (!VALID_SORT_KEYS.has(c.key)) continue;
+    if (c.direction !== "asc" && c.direction !== "desc") continue;
+    if (seen.has(c.key)) continue;
+    seen.add(c.key);
+    sanitised.push({ key: c.key, direction: c.direction });
+  }
+  const existing = (config.sortCriteria && typeof config.sortCriteria === "object")
+    ? config.sortCriteria as Record<string, unknown>
+    : {};
+  config.sortCriteria = { ...existing, global: sanitised };
 }
 
 function applyPresetToggles(
@@ -196,6 +259,11 @@ Deno.serve(async (request) => {
     animeToshoEnabled?: unknown;
     debridioApiKey?: unknown;
     presetToggles?: unknown;
+    excludedResolutions?: unknown;
+    preferredResolutions?: unknown;
+    excludedQualities?: unknown;
+    preferredQualities?: unknown;
+    sortCriteria?: unknown;
   };
   try {
     body = await request.json();
@@ -238,6 +306,25 @@ Deno.serve(async (request) => {
       if (typeof v === "boolean" && typeof k === "string" && k.length > 0) sanitised[k] = v;
     }
     if (Object.keys(sanitised).length > 0) presetToggles = sanitised;
+  }
+
+  const readStrArr = (raw: unknown): string[] | undefined =>
+    Array.isArray(raw) ? raw.filter((v): v is string => typeof v === "string") : undefined;
+  const excludedResolutions = "excludedResolutions" in body ? readStrArr(body.excludedResolutions) : undefined;
+  const preferredResolutions = "preferredResolutions" in body ? readStrArr(body.preferredResolutions) : undefined;
+  const excludedQualities = "excludedQualities" in body ? readStrArr(body.excludedQualities) : undefined;
+  const preferredQualities = "preferredQualities" in body ? readStrArr(body.preferredQualities) : undefined;
+
+  let sortCriteria: SortCriterionInput[] | undefined;
+  if ("sortCriteria" in body && Array.isArray(body.sortCriteria)) {
+    sortCriteria = [];
+    for (const entry of body.sortCriteria as unknown[]) {
+      if (!entry || typeof entry !== "object") continue;
+      const e = entry as Record<string, unknown>;
+      if (typeof e.key !== "string") continue;
+      if (e.direction !== "asc" && e.direction !== "desc") continue;
+      sortCriteria.push({ key: e.key, direction: e.direction });
+    }
   }
 
   const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
@@ -292,6 +379,11 @@ Deno.serve(async (request) => {
     : [];
   applyDebridioKey(config, debridioApiKey, services);
   applyPresetToggles(config, presetToggles);
+  applyStringArray(config, "excludedResolutions", excludedResolutions, VALID_RESOLUTIONS);
+  applyStringArray(config, "preferredResolutions", preferredResolutions, VALID_RESOLUTIONS);
+  applyStringArray(config, "excludedQualities", excludedQualities, VALID_QUALITIES);
+  applyStringArray(config, "preferredQualities", preferredQualities, VALID_QUALITIES);
+  applySortCriteria(config, sortCriteria);
 
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);

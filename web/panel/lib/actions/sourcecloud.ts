@@ -43,6 +43,11 @@ export interface SourceCloudPresetSummary {
   enabled: boolean;
 }
 
+export interface SourceCloudSortCriterion {
+  key: string;
+  direction: "asc" | "desc";
+}
+
 export interface SourceCloudConfigSummaryResponse {
   tmdbApiKey: string | null;
   tmdbAccessToken: string | null;
@@ -51,6 +56,11 @@ export interface SourceCloudConfigSummaryResponse {
   animeToshoEnabled: boolean;
   debridioApiKey: string | null;
   presets: SourceCloudPresetSummary[];
+  excludedResolutions: string[];
+  preferredResolutions: string[];
+  excludedQualities: string[];
+  preferredQualities: string[];
+  sortCriteria: SourceCloudSortCriterion[];
   provisioned: boolean;
 }
 
@@ -177,6 +187,11 @@ export interface UpdateConfigInput {
   animeToshoEnabled?: boolean;
   debridioApiKey?: string | null;
   presetToggles?: Record<string, boolean>;
+  excludedResolutions?: string[];
+  preferredResolutions?: string[];
+  excludedQualities?: string[];
+  preferredQualities?: string[];
+  sortCriteria?: SourceCloudSortCriterion[];
 }
 
 export async function updateSourceCloudConfig(

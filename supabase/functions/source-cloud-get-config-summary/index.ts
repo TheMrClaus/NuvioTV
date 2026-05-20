@@ -23,6 +23,11 @@ import {
  *   animeToshoEnabled: boolean,
  *   debridioApiKey: string | null,
  *   presets: Array<{ instanceId, type, name, enabled }>,
+ *   excludedResolutions: string[],
+ *   preferredResolutions: string[],
+ *   excludedQualities: string[],
+ *   preferredQualities: string[],
+ *   sortCriteria: Array<{ key, direction }>,
  *   provisioned: boolean,
  * }
  *
@@ -35,6 +40,34 @@ interface PresetSummary {
   type: string;
   name: string;
   enabled: boolean;
+}
+
+function stringArray(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((v): v is string => typeof v === "string" && v.length > 0);
+}
+
+interface SortEntry {
+  key: string;
+  direction: "asc" | "desc";
+}
+
+function summariseSortCriteria(raw: unknown): SortEntry[] {
+  // AIOStreams stores sort as { global: SortCriterion[] }.
+  const global = raw && typeof raw === "object"
+    ? (raw as Record<string, unknown>).global
+    : null;
+  if (!Array.isArray(global)) return [];
+  const out: SortEntry[] = [];
+  for (const entry of global) {
+    if (!entry || typeof entry !== "object") continue;
+    const e = entry as Record<string, unknown>;
+    const key = typeof e.key === "string" ? e.key : null;
+    const direction = e.direction === "asc" || e.direction === "desc" ? e.direction : null;
+    if (!key || !direction) continue;
+    out.push({ key, direction });
+  }
+  return out;
 }
 
 function summarisePresets(raw: unknown): PresetSummary[] {
@@ -93,6 +126,11 @@ Deno.serve(async (request) => {
     animeToshoEnabled: false,
     debridioApiKey: null,
     presets: [] as PresetSummary[],
+    excludedResolutions: [] as string[],
+    preferredResolutions: [] as string[],
+    excludedQualities: [] as string[],
+    preferredQualities: [] as string[],
+    sortCriteria: [] as SortEntry[],
     provisioned: false,
   };
 
@@ -156,6 +194,11 @@ Deno.serve(async (request) => {
       ? debridioOptions.debridioApiKey as string
       : null,
     presets: summarisePresets(config.presets),
+    excludedResolutions: stringArray(config.excludedResolutions),
+    preferredResolutions: stringArray(config.preferredResolutions),
+    excludedQualities: stringArray(config.excludedQualities),
+    preferredQualities: stringArray(config.preferredQualities),
+    sortCriteria: summariseSortCriteria(config.sortCriteria),
     provisioned: true,
   });
 });

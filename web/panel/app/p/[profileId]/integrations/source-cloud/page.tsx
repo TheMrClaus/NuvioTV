@@ -7,6 +7,8 @@ import {
 import SourceCloudServicesForm from "@/components/forms/SourceCloudServicesForm";
 import SourceCloudApiKeysForm from "@/components/forms/SourceCloudApiKeysForm";
 import SourceCloudPresetsForm from "@/components/forms/SourceCloudPresetsForm";
+import SourceCloudFiltersForm from "@/components/forms/SourceCloudFiltersForm";
+import SourceCloudSortForm from "@/components/forms/SourceCloudSortForm";
 import SourceCloudAdvancedForm from "@/components/forms/SourceCloudAdvancedForm";
 
 interface Props {
@@ -72,6 +74,10 @@ export default async function SourceCloudPage({ params }: Props) {
           presets={summary.presets ?? []}
         />
       )}
+
+      {summary && <SourceCloudFiltersForm profileId={id} summary={summary} />}
+
+      {summary && <SourceCloudSortForm profileId={id} summary={summary} />}
 
       <SourceCloudAdvancedForm profileId={id} canReset={canReset} />
     </div>
