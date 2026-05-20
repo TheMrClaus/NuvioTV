@@ -6,6 +6,7 @@ import {
 } from "@/lib/actions/sourcecloud";
 import SourceCloudServicesForm from "@/components/forms/SourceCloudServicesForm";
 import SourceCloudApiKeysForm from "@/components/forms/SourceCloudApiKeysForm";
+import SourceCloudPresetsForm from "@/components/forms/SourceCloudPresetsForm";
 import SourceCloudAdvancedForm from "@/components/forms/SourceCloudAdvancedForm";
 
 interface Props {
@@ -63,6 +64,14 @@ export default async function SourceCloudPage({ params }: Props) {
       <SourceCloudServicesForm profileId={id} services={services} />
 
       {summary && <SourceCloudApiKeysForm profileId={id} summary={summary} />}
+
+      {summary && (
+        <SourceCloudPresetsForm
+          profileId={id}
+          provisioned={summary.provisioned}
+          presets={summary.presets ?? []}
+        />
+      )}
 
       <SourceCloudAdvancedForm profileId={id} canReset={canReset} />
     </div>

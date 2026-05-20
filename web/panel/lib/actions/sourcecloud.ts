@@ -36,6 +36,13 @@ export interface SourceCloudStatusResponse {
   services?: SourceCloudServiceDto[] | null;
 }
 
+export interface SourceCloudPresetSummary {
+  instanceId: string;
+  type: string;
+  name: string;
+  enabled: boolean;
+}
+
 export interface SourceCloudConfigSummaryResponse {
   tmdbApiKey: string | null;
   tmdbAccessToken: string | null;
@@ -43,6 +50,7 @@ export interface SourceCloudConfigSummaryResponse {
   rpdbApiKey: string | null;
   animeToshoEnabled: boolean;
   debridioApiKey: string | null;
+  presets: SourceCloudPresetSummary[];
   provisioned: boolean;
 }
 
@@ -168,6 +176,7 @@ export interface UpdateConfigInput {
   rpdbApiKey?: string | null;
   animeToshoEnabled?: boolean;
   debridioApiKey?: string | null;
+  presetToggles?: Record<string, boolean>;
 }
 
 export async function updateSourceCloudConfig(

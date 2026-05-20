@@ -10,9 +10,9 @@ import {
 } from "../_shared/source_cloud.ts";
 
 /**
- * Return the user-facing slice of the AIOStreams config that the in-app
- * API Keys section renders/edits. Does not expose the full config — just
- * the values our form binds to.
+ * Return the user-facing slice of the AIOStreams config that the panel
+ * forms render/edit. Does not expose the full config — just the values
+ * our forms bind to.
  *
  * Request: POST { profileId }
  * Response (200): {
@@ -22,12 +22,45 @@ import {
  *   rpdbApiKey: string | null,
  *   animeToshoEnabled: boolean,
  *   debridioApiKey: string | null,
+ *   presets: Array<{ instanceId, type, name, enabled }>,
  *   provisioned: boolean,
  * }
  *
  * When the user has no AIOStreams config yet, returns all fields as
- * null/false with provisioned=false.
+ * null/false/[] with provisioned=false.
  */
+
+interface PresetSummary {
+  instanceId: string;
+  type: string;
+  name: string;
+  enabled: boolean;
+}
+
+function summarisePresets(raw: unknown): PresetSummary[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PresetSummary[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const p = entry as Record<string, unknown>;
+    const type = typeof p.type === "string" ? p.type : null;
+    const instanceId = typeof p.instanceId === "string" ? p.instanceId : null;
+    if (!type || !instanceId) continue;
+    const options = (p.options && typeof p.options === "object")
+      ? p.options as Record<string, unknown>
+      : {};
+    const name = typeof options.name === "string" && options.name.length > 0
+      ? options.name
+      : type;
+    out.push({
+      instanceId,
+      type,
+      name,
+      enabled: p.enabled === true,
+    });
+  }
+  return out;
+}
 Deno.serve(async (request) => {
   const cors = handleCors(request);
   if (cors) return cors;
@@ -59,6 +92,7 @@ Deno.serve(async (request) => {
     rpdbApiKey: null,
     animeToshoEnabled: false,
     debridioApiKey: null,
+    presets: [] as PresetSummary[],
     provisioned: false,
   };
 
@@ -121,6 +155,7 @@ Deno.serve(async (request) => {
     debridioApiKey: typeof debridioOptions?.debridioApiKey === "string"
       ? debridioOptions.debridioApiKey as string
       : null,
+    presets: summarisePresets(config.presets),
     provisioned: true,
   });
 });

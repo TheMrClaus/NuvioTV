@@ -27,6 +27,7 @@ import {
  *   rpdbApiKey?: string | null,
  *   animeToshoEnabled?: boolean,
  *   debridioApiKey?: string | null,    // null clears + disables preset
+ *   presetToggles?: Record<string, boolean>,  // instanceId → enabled
  * }
  *
  * Edge cases:
@@ -110,6 +111,26 @@ function applyAnimeToshoToggle(
   config.presets = presets;
 }
 
+function applyPresetToggles(
+  config: Record<string, unknown>,
+  toggles: Record<string, boolean> | undefined,
+): void {
+  if (!toggles) return;
+  const presets = Array.isArray(config.presets) ? config.presets as Array<Record<string, unknown>> : [];
+  let changed = false;
+  for (let i = 0; i < presets.length; i++) {
+    const preset = presets[i];
+    if (!preset || typeof preset !== "object") continue;
+    const instanceId = typeof preset.instanceId === "string" ? preset.instanceId : null;
+    if (!instanceId) continue;
+    if (instanceId in toggles) {
+      presets[i] = { ...preset, enabled: toggles[instanceId] };
+      changed = true;
+    }
+  }
+  if (changed) config.presets = presets;
+}
+
 function applyDebridioKey(
   config: Record<string, unknown>,
   apiKey: string | null | undefined,
@@ -174,6 +195,7 @@ Deno.serve(async (request) => {
     rpdbApiKey?: unknown;
     animeToshoEnabled?: unknown;
     debridioApiKey?: unknown;
+    presetToggles?: unknown;
   };
   try {
     body = await request.json();
@@ -208,6 +230,15 @@ Deno.serve(async (request) => {
   const debridioApiKey = "debridioApiKey" in body
     ? (body.debridioApiKey === null ? null : typeof body.debridioApiKey === "string" ? body.debridioApiKey : undefined)
     : undefined;
+
+  let presetToggles: Record<string, boolean> | undefined;
+  if (body.presetToggles && typeof body.presetToggles === "object" && !Array.isArray(body.presetToggles)) {
+    const sanitised: Record<string, boolean> = {};
+    for (const [k, v] of Object.entries(body.presetToggles as Record<string, unknown>)) {
+      if (typeof v === "boolean" && typeof k === "string" && k.length > 0) sanitised[k] = v;
+    }
+    if (Object.keys(sanitised).length > 0) presetToggles = sanitised;
+  }
 
   const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
   const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
@@ -260,6 +291,7 @@ Deno.serve(async (request) => {
     ? (config.services as Array<{ id?: string }>).filter((s) => typeof s.id === "string") as Array<{ id: string }>
     : [];
   applyDebridioKey(config, debridioApiKey, services);
+  applyPresetToggles(config, presetToggles);
 
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
