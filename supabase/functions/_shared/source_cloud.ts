@@ -439,32 +439,35 @@ export function normalizeAioStreamsResult(
 
 export async function fetchAioStreamsSearch(
   configId: string,
+  encryptedPassword: string,
   type: string,
   videoId: string,
   season: number | null | undefined,
   episode: number | null | undefined,
 ): Promise<NormalizedStream[]> {
   const baseUrl = AIOSTREAMS_BASE_URL;
-  const addonPassword = AIOSTREAMS_ADDON_PASSWORD;
-  if (!baseUrl || !addonPassword || !configId) return [];
+  if (!baseUrl || !configId || !encryptedPassword) return [];
 
+  // AIOStreams' Stremio endpoints live under the authenticated route
+  // /stremio/:uuid/:encryptedPassword/... — the unauthenticated
+  // /stremio/<uuid>/stream/... path doesn't load the user's config and
+  // returns nothing useful. encryptedPassword is the AES-encrypted form
+  // we stashed on the source_cloud_configs row during provisioning.
   let path: string;
   if (type === "movie") {
-    path = `/stremio/${configId}/stream/movie/${encodeURIComponent(videoId)}.json`;
+    path = `/stremio/${configId}/${encryptedPassword}/stream/movie/${encodeURIComponent(videoId)}.json`;
   } else if (type === "series") {
     const id =
       season != null && episode != null
         ? `${videoId}:${season}:${episode}`
         : videoId;
-    path = `/stremio/${configId}/stream/series/${encodeURIComponent(id)}.json`;
+    path = `/stremio/${configId}/${encryptedPassword}/stream/series/${encodeURIComponent(id)}.json`;
   } else {
     return [];
   }
 
   try {
-    const response = await fetch(`${baseUrl}${path}`, {
-      headers: { "X-Addon-Password": addonPassword },
-    });
+    const response = await fetch(`${baseUrl}${path}`);
     if (!response.ok) return [];
     const data = await response.json() as Record<string, unknown>;
     return normalizeAioStreamsResult(data?.streams);

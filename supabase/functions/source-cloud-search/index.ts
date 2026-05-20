@@ -1,6 +1,5 @@
 import {
   createServiceClient,
-  ensureAioStreamsConfig,
   fetchAioStreamsSearch,
   errorResponse,
   handleCors,
@@ -87,13 +86,23 @@ Deno.serve(async (request) => {
     return jsonResponse(200, { streams: [] });
   }
 
-  const { configId, status } = await ensureAioStreamsConfig(
-    client,
-    ownerId,
-    profileId,
-  );
+  // Look up the user's AIOStreams config directly — we no longer rely on
+  // ensureAioStreamsConfig (which targets a non-existent /api/v1/config/save
+  // endpoint and would always fail). The in-app connect flow now
+  // populates aiostreams_config_id + aiostreams_encrypted_password
+  // directly, so we just read them here.
+  const { data: configRow } = await client
+    .from("source_cloud_configs")
+    .select("aiostreams_config_id, aiostreams_encrypted_password, config_status")
+    .eq("user_id", ownerId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
 
-  if (!configId || status !== "ready") {
+  const configId = configRow?.aiostreams_config_id as string | null | undefined;
+  const encryptedPassword = configRow?.aiostreams_encrypted_password as string | null | undefined;
+  const status = configRow?.config_status as string | undefined;
+
+  if (!configId || !encryptedPassword || status !== "ready") {
     return jsonResponse(200, { streams: [] });
   }
 
@@ -103,6 +112,7 @@ Deno.serve(async (request) => {
 
   const streams = await fetchAioStreamsSearch(
     configId,
+    encryptedPassword,
     type,
     searchId,
     season,
