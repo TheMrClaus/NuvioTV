@@ -44,6 +44,11 @@ import {
  *   titleMatching?: { enabled?, mode?, similarityThreshold? },
  *   yearMatching?: { enabled?, tolerance?, strict? },
  *   digitalReleaseFilter?: { enabled?, tolerance? },
+ *   excludedKeywords?: string[],
+ *   excludedRegexPatterns?: string[],
+ *   includedRegexPatterns?: string[],
+ *   requiredRegexPatterns?: string[],
+ *   deduplicator?: { enabled?, multiGroupBehaviour?, keys?, cached?, uncached? },
  *   addPresets?: string[],           // preset types to add from starter template
  * }
  *
@@ -149,6 +154,13 @@ const VALID_LANGUAGES = new Set([
   "Dubbed", "Multi", "Original", "Unknown",
 ]);
 
+const VALID_DEDUP_KEYS = new Set(["filename", "infoHash", "smartDetect"]);
+const VALID_DEDUP_MODES = new Set(["single_result", "per_service", "per_addon", "disabled"]);
+const VALID_DEDUP_MGB = new Set(["keep_all", "aggressive", "conservative"]);
+const MAX_KEYWORD_LEN = 100;
+const MAX_REGEX_LEN = 500;
+const MAX_LIST_ITEMS = 200;
+
 const VALID_MEDIA_TYPES = new Set(["movie", "series", "channel", "tv", "anime"]);
 const MIN_TIMEOUT_MS = 1000;
 const MAX_TIMEOUT_MS = 300_000;
@@ -216,6 +228,57 @@ interface YearMatchingPatch {
 interface DigitalReleaseFilterPatch {
   enabled?: boolean;
   tolerance?: number;
+}
+
+function applyFreeFormStringArray(
+  config: Record<string, unknown>,
+  key: string,
+  value: string[] | undefined,
+  maxLen: number,
+): void {
+  if (value === undefined) return;
+  const sanitised = value
+    .filter((v): v is string => typeof v === "string")
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0 && v.length <= maxLen)
+    .slice(0, MAX_LIST_ITEMS);
+  const unique = Array.from(new Set(sanitised));
+  if (unique.length === 0) {
+    delete config[key];
+  } else {
+    config[key] = unique;
+  }
+}
+
+function applyDeduplicator(
+  config: Record<string, unknown>,
+  patch: Record<string, unknown> | undefined,
+): void {
+  if (!patch) return;
+  const existing = (config.deduplicator && typeof config.deduplicator === "object")
+    ? config.deduplicator as Record<string, unknown>
+    : {};
+  const next: Record<string, unknown> = { ...existing };
+  if (typeof patch.enabled === "boolean") next.enabled = patch.enabled;
+  if (typeof patch.multiGroupBehaviour === "string" && VALID_DEDUP_MGB.has(patch.multiGroupBehaviour)) {
+    next.multiGroupBehaviour = patch.multiGroupBehaviour;
+  }
+  if (Array.isArray(patch.keys)) {
+    next.keys = Array.from(
+      new Set(
+        (patch.keys as unknown[]).filter(
+          (v): v is string => typeof v === "string" && VALID_DEDUP_KEYS.has(v),
+        ),
+      ),
+    );
+  }
+  if (typeof patch.cached === "string" && VALID_DEDUP_MODES.has(patch.cached)) {
+    next.cached = patch.cached;
+  }
+  if (typeof patch.uncached === "string" && VALID_DEDUP_MODES.has(patch.uncached)) {
+    next.uncached = patch.uncached;
+  }
+  config.deduplicator = next;
 }
 
 function applyObjectPatch(
@@ -418,6 +481,11 @@ Deno.serve(async (request) => {
     titleMatching?: unknown;
     yearMatching?: unknown;
     digitalReleaseFilter?: unknown;
+    excludedKeywords?: unknown;
+    excludedRegexPatterns?: unknown;
+    includedRegexPatterns?: unknown;
+    requiredRegexPatterns?: unknown;
+    deduplicator?: unknown;
     addPresets?: unknown;
   };
   try {
@@ -539,6 +607,15 @@ Deno.serve(async (request) => {
     if (addPresets.length === 0) addPresets = undefined;
   }
 
+  const excludedKeywords = "excludedKeywords" in body ? readStrArr(body.excludedKeywords) : undefined;
+  const excludedRegexPatterns = "excludedRegexPatterns" in body ? readStrArr(body.excludedRegexPatterns) : undefined;
+  const includedRegexPatterns = "includedRegexPatterns" in body ? readStrArr(body.includedRegexPatterns) : undefined;
+  const requiredRegexPatterns = "requiredRegexPatterns" in body ? readStrArr(body.requiredRegexPatterns) : undefined;
+
+  const deduplicatorPatch = "deduplicator" in body && body.deduplicator && typeof body.deduplicator === "object" && !Array.isArray(body.deduplicator)
+    ? body.deduplicator as Record<string, unknown>
+    : undefined;
+
   let sortCriteria: SortCriterionInput[] | undefined;
   if ("sortCriteria" in body && Array.isArray(body.sortCriteria)) {
     sortCriteria = [];
@@ -614,6 +691,11 @@ Deno.serve(async (request) => {
   applyObjectPatch(config, "titleMatching", titleMatchingPatch);
   applyObjectPatch(config, "yearMatching", yearMatchingPatch);
   applyObjectPatch(config, "digitalReleaseFilter", digitalReleaseFilterPatch);
+  applyFreeFormStringArray(config, "excludedKeywords", excludedKeywords, MAX_KEYWORD_LEN);
+  applyFreeFormStringArray(config, "excludedRegexPatterns", excludedRegexPatterns, MAX_REGEX_LEN);
+  applyFreeFormStringArray(config, "includedRegexPatterns", includedRegexPatterns, MAX_REGEX_LEN);
+  applyFreeFormStringArray(config, "requiredRegexPatterns", requiredRegexPatterns, MAX_REGEX_LEN);
+  applyDeduplicator(config, deduplicatorPatch);
   applySortCriteria(config, sortCriteria);
 
   applyTmdbPolicy(config);

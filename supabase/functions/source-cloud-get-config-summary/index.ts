@@ -33,6 +33,11 @@ import {
  *   titleMatching: { enabled, mode, similarityThreshold } | null,
  *   yearMatching: { enabled, tolerance, strict } | null,
  *   digitalReleaseFilter: { enabled, tolerance } | null,
+ *   excludedKeywords: string[],
+ *   excludedRegexPatterns: string[],
+ *   includedRegexPatterns: string[],
+ *   requiredRegexPatterns: string[],
+ *   deduplicator: DeduplicatorSummary | null,
  *   availablePresets: Array<{ type, name }>,  // starter presets the user is missing
  *   provisioned: boolean,
  * }
@@ -123,6 +128,30 @@ function summariseDigitalReleaseFilter(raw: unknown): DigitalReleaseFilterSummar
   return {
     enabled: o.enabled === true,
     tolerance: typeof o.tolerance === "number" && Number.isFinite(o.tolerance) ? o.tolerance : null,
+  };
+}
+
+interface DeduplicatorSummary {
+  enabled: boolean;
+  multiGroupBehaviour: "keep_all" | "aggressive" | "conservative" | null;
+  keys: string[];
+  cached: string | null;
+  uncached: string | null;
+}
+
+function summariseDeduplicator(raw: unknown): DeduplicatorSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  const mgb = o.multiGroupBehaviour;
+  return {
+    enabled: o.enabled === true,
+    multiGroupBehaviour:
+      mgb === "keep_all" || mgb === "aggressive" || mgb === "conservative" ? mgb : null,
+    keys: Array.isArray(o.keys)
+      ? (o.keys as unknown[]).filter((v): v is string => typeof v === "string")
+      : [],
+    cached: typeof o.cached === "string" ? o.cached : null,
+    uncached: typeof o.uncached === "string" ? o.uncached : null,
   };
 }
 
@@ -239,6 +268,11 @@ Deno.serve(async (request) => {
     titleMatching: null as TitleMatchingSummary | null,
     yearMatching: null as YearMatchingSummary | null,
     digitalReleaseFilter: null as DigitalReleaseFilterSummary | null,
+    excludedKeywords: [] as string[],
+    excludedRegexPatterns: [] as string[],
+    includedRegexPatterns: [] as string[],
+    requiredRegexPatterns: [] as string[],
+    deduplicator: null as DeduplicatorSummary | null,
     availablePresets: [] as AvailablePreset[],
     provisioned: false,
   };
@@ -313,6 +347,11 @@ Deno.serve(async (request) => {
     titleMatching: summariseTitleMatching(config.titleMatching),
     yearMatching: summariseYearMatching(config.yearMatching),
     digitalReleaseFilter: summariseDigitalReleaseFilter(config.digitalReleaseFilter),
+    excludedKeywords: stringArray(config.excludedKeywords),
+    excludedRegexPatterns: stringArray(config.excludedRegexPatterns),
+    includedRegexPatterns: stringArray(config.includedRegexPatterns),
+    requiredRegexPatterns: stringArray(config.requiredRegexPatterns),
+    deduplicator: summariseDeduplicator(config.deduplicator),
     availablePresets: await fetchAvailablePresets(
       baseUrl,
       new Set(summarisePresets(config.presets).map((p) => p.type)),

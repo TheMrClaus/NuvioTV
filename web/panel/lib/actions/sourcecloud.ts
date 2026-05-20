@@ -77,6 +77,14 @@ export interface SourceCloudAvailablePreset {
   name: string;
 }
 
+export interface SourceCloudDeduplicator {
+  enabled: boolean;
+  multiGroupBehaviour: "keep_all" | "aggressive" | "conservative" | null;
+  keys: string[];
+  cached: string | null;
+  uncached: string | null;
+}
+
 export interface SourceCloudConfigSummaryResponse {
   tmdbApiKey: string | null;
   tmdbAccessToken: string | null;
@@ -95,6 +103,11 @@ export interface SourceCloudConfigSummaryResponse {
   titleMatching: SourceCloudTitleMatching | null;
   yearMatching: SourceCloudYearMatching | null;
   digitalReleaseFilter: SourceCloudDigitalReleaseFilter | null;
+  excludedKeywords: string[];
+  excludedRegexPatterns: string[];
+  includedRegexPatterns: string[];
+  requiredRegexPatterns: string[];
+  deduplicator: SourceCloudDeduplicator | null;
   availablePresets: SourceCloudAvailablePreset[];
   provisioned: boolean;
 }
@@ -233,6 +246,17 @@ export interface UpdateConfigInput {
   titleMatching?: { enabled?: boolean; mode?: "exact" | "contains"; similarityThreshold?: number };
   yearMatching?: { enabled?: boolean; tolerance?: number; strict?: boolean };
   digitalReleaseFilter?: { enabled?: boolean; tolerance?: number };
+  excludedKeywords?: string[];
+  excludedRegexPatterns?: string[];
+  includedRegexPatterns?: string[];
+  requiredRegexPatterns?: string[];
+  deduplicator?: {
+    enabled?: boolean;
+    multiGroupBehaviour?: "keep_all" | "aggressive" | "conservative";
+    keys?: string[];
+    cached?: string;
+    uncached?: string;
+  };
   addPresets?: string[];
 }
 

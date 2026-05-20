@@ -9,6 +9,9 @@ import SourceCloudApiKeysForm from "@/components/forms/SourceCloudApiKeysForm";
 import SourceCloudPresetsForm from "@/components/forms/SourceCloudPresetsForm";
 import SourceCloudFiltersForm from "@/components/forms/SourceCloudFiltersForm";
 import SourceCloudMatchingForm from "@/components/forms/SourceCloudMatchingForm";
+import SourceCloudKeywordsForm from "@/components/forms/SourceCloudKeywordsForm";
+import SourceCloudRegexForm from "@/components/forms/SourceCloudRegexForm";
+import SourceCloudDedupForm from "@/components/forms/SourceCloudDedupForm";
 import SourceCloudSortForm from "@/components/forms/SourceCloudSortForm";
 import SourceCloudAdvancedForm from "@/components/forms/SourceCloudAdvancedForm";
 
@@ -80,6 +83,12 @@ export default async function SourceCloudPage({ params }: Props) {
       {summary && <SourceCloudFiltersForm profileId={id} summary={summary} />}
 
       {summary && <SourceCloudMatchingForm profileId={id} summary={summary} />}
+
+      {summary && <SourceCloudKeywordsForm profileId={id} summary={summary} />}
+
+      {summary && <SourceCloudRegexForm profileId={id} summary={summary} />}
+
+      {summary && <SourceCloudDedupForm profileId={id} summary={summary} />}
 
       {summary && <SourceCloudSortForm profileId={id} summary={summary} />}
 
