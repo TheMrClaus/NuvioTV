@@ -86,6 +86,7 @@ fun SourceCloudSettingsContent(
     var connectChooserService by remember { mutableStateOf<SourceCloudService?>(null) }
     var connectApiKeyService by remember { mutableStateOf<SourceCloudService?>(null) }
     var showAiostreamsQrFullscreen by remember { mutableStateOf(false) }
+    var showAdvancedQrFullscreen by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Column(
@@ -172,6 +173,12 @@ fun SourceCloudSettingsContent(
                     SourceCloudAdvancedQrCard(
                         url = advancedSession.url,
                         message = advancedSession.message ?: stringResource(R.string.source_cloud_advanced_qr_message)
+                    )
+
+                    SettingsActionRow(
+                        title = stringResource(R.string.source_cloud_advanced_show_qr_title),
+                        subtitle = stringResource(R.string.source_cloud_advanced_show_qr_subtitle),
+                        onClick = { showAdvancedQrFullscreen = true }
                     )
 
                     SettingsActionRow(
@@ -306,6 +313,71 @@ fun SourceCloudSettingsContent(
             url = aioConfigureUrl,
             onDismiss = { showAiostreamsQrFullscreen = false }
         )
+    }
+
+    val advancedSessionUrl = advancedSession?.url
+    if (showAdvancedQrFullscreen && !advancedSessionUrl.isNullOrBlank()) {
+        SourceCloudAdvancedQrFullscreenOverlay(
+            url = advancedSessionUrl,
+            onDismiss = { showAdvancedQrFullscreen = false }
+        )
+    }
+}
+
+@Composable
+private fun SourceCloudAdvancedQrFullscreenOverlay(url: String, onDismiss: () -> Unit) {
+    BackHandler(onBack = onDismiss)
+
+    val bitmap = remember(url) {
+        runCatching { QrCodeGenerator.generate(url, 720) }.getOrNull()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.94f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            if (bitmap != null) {
+                Box(
+                    modifier = Modifier
+                        .background(Color.White)
+                        .padding(20.dp)
+                ) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = stringResource(R.string.cd_source_cloud_advanced_fullscreen_qr),
+                        modifier = Modifier.size(420.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.source_cloud_advanced_qr_caption),
+                style = MaterialTheme.typography.bodyLarge,
+                color = OmnioColors.TextPrimary
+            )
+            Text(
+                text = url,
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextSecondary
+            )
+            Text(
+                text = stringResource(R.string.source_cloud_advanced_qr_dismiss_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextTertiary
+            )
+        }
     }
 }
 

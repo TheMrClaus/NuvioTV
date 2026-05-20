@@ -66,16 +66,28 @@ class SourceCloudRepositoryImpl private constructor(
         }
 
         return when (val result = safeApiCall { api.status(currentProfileId()) }) {
-            is NetworkResult.Success -> result.data.toDomain(
-                enabled = local.enabled,
-                baseUrlConfigured = true
-            )
+            is NetworkResult.Success -> {
+                val domain = result.data.toDomain(
+                    enabled = local.enabled,
+                    baseUrlConfigured = true
+                )
+                syncConnectedServicesFromStatus(domain)
+                domain
+            }
             is NetworkResult.Error -> {
                 Log.w(TAG, "status failed: ${result.message}")
                 local.toOfflineStatus(baseUrlConfigured = true)
             }
             NetworkResult.Loading -> local.toOfflineStatus(baseUrlConfigured = true)
         }
+    }
+
+    private suspend fun syncConnectedServicesFromStatus(status: SourceCloudStatus) {
+        val connected = status.services
+            .filter { it.connected }
+            .map { it.service }
+            .toSet()
+        dataStore.setConnectedServices(connected)
     }
 
     override suspend fun setEnabled(enabled: Boolean) {
@@ -88,7 +100,12 @@ class SourceCloudRepositoryImpl private constructor(
 
     override suspend fun search(request: SourceCloudSearchRequest): NetworkResult<AddonStreams?> {
         val local = settings.first()
-        if (!baseUrlConfigured || !local.enabled || !local.hasConnectedService) {
+        // Don't gate on `hasConnectedService` (local cache): users who configured services
+        // through the phone/QR or API-key flow may not have written the local set, and the
+        // backend may also resolve sources via hosted AIOStreams configurations even when no
+        // debrid service is bound to this profile yet. Let the server decide and return empty
+        // when there is nothing to serve.
+        if (!baseUrlConfigured || !local.enabled) {
             return NetworkResult.Success(null)
         }
 
@@ -126,9 +143,11 @@ class SourceCloudRepositoryImpl private constructor(
         )
 
         return when (val result = safeApiCall { api.disconnectService(body) }) {
-            is NetworkResult.Success -> NetworkResult.Success(
-                result.data.toDomain(enabled = local.enabled, baseUrlConfigured = true)
-            )
+            is NetworkResult.Success -> {
+                val domain = result.data.toDomain(enabled = local.enabled, baseUrlConfigured = true)
+                syncConnectedServicesFromStatus(domain)
+                NetworkResult.Success(domain)
+            }
             is NetworkResult.Error -> {
                 Log.w(TAG, "disconnect failed: ${result.message}")
                 result
@@ -153,9 +172,11 @@ class SourceCloudRepositoryImpl private constructor(
         )
 
         return when (val result = safeApiCall { api.connectService(body) }) {
-            is NetworkResult.Success -> NetworkResult.Success(
-                result.data.toDomain(enabled = local.enabled, baseUrlConfigured = true)
-            )
+            is NetworkResult.Success -> {
+                val domain = result.data.toDomain(enabled = local.enabled, baseUrlConfigured = true)
+                syncConnectedServicesFromStatus(domain)
+                NetworkResult.Success(domain)
+            }
             is NetworkResult.Error -> {
                 Log.w(TAG, "connect failed: ${result.message}")
                 result
@@ -170,10 +191,14 @@ class SourceCloudRepositoryImpl private constructor(
 
         val body = SourceCloudProfileScopedRequestDto(profileId = currentProfileId())
         return when (val result = safeApiCall { api.resetConfig(body) }) {
-            is NetworkResult.Success -> result.data.toDomain(
-                enabled = local.enabled,
-                baseUrlConfigured = true
-            )
+            is NetworkResult.Success -> {
+                val domain = result.data.toDomain(
+                    enabled = local.enabled,
+                    baseUrlConfigured = true
+                )
+                syncConnectedServicesFromStatus(domain)
+                domain
+            }
             is NetworkResult.Error -> {
                 Log.w(TAG, "config reset failed: ${result.message}")
                 local.toOfflineStatus(baseUrlConfigured = true)

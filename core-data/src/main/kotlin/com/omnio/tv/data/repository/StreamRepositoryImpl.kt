@@ -74,7 +74,12 @@ class StreamRepositoryImpl @Inject constructor(
             val tmdbId = tmdbService.ensureTmdbId(videoId, type)
             Log.d(TAG, "Video ID: $videoId -> TMDB ID: $tmdbId (type: $type)")
             val sourceCloudSettings = sourceCloudRepository.settings.first()
-            val sourceCloudJobCount = if (sourceCloudSettings.enabled && sourceCloudSettings.hasConnectedService) 1 else 0
+            // The connected-services set is a local cache that may lag behind the server
+            // (users who configured services via the phone/QR flow or who have a hosted
+            // AIOStreams config never write it). Only gate on the user-controlled `enabled`
+            // toggle here and let the repository itself decide whether the server has
+            // anything to return.
+            val sourceCloudJobCount = if (sourceCloudSettings.enabled) 1 else 0
             val attemptedAddonNames = buildList {
                 if (sourceCloudJobCount == 1) {
                     add("Omnio Source Cloud")

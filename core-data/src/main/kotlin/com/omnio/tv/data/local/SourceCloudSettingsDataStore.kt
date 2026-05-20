@@ -55,4 +55,10 @@ class SourceCloudSettingsDataStore @Inject constructor(
             prefs[connectedServicesKey] = encodeServiceKeys(current)
         }
     }
+
+    suspend fun setConnectedServices(services: Set<SourceCloudService>) {
+        store().edit { prefs ->
+            prefs[connectedServicesKey] = encodeServiceKeys(services)
+        }
+    }
 }
