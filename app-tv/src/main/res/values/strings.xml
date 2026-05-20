@@ -329,6 +329,16 @@
     <string name="source_cloud_reset_config_title">Reset source config</string>
     <string name="source_cloud_reset_config_subtitle">Recreate your private backend source config for this profile.</string>
     <string name="cd_source_cloud_advanced_qr">Advanced Source Config QR code</string>
+    <string name="source_cloud_aiostreams_section_title">AIOStreams config</string>
+    <string name="source_cloud_aiostreams_configure_url_title">Configure URL</string>
+    <string name="source_cloud_aiostreams_configure_url_subtitle">Copy to open the configure page on your phone or browser</string>
+    <string name="source_cloud_aiostreams_configure_password_title">Configure password</string>
+    <string name="source_cloud_aiostreams_configure_password_subtitle">Required when saving changes on the web — tap to copy</string>
+    <string name="source_cloud_aiostreams_show_qr_title">Show configure QR code</string>
+    <string name="source_cloud_aiostreams_show_qr_subtitle">Open a fullscreen QR you can scan with your phone</string>
+    <string name="source_cloud_aiostreams_qr_caption">Scan to open AIOStreams configuration</string>
+    <string name="source_cloud_aiostreams_qr_dismiss_hint">Press Back or click anywhere to close</string>
+    <string name="cd_source_cloud_aiostreams_qr">AIOStreams configure QR code</string>
     <string name="settings_emby_title">Emby</string>
     <string name="settings_emby_subtitle">Direct streams and playback reporting from your Emby server</string>
     <string name="settings_emby_connected">Connected</string>

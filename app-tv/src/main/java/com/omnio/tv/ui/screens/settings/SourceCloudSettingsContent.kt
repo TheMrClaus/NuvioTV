@@ -6,7 +6,10 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.KeyEvent as AndroidKeyEvent
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +29,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -80,6 +85,8 @@ fun SourceCloudSettingsContent(
     var disconnectConfirmService by remember { mutableStateOf<SourceCloudService?>(null) }
     var connectChooserService by remember { mutableStateOf<SourceCloudService?>(null) }
     var connectApiKeyService by remember { mutableStateOf<SourceCloudService?>(null) }
+    var showAiostreamsQrFullscreen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -173,6 +180,43 @@ fun SourceCloudSettingsContent(
                         onClick = { viewModel.requestAdvancedConfigSession() },
                         enabled = !uiState.isAdvancedConfigLoading
                     )
+
+                    val configureUrl = advancedSession.directConfigureUrl
+                    val configurePassword = advancedSession.configurePassword
+                    if (!configureUrl.isNullOrBlank() || !configurePassword.isNullOrBlank()) {
+                        Text(
+                            text = stringResource(R.string.source_cloud_aiostreams_section_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = OmnioColors.TextSecondary,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                        )
+
+                        if (!configureUrl.isNullOrBlank()) {
+                            SettingsActionRow(
+                                title = stringResource(R.string.source_cloud_aiostreams_configure_url_title),
+                                subtitle = stringResource(R.string.source_cloud_aiostreams_configure_url_subtitle),
+                                value = shortenUrl(configureUrl),
+                                onClick = { copyToClipboard(context, "AIOStreams URL", configureUrl) }
+                            )
+                        }
+
+                        if (!configurePassword.isNullOrBlank()) {
+                            SettingsActionRow(
+                                title = stringResource(R.string.source_cloud_aiostreams_configure_password_title),
+                                subtitle = stringResource(R.string.source_cloud_aiostreams_configure_password_subtitle),
+                                value = "••••••••",
+                                onClick = { copyToClipboard(context, "AIOStreams password", configurePassword) }
+                            )
+                        }
+
+                        if (!configureUrl.isNullOrBlank()) {
+                            SettingsActionRow(
+                                title = stringResource(R.string.source_cloud_aiostreams_show_qr_title),
+                                subtitle = stringResource(R.string.source_cloud_aiostreams_show_qr_subtitle),
+                                onClick = { showAiostreamsQrFullscreen = true }
+                            )
+                        }
+                    }
                 }
 
                 if (config?.canReset == true) {
@@ -255,6 +299,81 @@ fun SourceCloudSettingsContent(
             )
         }
     }
+
+    val aioConfigureUrl = advancedSession?.directConfigureUrl
+    if (showAiostreamsQrFullscreen && !aioConfigureUrl.isNullOrBlank()) {
+        AiostreamsConfigureQrFullscreenOverlay(
+            url = aioConfigureUrl,
+            onDismiss = { showAiostreamsQrFullscreen = false }
+        )
+    }
+}
+
+@Composable
+private fun AiostreamsConfigureQrFullscreenOverlay(url: String, onDismiss: () -> Unit) {
+    BackHandler(onBack = onDismiss)
+
+    val bitmap = remember(url) {
+        runCatching { QrCodeGenerator.generate(url, 720) }.getOrNull()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.94f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onDismiss
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.padding(32.dp)
+        ) {
+            if (bitmap != null) {
+                Box(
+                    modifier = Modifier
+                        .background(Color.White)
+                        .padding(20.dp)
+                ) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = stringResource(R.string.cd_source_cloud_aiostreams_qr),
+                        modifier = Modifier.size(420.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.source_cloud_aiostreams_qr_caption),
+                style = MaterialTheme.typography.bodyLarge,
+                color = OmnioColors.TextPrimary
+            )
+            Text(
+                text = url,
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextSecondary
+            )
+            Text(
+                text = stringResource(R.string.source_cloud_aiostreams_qr_dismiss_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = OmnioColors.TextTertiary
+            )
+        }
+    }
+}
+
+private fun shortenUrl(url: String): String {
+    if (url.length <= 48) return url
+    return url.take(24) + "…" + url.takeLast(20)
+}
+
+private fun copyToClipboard(context: Context, label: String, value: String) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(label, value))
 }
 
 @Composable
