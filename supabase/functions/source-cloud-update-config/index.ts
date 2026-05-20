@@ -38,7 +38,13 @@ import {
  *   preferredResolutions?: string[],
  *   excludedQualities?: string[],
  *   preferredQualities?: string[],
+ *   excludedLanguages?: string[],
+ *   preferredLanguages?: string[],
  *   sortCriteria?: Array<{ key: string, direction: "asc"|"desc" }>,
+ *   titleMatching?: { enabled?, mode?, similarityThreshold? },
+ *   yearMatching?: { enabled?, tolerance?, strict? },
+ *   digitalReleaseFilter?: { enabled?, tolerance? },
+ *   addPresets?: string[],           // preset types to add from starter template
  * }
  *
  * Edge cases:
@@ -131,6 +137,18 @@ const VALID_QUALITIES = new Set([
   "BluRay REMUX", "BluRay", "WEB-DL", "WEBRip", "HDRip", "HC HD-Rip",
   "DVDRip", "HDTV", "CAM", "TS", "TC", "SCR", "Unknown",
 ]);
+const VALID_LANGUAGES = new Set([
+  "English", "Japanese", "Chinese", "Russian", "Arabic", "Portuguese",
+  "Portuguese (Brazil)", "Spanish", "French", "German", "Italian", "Korean",
+  "Hindi", "Bengali", "Punjabi", "Marathi", "Gujarati", "Tamil", "Telugu",
+  "Kannada", "Malayalam", "Thai", "Vietnamese", "Indonesian", "Turkish",
+  "Hebrew", "Persian", "Ukrainian", "Greek", "Lithuanian", "Latvian",
+  "Estonian", "Polish", "Czech", "Slovak", "Hungarian", "Romanian",
+  "Bulgarian", "Serbian", "Croatian", "Slovenian", "Dutch", "Danish",
+  "Finnish", "Swedish", "Norwegian", "Malay", "Latino", "Dual Audio",
+  "Dubbed", "Multi", "Original", "Unknown",
+]);
+
 const VALID_MEDIA_TYPES = new Set(["movie", "series", "channel", "tv", "anime"]);
 const MIN_TIMEOUT_MS = 1000;
 const MAX_TIMEOUT_MS = 300_000;
@@ -183,6 +201,77 @@ function applySortCriteria(
     ? config.sortCriteria as Record<string, unknown>
     : {};
   config.sortCriteria = { ...existing, global: sanitised };
+}
+
+interface TitleMatchingPatch {
+  enabled?: boolean;
+  mode?: "exact" | "contains";
+  similarityThreshold?: number;
+}
+interface YearMatchingPatch {
+  enabled?: boolean;
+  tolerance?: number;
+  strict?: boolean;
+}
+interface DigitalReleaseFilterPatch {
+  enabled?: boolean;
+  tolerance?: number;
+}
+
+function applyObjectPatch(
+  config: Record<string, unknown>,
+  key: string,
+  patch: Record<string, unknown> | undefined,
+): void {
+  if (!patch) return;
+  const existing = (config[key] && typeof config[key] === "object")
+    ? config[key] as Record<string, unknown>
+    : {};
+  config[key] = { ...existing, ...patch };
+}
+
+async function applyAddPresets(
+  config: Record<string, unknown>,
+  baseUrl: string,
+  types: string[] | undefined,
+): Promise<void> {
+  if (!types || types.length === 0) return;
+  let starterPresets: Array<Record<string, unknown>> = [];
+  try {
+    const response = await fetch(`${baseUrl}/api/v1/templates`);
+    if (response.ok) {
+      const json = await response.json() as {
+        data?: Array<{ metadata?: { id?: string }; config?: { presets?: unknown } }>;
+      };
+      const starter = (json.data ?? []).find((t) => t.metadata?.id === "builtin.debrid-starter");
+      if (Array.isArray(starter?.config?.presets)) {
+        starterPresets = starter!.config!.presets as Array<Record<string, unknown>>;
+      }
+    }
+  } catch {
+    // fall through with empty starter list
+  }
+  if (starterPresets.length === 0) return;
+  const presets = Array.isArray(config.presets) ? config.presets as Array<Record<string, unknown>> : [];
+  const existingTypes = new Set(
+    presets
+      .map((p) => (p && typeof p === "object" ? (p as Record<string, unknown>).type : null))
+      .filter((t): t is string => typeof t === "string"),
+  );
+  let added = false;
+  for (const type of types) {
+    if (typeof type !== "string" || existingTypes.has(type)) continue;
+    const template = starterPresets.find((p) => p && typeof p === "object" && p.type === type);
+    if (!template) continue;
+    presets.push({
+      ...template,
+      instanceId: Math.random().toString(16).slice(2, 5) + Date.now().toString(16).slice(-3),
+      enabled: true,
+    });
+    existingTypes.add(type);
+    added = true;
+  }
+  if (added) config.presets = presets;
 }
 
 interface PresetOptionOverride {
@@ -323,7 +412,13 @@ Deno.serve(async (request) => {
     preferredResolutions?: unknown;
     excludedQualities?: unknown;
     preferredQualities?: unknown;
+    excludedLanguages?: unknown;
+    preferredLanguages?: unknown;
     sortCriteria?: unknown;
+    titleMatching?: unknown;
+    yearMatching?: unknown;
+    digitalReleaseFilter?: unknown;
+    addPresets?: unknown;
   };
   try {
     body = await request.json();
@@ -397,6 +492,52 @@ Deno.serve(async (request) => {
   const preferredResolutions = "preferredResolutions" in body ? readStrArr(body.preferredResolutions) : undefined;
   const excludedQualities = "excludedQualities" in body ? readStrArr(body.excludedQualities) : undefined;
   const preferredQualities = "preferredQualities" in body ? readStrArr(body.preferredQualities) : undefined;
+  const excludedLanguages = "excludedLanguages" in body ? readStrArr(body.excludedLanguages) : undefined;
+  const preferredLanguages = "preferredLanguages" in body ? readStrArr(body.preferredLanguages) : undefined;
+
+  function readTitleMatching(raw: unknown): Record<string, unknown> | undefined {
+    if (!raw || typeof raw !== "object") return undefined;
+    const o = raw as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    if (typeof o.enabled === "boolean") out.enabled = o.enabled;
+    if (o.mode === "exact" || o.mode === "contains") out.mode = o.mode;
+    if (typeof o.similarityThreshold === "number" && Number.isFinite(o.similarityThreshold)) {
+      out.similarityThreshold = Math.max(0, Math.min(1, o.similarityThreshold));
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+  }
+  function readYearMatching(raw: unknown): Record<string, unknown> | undefined {
+    if (!raw || typeof raw !== "object") return undefined;
+    const o = raw as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    if (typeof o.enabled === "boolean") out.enabled = o.enabled;
+    if (typeof o.tolerance === "number" && Number.isFinite(o.tolerance)) {
+      out.tolerance = Math.max(0, Math.min(100, Math.round(o.tolerance)));
+    }
+    if (typeof o.strict === "boolean") out.strict = o.strict;
+    return Object.keys(out).length > 0 ? out : undefined;
+  }
+  function readDigitalReleaseFilter(raw: unknown): Record<string, unknown> | undefined {
+    if (!raw || typeof raw !== "object") return undefined;
+    const o = raw as Record<string, unknown>;
+    const out: Record<string, unknown> = {};
+    if (typeof o.enabled === "boolean") out.enabled = o.enabled;
+    if (typeof o.tolerance === "number" && Number.isFinite(o.tolerance)) {
+      out.tolerance = Math.max(0, Math.min(365, Math.round(o.tolerance)));
+    }
+    return Object.keys(out).length > 0 ? out : undefined;
+  }
+  const titleMatchingPatch = "titleMatching" in body ? readTitleMatching(body.titleMatching) : undefined;
+  const yearMatchingPatch = "yearMatching" in body ? readYearMatching(body.yearMatching) : undefined;
+  const digitalReleaseFilterPatch = "digitalReleaseFilter" in body
+    ? readDigitalReleaseFilter(body.digitalReleaseFilter)
+    : undefined;
+
+  let addPresets: string[] | undefined;
+  if ("addPresets" in body && Array.isArray(body.addPresets)) {
+    addPresets = (body.addPresets as unknown[]).filter((v): v is string => typeof v === "string");
+    if (addPresets.length === 0) addPresets = undefined;
+  }
 
   let sortCriteria: SortCriterionInput[] | undefined;
   if ("sortCriteria" in body && Array.isArray(body.sortCriteria)) {
@@ -461,12 +602,18 @@ Deno.serve(async (request) => {
     ? (config.services as Array<{ id?: string }>).filter((s) => typeof s.id === "string") as Array<{ id: string }>
     : [];
   applyDebridioKey(config, debridioApiKey, services);
+  await applyAddPresets(config, baseUrl, addPresets);
   applyPresetToggles(config, presetToggles);
   applyPresetOptions(config, presetOptions);
   applyStringArray(config, "excludedResolutions", excludedResolutions, VALID_RESOLUTIONS);
   applyStringArray(config, "preferredResolutions", preferredResolutions, VALID_RESOLUTIONS);
   applyStringArray(config, "excludedQualities", excludedQualities, VALID_QUALITIES);
   applyStringArray(config, "preferredQualities", preferredQualities, VALID_QUALITIES);
+  applyStringArray(config, "excludedLanguages", excludedLanguages, VALID_LANGUAGES);
+  applyStringArray(config, "preferredLanguages", preferredLanguages, VALID_LANGUAGES);
+  applyObjectPatch(config, "titleMatching", titleMatchingPatch);
+  applyObjectPatch(config, "yearMatching", yearMatchingPatch);
+  applyObjectPatch(config, "digitalReleaseFilter", digitalReleaseFilterPatch);
   applySortCriteria(config, sortCriteria);
 
   applyTmdbPolicy(config);

@@ -1,10 +1,11 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   updateSourceCloudConfig,
+  type SourceCloudAvailablePreset,
   type SourceCloudPresetOptionPatch,
   type SourceCloudPresetSummary,
 } from "@/lib/actions/sourcecloud";
@@ -14,6 +15,7 @@ interface Props {
   profileId: number;
   provisioned: boolean;
   presets: SourceCloudPresetSummary[];
+  availablePresets: SourceCloudAvailablePreset[];
 }
 
 interface PresetState {
@@ -50,11 +52,18 @@ function statesEqual(a: PresetState, b: PresetState): boolean {
   );
 }
 
-export default function SourceCloudPresetsForm({ profileId, provisioned, presets }: Props) {
+export default function SourceCloudPresetsForm({
+  profileId,
+  provisioned,
+  presets,
+  availablePresets,
+}: Props) {
   const router = useRouter();
   const baseline = useMemo(() => presetsToStateMap(presets), [presets]);
   const [state, setState] = useState<PresetStateMap>(baseline);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [addType, setAddType] = useState<string>("");
+  const [addPending, startAddTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -78,6 +87,23 @@ export default function SourceCloudPresetsForm({ profileId, provisioned, presets
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
+    });
+  };
+
+  const handleAdd = () => {
+    if (!addType) return;
+    setError(null);
+    startAddTransition(async () => {
+      const result = await updateSourceCloudConfig({
+        profileId,
+        addPresets: [addType],
+      });
+      if (result.ok) {
+        setAddType("");
+        router.refresh();
+      } else {
+        setError(result.error ?? "Add failed");
+      }
     });
   };
 
@@ -155,6 +181,33 @@ export default function SourceCloudPresetsForm({ profileId, provisioned, presets
               onChange={(patch) => updatePreset(preset.instanceId, patch)}
             />
           ))}
+        </div>
+      )}
+
+      {availablePresets.length > 0 && (
+        <div className="mt-3 flex items-center gap-2">
+          <Plus className="h-4 w-4 text-slate-500" />
+          <select
+            value={addType}
+            onChange={(e) => setAddType(e.target.value)}
+            disabled={addPending}
+            className="flex-1 rounded-lg border border-slate-700 bg-slate-900/40 px-3 py-2 text-sm text-slate-100 outline-none focus:border-primary disabled:opacity-50"
+          >
+            <option value="">Add preset…</option>
+            {availablePresets.map((p) => (
+              <option key={p.type} value={p.type}>
+                {p.name} ({p.type})
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={!addType || addPending}
+            className="rounded-lg border border-slate-600 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-700/40 disabled:opacity-50"
+          >
+            {addPending ? "Adding..." : "Add"}
+          </button>
         </div>
       )}
 

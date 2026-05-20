@@ -22,12 +22,18 @@ import {
  *   rpdbApiKey: string | null,
  *   animeToshoEnabled: boolean,
  *   debridioApiKey: string | null,
- *   presets: Array<{ instanceId, type, name, enabled }>,
+ *   presets: PresetSummary[],
  *   excludedResolutions: string[],
  *   preferredResolutions: string[],
  *   excludedQualities: string[],
  *   preferredQualities: string[],
+ *   excludedLanguages: string[],
+ *   preferredLanguages: string[],
  *   sortCriteria: Array<{ key, direction }>,
+ *   titleMatching: { enabled, mode, similarityThreshold } | null,
+ *   yearMatching: { enabled, tolerance, strict } | null,
+ *   digitalReleaseFilter: { enabled, tolerance } | null,
+ *   availablePresets: Array<{ type, name }>,  // starter presets the user is missing
  *   provisioned: boolean,
  * }
  *
@@ -71,6 +77,91 @@ function summariseSortCriteria(raw: unknown): SortEntry[] {
     out.push({ key, direction });
   }
   return out;
+}
+
+interface TitleMatchingSummary {
+  enabled: boolean;
+  mode: "exact" | "contains" | null;
+  similarityThreshold: number | null;
+}
+interface YearMatchingSummary {
+  enabled: boolean;
+  tolerance: number | null;
+  strict: boolean;
+}
+interface DigitalReleaseFilterSummary {
+  enabled: boolean;
+  tolerance: number | null;
+}
+
+function summariseTitleMatching(raw: unknown): TitleMatchingSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    enabled: o.enabled === true,
+    mode: o.mode === "exact" || o.mode === "contains" ? o.mode : null,
+    similarityThreshold:
+      typeof o.similarityThreshold === "number" && Number.isFinite(o.similarityThreshold)
+        ? o.similarityThreshold
+        : null,
+  };
+}
+
+function summariseYearMatching(raw: unknown): YearMatchingSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    enabled: o.enabled === true,
+    tolerance: typeof o.tolerance === "number" && Number.isFinite(o.tolerance) ? o.tolerance : null,
+    strict: o.strict === true,
+  };
+}
+
+function summariseDigitalReleaseFilter(raw: unknown): DigitalReleaseFilterSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const o = raw as Record<string, unknown>;
+  return {
+    enabled: o.enabled === true,
+    tolerance: typeof o.tolerance === "number" && Number.isFinite(o.tolerance) ? o.tolerance : null,
+  };
+}
+
+interface AvailablePreset {
+  type: string;
+  name: string;
+}
+
+async function fetchAvailablePresets(
+  baseUrl: string,
+  existingTypes: Set<string>,
+): Promise<AvailablePreset[]> {
+  try {
+    const response = await fetch(`${baseUrl}/api/v1/templates`);
+    if (!response.ok) return [];
+    const json = await response.json() as {
+      data?: Array<{ metadata?: { id?: string }; config?: { presets?: unknown } }>;
+    };
+    const starter = (json.data ?? []).find((t) => t.metadata?.id === "builtin.debrid-starter");
+    if (!starter) return [];
+    const presets = Array.isArray(starter.config?.presets) ? starter.config!.presets : [];
+    const out: AvailablePreset[] = [];
+    const seen = new Set<string>();
+    for (const p of presets) {
+      if (!p || typeof p !== "object") continue;
+      const rec = p as Record<string, unknown>;
+      const type = typeof rec.type === "string" ? rec.type : null;
+      if (!type || existingTypes.has(type) || seen.has(type)) continue;
+      seen.add(type);
+      const options = (rec.options && typeof rec.options === "object")
+        ? rec.options as Record<string, unknown>
+        : {};
+      const name = typeof options.name === "string" && options.name.length > 0 ? options.name : type;
+      out.push({ type, name });
+    }
+    return out;
+  } catch {
+    return [];
+  }
 }
 
 function summarisePresets(raw: unknown): PresetSummary[] {
@@ -142,7 +233,13 @@ Deno.serve(async (request) => {
     preferredResolutions: [] as string[],
     excludedQualities: [] as string[],
     preferredQualities: [] as string[],
+    excludedLanguages: [] as string[],
+    preferredLanguages: [] as string[],
     sortCriteria: [] as SortEntry[],
+    titleMatching: null as TitleMatchingSummary | null,
+    yearMatching: null as YearMatchingSummary | null,
+    digitalReleaseFilter: null as DigitalReleaseFilterSummary | null,
+    availablePresets: [] as AvailablePreset[],
     provisioned: false,
   };
 
@@ -210,7 +307,16 @@ Deno.serve(async (request) => {
     preferredResolutions: stringArray(config.preferredResolutions),
     excludedQualities: stringArray(config.excludedQualities),
     preferredQualities: stringArray(config.preferredQualities),
+    excludedLanguages: stringArray(config.excludedLanguages),
+    preferredLanguages: stringArray(config.preferredLanguages),
     sortCriteria: summariseSortCriteria(config.sortCriteria),
+    titleMatching: summariseTitleMatching(config.titleMatching),
+    yearMatching: summariseYearMatching(config.yearMatching),
+    digitalReleaseFilter: summariseDigitalReleaseFilter(config.digitalReleaseFilter),
+    availablePresets: await fetchAvailablePresets(
+      baseUrl,
+      new Set(summarisePresets(config.presets).map((p) => p.type)),
+    ),
     provisioned: true,
   });
 });

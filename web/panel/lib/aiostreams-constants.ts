@@ -25,6 +25,18 @@ export const SORT_CRITERIA = [
   "bitrate", "releaseGroup",
 ] as const;
 
+export const LANGUAGES = [
+  "English", "Japanese", "Chinese", "Russian", "Arabic", "Portuguese",
+  "Portuguese (Brazil)", "Spanish", "French", "German", "Italian", "Korean",
+  "Hindi", "Bengali", "Punjabi", "Marathi", "Gujarati", "Tamil", "Telugu",
+  "Kannada", "Malayalam", "Thai", "Vietnamese", "Indonesian", "Turkish",
+  "Hebrew", "Persian", "Ukrainian", "Greek", "Lithuanian", "Latvian",
+  "Estonian", "Polish", "Czech", "Slovak", "Hungarian", "Romanian",
+  "Bulgarian", "Serbian", "Croatian", "Slovenian", "Dutch", "Danish",
+  "Finnish", "Swedish", "Norwegian", "Malay", "Latino", "Dual Audio",
+  "Dubbed", "Multi", "Original", "Unknown",
+] as const;
+
 export const MEDIA_TYPES = ["movie", "series", "channel", "tv", "anime"] as const;
 
 export const MEDIA_TYPE_LABELS: Record<(typeof MEDIA_TYPES)[number], string> = {

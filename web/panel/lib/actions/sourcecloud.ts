@@ -58,6 +58,25 @@ export interface SourceCloudSortCriterion {
   direction: "asc" | "desc";
 }
 
+export interface SourceCloudTitleMatching {
+  enabled: boolean;
+  mode: "exact" | "contains" | null;
+  similarityThreshold: number | null;
+}
+export interface SourceCloudYearMatching {
+  enabled: boolean;
+  tolerance: number | null;
+  strict: boolean;
+}
+export interface SourceCloudDigitalReleaseFilter {
+  enabled: boolean;
+  tolerance: number | null;
+}
+export interface SourceCloudAvailablePreset {
+  type: string;
+  name: string;
+}
+
 export interface SourceCloudConfigSummaryResponse {
   tmdbApiKey: string | null;
   tmdbAccessToken: string | null;
@@ -70,7 +89,13 @@ export interface SourceCloudConfigSummaryResponse {
   preferredResolutions: string[];
   excludedQualities: string[];
   preferredQualities: string[];
+  excludedLanguages: string[];
+  preferredLanguages: string[];
   sortCriteria: SourceCloudSortCriterion[];
+  titleMatching: SourceCloudTitleMatching | null;
+  yearMatching: SourceCloudYearMatching | null;
+  digitalReleaseFilter: SourceCloudDigitalReleaseFilter | null;
+  availablePresets: SourceCloudAvailablePreset[];
   provisioned: boolean;
 }
 
@@ -202,7 +227,13 @@ export interface UpdateConfigInput {
   preferredResolutions?: string[];
   excludedQualities?: string[];
   preferredQualities?: string[];
+  excludedLanguages?: string[];
+  preferredLanguages?: string[];
   sortCriteria?: SourceCloudSortCriterion[];
+  titleMatching?: { enabled?: boolean; mode?: "exact" | "contains"; similarityThreshold?: number };
+  yearMatching?: { enabled?: boolean; tolerance?: number; strict?: boolean };
+  digitalReleaseFilter?: { enabled?: boolean; tolerance?: number };
+  addPresets?: string[];
 }
 
 export async function updateSourceCloudConfig(

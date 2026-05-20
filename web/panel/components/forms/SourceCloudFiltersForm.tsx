@@ -6,7 +6,7 @@ import {
   updateSourceCloudConfig,
   type SourceCloudConfigSummaryResponse,
 } from "@/lib/actions/sourcecloud";
-import { QUALITIES, RESOLUTIONS } from "@/lib/aiostreams-constants";
+import { LANGUAGES, QUALITIES, RESOLUTIONS } from "@/lib/aiostreams-constants";
 
 interface Props {
   profileId: number;
@@ -18,6 +18,8 @@ interface FormState {
   preferredResolutions: string[];
   excludedQualities: string[];
   preferredQualities: string[];
+  excludedLanguages: string[];
+  preferredLanguages: string[];
 }
 
 function summaryToForm(s: SourceCloudConfigSummaryResponse): FormState {
@@ -26,6 +28,8 @@ function summaryToForm(s: SourceCloudConfigSummaryResponse): FormState {
     preferredResolutions: [...(s.preferredResolutions ?? [])],
     excludedQualities: [...(s.excludedQualities ?? [])],
     preferredQualities: [...(s.preferredQualities ?? [])],
+    excludedLanguages: [...(s.excludedLanguages ?? [])],
+    preferredLanguages: [...(s.preferredLanguages ?? [])],
   };
 }
 
@@ -54,6 +58,10 @@ export default function SourceCloudFiltersForm({ profileId, summary }: Props) {
         diff.excludedQualities = form.excludedQualities;
       if (JSON.stringify(form.preferredQualities) !== JSON.stringify(baseline.preferredQualities))
         diff.preferredQualities = form.preferredQualities;
+      if (JSON.stringify(form.excludedLanguages) !== JSON.stringify(baseline.excludedLanguages))
+        diff.excludedLanguages = form.excludedLanguages;
+      if (JSON.stringify(form.preferredLanguages) !== JSON.stringify(baseline.preferredLanguages))
+        diff.preferredLanguages = form.preferredLanguages;
 
       const result = await updateSourceCloudConfig(diff);
       if (result.ok) {
@@ -118,6 +126,24 @@ export default function SourceCloudFiltersForm({ profileId, summary }: Props) {
           selected={form.preferredQualities}
           onToggle={(v) =>
             setForm({ ...form, preferredQualities: toggleInArray(form.preferredQualities, v) })
+          }
+        />
+        <ChipGroup
+          label="Excluded languages"
+          help="Streams in these languages are removed from results."
+          options={LANGUAGES}
+          selected={form.excludedLanguages}
+          onToggle={(v) =>
+            setForm({ ...form, excludedLanguages: toggleInArray(form.excludedLanguages, v) })
+          }
+        />
+        <ChipGroup
+          label="Preferred languages"
+          help="Streams in these languages are ranked higher when sorting by language."
+          options={LANGUAGES}
+          selected={form.preferredLanguages}
+          onToggle={(v) =>
+            setForm({ ...form, preferredLanguages: toggleInArray(form.preferredLanguages, v) })
           }
         />
       </div>
