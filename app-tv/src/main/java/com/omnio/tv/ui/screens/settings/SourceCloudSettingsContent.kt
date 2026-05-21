@@ -27,6 +27,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.Image
 import androidx.compose.ui.Alignment
@@ -87,6 +90,7 @@ fun SourceCloudSettingsContent(
     var connectApiKeyService by remember { mutableStateOf<SourceCloudService?>(null) }
     var showAiostreamsQrFullscreen by remember { mutableStateOf(false) }
     var showAdvancedQrFullscreen by remember { mutableStateOf(false) }
+    var aiostreamsAdvancedExpanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     Column(
@@ -176,47 +180,44 @@ fun SourceCloudSettingsContent(
                         onClick = { showAdvancedQrFullscreen = true }
                     )
 
-                    SettingsActionRow(
-                        title = stringResource(R.string.source_cloud_advanced_regenerate_title),
-                        subtitle = stringResource(R.string.source_cloud_advanced_regenerate_subtitle),
-                        onClick = { viewModel.requestAdvancedConfigSession() },
-                        enabled = !uiState.isAdvancedConfigLoading
-                    )
-
                     val configureUrl = advancedSession.directConfigureUrl
                     val configurePassword = advancedSession.configurePassword
                     if (!configureUrl.isNullOrBlank() || !configurePassword.isNullOrBlank()) {
-                        Text(
-                            text = stringResource(R.string.source_cloud_aiostreams_section_title),
-                            style = MaterialTheme.typography.titleSmall,
-                            color = OmnioColors.TextSecondary,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                        SettingsActionRow(
+                            title = stringResource(R.string.source_cloud_aiostreams_advanced_toggle_title),
+                            subtitle = null,
+                            onClick = { aiostreamsAdvancedExpanded = !aiostreamsAdvancedExpanded },
+                            trailingIcon = if (aiostreamsAdvancedExpanded)
+                                Icons.Default.KeyboardArrowUp
+                            else
+                                Icons.Default.KeyboardArrowDown
                         )
 
-                        if (!configureUrl.isNullOrBlank()) {
-                            SettingsActionRow(
-                                title = stringResource(R.string.source_cloud_aiostreams_configure_url_title),
-                                subtitle = stringResource(R.string.source_cloud_aiostreams_configure_url_subtitle),
-                                value = shortenUrl(configureUrl),
-                                onClick = { copyToClipboard(context, "AIOStreams URL", configureUrl) }
-                            )
-                        }
+                        if (aiostreamsAdvancedExpanded) {
+                            if (!configureUrl.isNullOrBlank()) {
+                                SettingsActionRow(
+                                    title = stringResource(R.string.source_cloud_aiostreams_configure_url_title),
+                                    subtitle = configureUrl,
+                                    onClick = { copyToClipboard(context, "AIOStreams URL", configureUrl) }
+                                )
+                            }
 
-                        if (!configurePassword.isNullOrBlank()) {
-                            SettingsActionRow(
-                                title = stringResource(R.string.source_cloud_aiostreams_configure_password_title),
-                                subtitle = stringResource(R.string.source_cloud_aiostreams_configure_password_subtitle),
-                                value = "••••••••",
-                                onClick = { copyToClipboard(context, "AIOStreams password", configurePassword) }
-                            )
-                        }
+                            if (!configurePassword.isNullOrBlank()) {
+                                SettingsActionRow(
+                                    title = stringResource(R.string.source_cloud_aiostreams_configure_password_title),
+                                    subtitle = stringResource(R.string.source_cloud_aiostreams_configure_password_subtitle),
+                                    value = "••••••••",
+                                    onClick = { copyToClipboard(context, "AIOStreams password", configurePassword) }
+                                )
+                            }
 
-                        if (!configureUrl.isNullOrBlank()) {
-                            SettingsActionRow(
-                                title = stringResource(R.string.source_cloud_aiostreams_show_qr_title),
-                                subtitle = stringResource(R.string.source_cloud_aiostreams_show_qr_subtitle),
-                                onClick = { showAiostreamsQrFullscreen = true }
-                            )
+                            if (!configureUrl.isNullOrBlank()) {
+                                SettingsActionRow(
+                                    title = stringResource(R.string.source_cloud_aiostreams_show_qr_title),
+                                    subtitle = stringResource(R.string.source_cloud_aiostreams_show_qr_subtitle),
+                                    onClick = { showAiostreamsQrFullscreen = true }
+                                )
+                            }
                         }
                     }
                 }
@@ -431,11 +432,6 @@ private fun AiostreamsConfigureQrFullscreenOverlay(url: String, onDismiss: () ->
             )
         }
     }
-}
-
-private fun shortenUrl(url: String): String {
-    if (url.length <= 48) return url
-    return url.take(24) + "…" + url.takeLast(20)
 }
 
 private fun copyToClipboard(context: Context, label: String, value: String) {
