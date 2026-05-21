@@ -52,6 +52,10 @@ export default async function AioMetadataPage({ params }: Props) {
 
       <StatusSection config={config} />
 
+      {config?.isKids && (
+        <KidsProfileBanner maxAgeRating={config?.maxAgeRating ?? null} />
+      )}
+
       {!hasConfig ? (
         <ProvisionEmptyState />
       ) : (
@@ -82,6 +86,7 @@ export default async function AioMetadataPage({ params }: Props) {
               <AioMetadataDisplayForm
                 profileId={id}
                 initialSettings={inner.settings}
+                isKids={config?.isKids ?? false}
               />
               <AioMetadataTrackersForm
                 profileId={id}
@@ -141,6 +146,27 @@ function StatusSection({ config }: { config: AioMetadataConfigState | null }) {
           Couldn&apos;t load AIOMetadata status. Make sure you&apos;re signed in.
         </p>
       )}
+    </section>
+  );
+}
+
+function KidsProfileBanner({ maxAgeRating }: { maxAgeRating: string | null }) {
+  return (
+    <section className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-100">
+      <h2 className="mb-1 font-medium">Kids profile</h2>
+      <p className="text-xs text-amber-200/90">
+        This profile is flagged as Kids in the TV profile settings
+        {maxAgeRating ? (
+          <>
+            {" "}with a max rating of{" "}
+            <span className="font-mono font-medium">{maxAgeRating}</span>
+          </>
+        ) : null}
+        . Changing the Display form&apos;s age rating here re-applies the Kids
+        catalog overlay (TMDB cert + genre clamps) and syncs back to the TV
+        profile&apos;s rating chip. The TV side does the same when you change
+        the chip there.
+      </p>
     </section>
   );
 }

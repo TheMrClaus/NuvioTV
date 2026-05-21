@@ -189,10 +189,29 @@ class ProfileSelectionViewModel @Inject constructor(
                     previous?.aioSharing == AioSharingMode.INDEPENDENT
                 )
             )
+            // In-place rating change on an already-Kids profile: re-apply the
+            // overlay against the existing UUID instead of re-provisioning a
+            // fresh one. Provisioning would mint a new UUID and re-shuffle the
+            // addon list; reapply keeps everything stable and just clamps the
+            // catalog params + flat ageRating setting to the new tier.
+            val ratingChangedOnKids = profile.id != 1 &&
+                profile.isKids &&
+                previous?.isKids == true &&
+                previous.maxAgeRating != profile.maxAgeRating
             if (needsProvision) {
                 aioMetadataRepository.provisionFromMain(
                     targetProfileId = profile.id,
                     kidsMaxAgeRating = if (profile.isKids) profile.maxAgeRating else null,
+                ).onFailure { error ->
+                    _provisionMessage.value = ProvisionMessage.Failure(
+                        profileName = profile.name,
+                        reason = error.message
+                    )
+                }
+            } else if (ratingChangedOnKids) {
+                aioMetadataRepository.reapplyKidsOverlay(
+                    profileId = profile.id,
+                    maxAgeRating = profile.maxAgeRating,
                 ).onFailure { error ->
                     _provisionMessage.value = ProvisionMessage.Failure(
                         profileName = profile.name,

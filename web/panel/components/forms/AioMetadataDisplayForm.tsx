@@ -22,6 +22,10 @@ import {
 interface Props {
   profileId: number;
   initialSettings: Record<string, unknown>;
+  /** Kids profiles can't pick "No rating filter" — picking one of the tiers
+   *  is required, and the edge function re-applies the Kids overlay across
+   *  catalogs on save. */
+  isKids?: boolean;
 }
 
 interface FormState {
@@ -71,12 +75,19 @@ function buildInitial(settings: Record<string, unknown>): FormState {
   };
 }
 
-export default function AioMetadataDisplayForm({ profileId, initialSettings }: Props) {
+export default function AioMetadataDisplayForm({ profileId, initialSettings, isKids = false }: Props) {
   const router = useRouter();
   const baseline = useMemo(() => buildInitial(initialSettings), [initialSettings]);
   const [form, setForm] = useState<FormState>(baseline);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, startSave] = useTransition();
+
+  // Drop the "None" choice for Kids profiles — picking it would conflict
+  // with the Kids overlay (overlay applies regardless of rating). The Kids
+  // banner above explains the lock.
+  const ageTierOptions = isKids
+    ? AIO_METADATA_AGE_TIERS.filter((t) => t.value !== "None")
+    : AIO_METADATA_AGE_TIERS;
 
   const dirty = JSON.stringify(form) !== JSON.stringify(baseline);
 
@@ -136,10 +147,14 @@ export default function AioMetadataDisplayForm({ profileId, initialSettings }: P
         />
         <Select
           label="Age rating filter"
-          helpText="Hides items above this rating. 'No filter' shows everything."
+          helpText={
+            isKids
+              ? "Kids profile — picking a tier re-applies the catalog overlay and syncs to the TV."
+              : "Hides items above this rating. 'No filter' shows everything."
+          }
           value={form.ageRating}
           onChange={(v) => setForm({ ...form, ageRating: v })}
-          options={AIO_METADATA_AGE_TIERS}
+          options={ageTierOptions}
         />
         <Select
           label="Poster rating provider"

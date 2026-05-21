@@ -9,13 +9,17 @@ import {
 } from "../_shared/source_cloud.ts";
 import {
   AIO_CONFIG_STATUS_LABELS,
+  ageRatingFromString,
   aioMetadataBaseUrl,
+  applyKidsOverlayToCatalogs,
   applyShallowPatch,
   applySettingsPatch,
   configureUrl,
   fallbackManifestUrl,
   fetchAioMetadataLink,
+  fetchProfileKidsState,
   generateConfigPassword,
+  updateProfileMaxAgeRating,
   upsertAioMetadataLink,
   upstreamLoadConfig,
   upstreamSaveConfig,
@@ -128,6 +132,35 @@ Deno.serve(async (request) => {
     nextConfig.catalogs = catalogsReplacement;
   }
   applySettingsPatch(nextConfig, settingsPatch);
+
+  // --- Two-way Kids overlay sync -------------------------------------------
+  //
+  // When `settings.ageRating` is in the patch AND this profile is flagged as
+  // Kids in public.profiles, the rating change should propagate to:
+  //   (a) public.profiles.max_age_rating  — so the TV's profile screen mirrors it
+  //   (b) every TMDB Discover catalog's params/formState — via the Kids overlay
+  //       (cert.lte clamp, with_genres / without_genres restrictions)
+  //
+  // For non-Kids profiles this whole block is a no-op — settings.ageRating
+  // is just a flat setting like any other.
+  const ageRatingInPatch =
+    settingsPatch !== undefined &&
+    Object.prototype.hasOwnProperty.call(settingsPatch, "ageRating");
+  if (ageRatingInPatch) {
+    const profile = await fetchProfileKidsState(client, ownerId, profileId);
+    if (profile.isKids) {
+      const newTier = ageRatingFromString(settingsPatch?.ageRating);
+      const catalogs = Array.isArray(nextConfig.catalogs)
+        ? nextConfig.catalogs as Array<Record<string, unknown>>
+        : [];
+      nextConfig.catalogs = applyKidsOverlayToCatalogs(catalogs, newTier);
+      // Mirror to public.profiles. The TV next sync sees it and the Kids
+      // profile chip row updates without manual intervention.
+      if (profile.maxAgeRating !== newTier) {
+        await updateProfileMaxAgeRating(client, ownerId, profileId, newTier);
+      }
+    }
+  }
 
   // First-save path mints the password and POSTs save; subsequent updates PUT.
   let manifestUrl = existing?.manifest_url ?? "";

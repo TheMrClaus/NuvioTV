@@ -40,5 +40,22 @@ interface AioMetadataRepository {
         kidsMaxAgeRating: AgeRatingTier? = null,
     ): Result<CreateConfigResult>
 
+    /**
+     * Re-applies the Kids overlay (TMDB cert + genre clamps) to the existing
+     * upstream AIOMetadata config for [profileId]. Also updates the
+     * [AioConfigInnerDto.settings] `ageRating` field so the upstream's
+     * built-in age filter matches the chosen tier. Preserves UUID, password,
+     * manifest URL, and the profile's addon list — meant for in-place
+     * rating changes on an already-provisioned Kids profile.
+     *
+     * No-op for the primary profile (id=1). For non-Kids profiles, prefer
+     * [updateConfig] with a plain `ageRating` change — that doesn't touch
+     * catalogs.
+     */
+    suspend fun reapplyKidsOverlay(
+        profileId: Int,
+        maxAgeRating: AgeRatingTier?,
+    ): Result<AioConfigInnerDto>
+
     data class CreateConfigResult(val uuid: String, val manifestUrl: String)
 }

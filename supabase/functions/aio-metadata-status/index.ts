@@ -11,6 +11,7 @@ import {
   AIO_CONFIG_STATUS_LABELS,
   configureUrl,
   fetchAioMetadataLink,
+  fetchProfileKidsState,
 } from "../_shared/aio_metadata.ts";
 
 /**
@@ -39,7 +40,10 @@ Deno.serve(async (request) => {
 
   const client = createServiceClient();
   const ownerId = await resolveOwnerId(client, userId);
-  const link = await fetchAioMetadataLink(client, ownerId, profileId);
+  const [link, profile] = await Promise.all([
+    fetchAioMetadataLink(client, ownerId, profileId),
+    fetchProfileKidsState(client, ownerId, profileId),
+  ]);
 
   const status = link?.config_status ?? "not_provisioned";
   const labels = AIO_CONFIG_STATUS_LABELS[status] ?? AIO_CONFIG_STATUS_LABELS.unknown;
@@ -59,6 +63,8 @@ Deno.serve(async (request) => {
       configPassword: link?.config_password ?? null,
       lastProvisionedAt: link?.last_provisioned_at ?? null,
       lastValidatedAt: link?.last_validated_at ?? null,
+      isKids: profile.isKids,
+      maxAgeRating: profile.maxAgeRating,
     },
   });
 });

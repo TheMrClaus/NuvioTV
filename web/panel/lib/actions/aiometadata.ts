@@ -29,6 +29,14 @@ export interface AioMetadataConfigState {
   configPassword?: string | null;
   lastProvisionedAt?: string | null;
   lastValidatedAt?: string | null;
+  /** Whether this profile is flagged as Kids in public.profiles. When true,
+   *  the panel restricts ageRating choices and surfaces a "two-way sync
+   *  with the TV's Kids profile settings" banner. */
+  isKids?: boolean;
+  /** Profile.max_age_rating mirrored from public.profiles. Surfaced for the
+   *  Kids banner copy; the inner config's settings.ageRating remains the
+   *  edit target since it's the one the upstream actually reads. */
+  maxAgeRating?: string | null;
 }
 
 export interface AioMetadataStatusResponse {

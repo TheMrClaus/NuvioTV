@@ -285,6 +285,55 @@ class AioMetadataRepositoryImpl @Inject constructor(
         AioMetadataRepository.CreateConfigResult(uuid = saveBody.userUUID, manifestUrl = manifestUrl)
     }.onFailure { Log.w(TAG, "provisionFromMain failed", it) }
 
+    override suspend fun reapplyKidsOverlay(
+        profileId: Int,
+        maxAgeRating: AgeRatingTier?,
+    ): Result<AioConfigInnerDto> = runCatching {
+        if (profileId == 1) error("Cannot apply Kids overlay to the primary profile")
+
+        val link = fetchLink(profileId = profileId)
+            ?: error("Profile $profileId has no AIOMetadata config to update")
+        val password = link.configPassword?.takeIf { it.isNotBlank() }
+            ?: error("Profile $profileId AIOMetadata link missing password")
+
+        val loadResp = api.loadConfig(link.aioUuid, AioConfigLoadRequestDto(password = password))
+        if (!loadResp.isSuccessful) {
+            error("loadConfig failed: HTTP ${loadResp.code()}")
+        }
+        val current = loadResp.body()?.config
+            ?: error("loadConfig empty body")
+
+        // Re-apply the Kids overlay across catalogs, then sync the upstream
+        // `ageRating` flat setting to whatever the panel/profile chose. Both
+        // must move together so the upstream age filter stops contradicting
+        // the per-catalog clamps.
+        val overlaid = AioMetadataKidsConfig.build(current, maxAgeRating)
+        val withAgeRating = overlaid.copy(
+            settings = overlaid.settings + mapOf(
+                "ageRating" to (maxAgeRating?.label ?: "None"),
+            )
+        )
+
+        val updateResp = api.updateConfig(
+            uuid = link.aioUuid,
+            body = AioConfigUpdateRequestDto(
+                config = withAgeRating,
+                password = password,
+                addonPassword = null,
+            ),
+        )
+        if (!updateResp.isSuccessful) {
+            error("updateConfig failed: HTTP ${updateResp.code()}")
+        }
+
+        if (activeProfileId() == profileId) {
+            currentConfig = withAgeRating
+            dataStore.markSynced(System.currentTimeMillis())
+        }
+
+        withAgeRating
+    }.onFailure { Log.w(TAG, "reapplyKidsOverlay failed", it) }
+
     override suspend fun setEnabled(enabled: Boolean, manifestUrl: String): Result<Unit> = runCatching {
         val profile = profileManager.activeProfile
         if (profile?.usesPrimaryAddons == true) {
