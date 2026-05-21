@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { ChevronLeft, ExternalLink } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import {
   fetchAioMetadataConfig,
   fetchAioMetadataStatus,
   type AioMetadataConfigState,
 } from "@/lib/actions/aiometadata";
 import AioMetadataAdminCard from "@/components/forms/AioMetadataAdminCard";
+import AioMetadataConfigureSession from "@/components/forms/AioMetadataConfigureSession";
 import AioMetadataProvidersForm from "@/components/forms/AioMetadataProvidersForm";
 import AioMetadataApiKeysForm from "@/components/forms/AioMetadataApiKeysForm";
 import AioMetadataDisplayForm from "@/components/forms/AioMetadataDisplayForm";
@@ -62,8 +63,9 @@ export default async function AioMetadataPage({ params }: Props) {
           />
 
           <ManifestSection
+            profileId={id}
             manifestUrl={config?.manifestUrl ?? null}
-            configureUrl={config?.configureUrl ?? null}
+            hasConfigureUrl={!!config?.configureUrl}
           />
 
           {inner ? (
@@ -158,17 +160,19 @@ function ProvisionEmptyState() {
 }
 
 function ManifestSection({
+  profileId,
   manifestUrl,
-  configureUrl,
+  hasConfigureUrl,
 }: {
+  profileId: number;
   manifestUrl: string | null;
-  configureUrl: string | null;
+  hasConfigureUrl: boolean;
 }) {
-  if (!manifestUrl && !configureUrl) return null;
+  if (!manifestUrl && !hasConfigureUrl) return null;
   return (
     <section className="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-5">
       <h2 className="mb-3 text-lg font-medium">Endpoints</h2>
-      <div className="space-y-3 text-sm">
+      <div className="space-y-4 text-sm">
         {manifestUrl && (
           <div>
             <p className="text-slate-300">Manifest URL</p>
@@ -177,21 +181,10 @@ function ManifestSection({
             </p>
           </div>
         )}
-        {configureUrl && (
+        {hasConfigureUrl && (
           <div>
-            <p className="text-slate-300">Upstream configure (fallback)</p>
-            <p className="mt-1 text-xs text-slate-400">
-              The upstream cedya77/aiometadata UI — useful for any setting this
-              panel doesn&apos;t expose yet.
-            </p>
-            <a
-              href={configureUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-xs text-emerald-300 hover:text-emerald-200"
-            >
-              <ExternalLink className="h-3 w-3" /> Open on upstream
-            </a>
+            <p className="mb-2 text-slate-300">Upstream configure</p>
+            <AioMetadataConfigureSession profileId={profileId} />
           </div>
         )}
       </div>
