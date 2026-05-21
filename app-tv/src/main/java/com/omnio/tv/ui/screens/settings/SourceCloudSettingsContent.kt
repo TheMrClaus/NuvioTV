@@ -170,11 +170,6 @@ fun SourceCloudSettingsContent(
                 )
 
                 if (advancedSession != null) {
-                    SourceCloudAdvancedQrCard(
-                        url = advancedSession.url,
-                        message = advancedSession.message ?: stringResource(R.string.source_cloud_advanced_qr_message)
-                    )
-
                     SettingsActionRow(
                         title = stringResource(R.string.source_cloud_advanced_show_qr_title),
                         subtitle = stringResource(R.string.source_cloud_advanced_show_qr_subtitle),
@@ -499,44 +494,6 @@ private fun SourceCloudConfigStatusCard(
         subtitle = subtitle,
         modifier = modifier
     )
-}
-
-@Composable
-private fun SourceCloudAdvancedQrCard(
-    url: String,
-    message: String,
-    modifier: Modifier = Modifier
-) {
-    val qrBitmap = remember(url) { runCatching { QrCodeGenerator.generate(url, 360) }.getOrNull() }
-
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(OmnioColors.Background, RoundedCornerShape(12.dp))
-            .border(1.dp, OmnioColors.Border, RoundedCornerShape(12.dp))
-            .padding(horizontal = 18.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Text(
-            text = stringResource(R.string.source_cloud_advanced_qr_title),
-            style = MaterialTheme.typography.bodyLarge,
-            color = OmnioColors.TextPrimary
-        )
-        Text(
-            text = message,
-            style = MaterialTheme.typography.bodySmall,
-            color = OmnioColors.TextSecondary
-        )
-        if (qrBitmap != null) {
-            Image(
-                bitmap = qrBitmap.asImageBitmap(),
-                contentDescription = stringResource(R.string.cd_source_cloud_advanced_qr),
-                modifier = Modifier
-                    .size(220.dp)
-                    .clip(RoundedCornerShape(20.dp))
-            )
-        }
-    }
 }
 
 @Composable
