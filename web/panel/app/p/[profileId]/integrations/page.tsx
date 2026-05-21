@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CheckCircle2, MinusCircle, AlertTriangle, ChevronRight } from "lucide-react";
 import { getSettingsSnapshot } from "@/lib/data/settings";
 import { fetchSourceCloudStatus } from "@/lib/actions/sourcecloud";
+import { fetchAioMetadataStatus } from "@/lib/actions/aiometadata";
 
 interface Props {
   params: Promise<{ profileId: string }>;
@@ -23,6 +24,28 @@ function rowFromBoolean(
   if (enabled === undefined) return { state: "missing" };
   if (!enabled) return { state: "disabled", detail };
   return { state: "connected", detail };
+}
+
+function aioMetadataRow(
+  status: Awaited<ReturnType<typeof fetchAioMetadataStatus>>,
+  profileId: string,
+): IntegrationRow {
+  const config = status?.config;
+  const configStatus = config?.status;
+  let state: IntegrationRow["state"] = "missing";
+  if (config?.hasConfig && config?.enabled) state = "connected";
+  else if (config?.hasConfig && !config?.enabled) state = "disabled";
+  else if (configStatus === "provisioning_failed") state = "disabled";
+  const detail = config?.hasConfig
+    ? (config?.enabled ? "enabled" : "disabled — toggle on to mount")
+    : "Set up on a TV first to provision";
+  return {
+    name: "AIO Metadata",
+    blurb: "Catalogs, metadata, artwork — self-hosted AIOMetadata.",
+    state,
+    detail,
+    manageHref: `/p/${profileId}/integrations/aio-metadata`,
+  };
 }
 
 function sourceCloudRow(
@@ -53,9 +76,10 @@ function sourceCloudRow(
 export default async function IntegrationsPage({ params }: Props) {
   const { profileId } = await params;
   const id = Number.parseInt(profileId, 10);
-  const [snap, sourceCloud] = await Promise.all([
+  const [snap, sourceCloud, aioMetadata] = await Promise.all([
     getSettingsSnapshot(id),
     fetchSourceCloudStatus(id),
+    fetchAioMetadataStatus(id),
   ]);
 
   const tmdb = snap.features.tmdb_settings ?? {};
@@ -126,6 +150,7 @@ export default async function IntegrationsPage({ params }: Props) {
       manageHref: `/p/${profileId}/integrations/emby`,
     },
     sourceCloudRow(sourceCloud, profileId),
+    aioMetadataRow(aioMetadata, profileId),
   ];
 
   return (
