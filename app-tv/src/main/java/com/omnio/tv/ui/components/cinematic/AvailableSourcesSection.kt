@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +38,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.omnio.tv.core.uishared.OmnioColors
 import com.omnio.tv.domain.model.Stream
 
 enum class StreamTier { Best, Good }
@@ -157,6 +161,9 @@ fun AvailableSourcesRow(
         shape = ClickableSurfaceDefaults.shape(shape),
         scale = ClickableSurfaceDefaults.scale(focusedScale = 1f)
     ) {
+        val meta = remember(display.rawDescription) { parseStreamMeta(display.rawDescription) }
+        val titleText = meta.filename ?: display.rawName
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -164,35 +171,94 @@ fun AvailableSourcesRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                modifier = Modifier.width(64.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
+            Box(modifier = Modifier.width(64.dp), contentAlignment = Alignment.CenterStart) {
                 display.sourceKind?.let { SourceBadge(src = it, size = SourceBadgeSize.Md) }
             }
-            Box(
-                modifier = Modifier.width(60.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
+            Box(modifier = Modifier.width(60.dp), contentAlignment = Alignment.CenterStart) {
                 display.quality?.let { QualityBadge(it) }
             }
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = display.rawName,
+                    text = titleText,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color.White
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                display.rawDescription?.let { description ->
+                if (meta.infoSegments.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = description,
+                        text = meta.infoSegments.joinToString("   "),
                         style = TextStyle(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Normal
                         ),
                         color = Color.White.copy(alpha = 0.72f),
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
+                }
+            }
+
+            val hasRightMeta = meta.sizeText != null ||
+                meta.bitrateText != null ||
+                meta.seedersText != null ||
+                meta.statusText != null
+            if (hasRightMeta) {
+                Column(
+                    modifier = Modifier.widthIn(min = 96.dp),
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    meta.sizeText?.let {
+                        Text(
+                            text = it,
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = Color.White
+                        )
+                    }
+                    meta.bitrateText?.let {
+                        Text(
+                            text = it,
+                            style = TextStyle(
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Normal
+                            ),
+                            color = Color.White.copy(alpha = 0.72f)
+                        )
+                    }
+                    if (meta.seedersText != null || meta.statusText != null) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            meta.seedersText?.let {
+                                Text(
+                                    text = "🌱 $it",
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 11.sp
+                                    ),
+                                    color = Color.White.copy(alpha = 0.72f)
+                                )
+                            }
+                            meta.statusText?.let {
+                                Text(
+                                    text = it,
+                                    style = TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = if (meta.statusIsError) OmnioColors.Error else OmnioColors.Success
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -256,4 +322,78 @@ private fun parseSizeFromText(text: String): Long? {
         "MB", "MIB" -> (value * 1_048_576).toLong()
         else -> null
     }
+}
+
+internal data class StreamMeta(
+    val filename: String?,
+    val infoSegments: List<String>,
+    val sizeText: String?,
+    val bitrateText: String?,
+    val seedersText: String?,
+    val statusText: String?,
+    val statusIsError: Boolean
+)
+
+internal fun parseStreamMeta(description: String?): StreamMeta {
+    val empty = StreamMeta(null, emptyList(), null, null, null, null, false)
+    if (description.isNullOrBlank()) return empty
+
+    val lines = description.lines().map { it.trim() }.filter { it.isNotBlank() }
+    if (lines.isEmpty()) return empty
+
+    val filename = lines.first()
+    val segmentDelimiter = Regex("""\s{2,}|\s[·•|]\s""")
+    val segments = lines.drop(1).flatMap { line ->
+        line.split(segmentDelimiter).map { it.trim() }.filter { it.isNotBlank() }
+    }
+
+    val sizeRegex = Regex(
+        """(\d+(?:[.,]\d+)?)\s*(GiB|GB|MiB|MB|TiB|TB|KiB|KB)\b""",
+        RegexOption.IGNORE_CASE
+    )
+    val bitrateRegex = Regex(
+        """(\d+(?:[.,]\d+)?)\s*([KMG]bps)\b""",
+        RegexOption.IGNORE_CASE
+    )
+
+    var sizeText: String? = null
+    var bitrateText: String? = null
+    var seedersText: String? = null
+    var statusText: String? = null
+    var statusIsError = false
+    val infoSegments = mutableListOf<String>()
+
+    for (seg in segments) {
+        val sizeMatch = if (sizeText == null) sizeRegex.find(seg) else null
+        val bitrateMatch = if (bitrateText == null) bitrateRegex.find(seg) else null
+        when {
+            sizeMatch != null -> {
+                sizeText = "${sizeMatch.groupValues[1].replace(',', '.')} ${sizeMatch.groupValues[2].uppercase()}"
+            }
+            bitrateMatch != null -> {
+                bitrateText = "${bitrateMatch.groupValues[1].replace(',', '.')} ${bitrateMatch.groupValues[2]}"
+            }
+            seedersText == null && seg.startsWith("🌱") -> {
+                val num = Regex("""\d+""").find(seg)?.value
+                if (num != null) seedersText = num else infoSegments.add(seg)
+            }
+            statusText == null && seg.contains("Not Ready", ignoreCase = true) -> {
+                statusText = stripLeadingEmoji(seg)
+                statusIsError = true
+            }
+            statusText == null && seg.contains("Ready", ignoreCase = true) -> {
+                statusText = stripLeadingEmoji(seg)
+                statusIsError = false
+            }
+            else -> infoSegments.add(seg)
+        }
+    }
+
+    return StreamMeta(filename, infoSegments, sizeText, bitrateText, seedersText, statusText, statusIsError)
+}
+
+private fun stripLeadingEmoji(s: String): String {
+    var i = 0
+    while (i < s.length && !s[i].isLetterOrDigit() && s[i] != '(') i++
+    return s.substring(i).trim()
 }
