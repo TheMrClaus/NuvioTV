@@ -4,7 +4,7 @@
   "version_name": "0.5.57-beta",
   "release_tag": "0.5.57-beta-app-tv",
   "release_title": "OmnioTV 0.5.57-beta",
-  "release_notes": "## This is a beta version intended for testing only. Expect breaking changes in updates. Normal users are advised to wait for the stable release.\n\n### Improvements & Fixes\n- Release: update app-tv manifest for 0.5.56-beta-app-tv\n- Right-align stream meta (size, bitrate, seeders, status) on AIOStreams cards\n- show advanced QR fullscreen only\n- collapse AIOStreams advanced rows, drop Regenerate\n- Disable addon without removing it\n- Panel-driven config + provisioning state",
+  "release_notes": "### Improvements & Fixes\n- Right-align stream meta (size, bitrate, seeders, status) on AIOStreams cards\n- show advanced QR fullscreen only\n- collapse AIOStreams advanced rows, drop Regenerate\n- Disable addon without removing it\n- Panel-driven config + provisioning state",
   "release_url": "https://github.com/TheMrClaus/OmnioTV/releases/tag/0.5.57-beta-app-tv",
   "published_at_utc": "2026-05-21T20:05:56Z",
   "assets": [
