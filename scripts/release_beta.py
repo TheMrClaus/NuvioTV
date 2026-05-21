@@ -22,10 +22,6 @@ UPDATE_MANIFESTS_DIR = ROOT / "updates"
 GITHUB_OWNER = "TheMrClaus"
 GITHUB_REPO = "OmnioTV"
 APP_DISPLAY_NAME = "OmnioTV"
-DEFAULT_BETA_NOTICE = (
-    "## This is a beta version intended for testing only. Expect breaking changes "
-    "in updates. Normal users are advised to wait for the stable release."
-)
 EXPECTED_ASSET_NAMES = [
     f"{APP_MODULE}-arm64-v8a-release.apk",
     f"{APP_MODULE}-armeabi-v7a-release.apk",
@@ -60,6 +56,8 @@ DROP_PATTERNS = (
     re.compile(r"^merge conflict$", re.IGNORECASE),
     re.compile(r"^update .* version to ", re.IGNORECASE),
     re.compile(r"^update .*\.(kt|java|xml|gradle\.kts?)$", re.IGNORECASE),
+    re.compile(r"^release[:\s]", re.IGNORECASE),
+    re.compile(r"^manual release[:\s]", re.IGNORECASE),
     re.compile(r"baselineprofile", re.IGNORECASE),
 )
 TRIM_TOKENS = ("cw", "wip")
@@ -268,7 +266,7 @@ def build_release_notes(
     if not bullet_items:
         bullet_items = ["Beta maintenance update"]
 
-    lines = [DEFAULT_BETA_NOTICE, "", "### Improvements & Fixes"]
+    lines = ["### Improvements & Fixes"]
     lines.extend(f"- {item}" for item in bullet_items)
     if downloader_code:
         lines.extend(["", f"### Downloader Code - {downloader_code.strip()}"])
