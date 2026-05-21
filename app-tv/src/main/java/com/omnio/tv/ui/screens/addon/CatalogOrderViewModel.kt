@@ -6,6 +6,7 @@ import com.omnio.tv.data.local.LayoutPreferenceDataStore
 import com.omnio.tv.domain.model.Addon
 import com.omnio.tv.domain.model.CatalogDescriptor
 import com.omnio.tv.domain.repository.AddonRepository
+import com.omnio.tv.domain.repository.AioMetadataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CatalogOrderViewModel @Inject constructor(
     private val addonRepository: AddonRepository,
+    private val aioMetadataRepository: AioMetadataRepository,
     private val layoutPreferenceDataStore: LayoutPreferenceDataStore
 ) : ViewModel() {
 
@@ -70,10 +72,14 @@ class CatalogOrderViewModel @Inject constructor(
             combine(
                 addonRepository.getInstalledAddons(),
                 layoutPreferenceDataStore.homeCatalogOrderKeys,
-                layoutPreferenceDataStore.disabledHomeCatalogKeys
-            ) { addons, savedOrderKeys, disabledKeys ->
+                layoutPreferenceDataStore.disabledHomeCatalogKeys,
+                aioMetadataRepository.settings
+            ) { addons, savedOrderKeys, disabledKeys, aio ->
+                // AIOMetadata is managed only from Settings > AIOMetadata; its
+                // catalogs should not appear in the user-facing reorder list.
+                val visible = addons.filterNot { isAioManifest(it.baseUrl, aio.manifestUrl) }
                 buildOrderedCatalogItems(
-                    addons = addons,
+                    addons = visible,
                     savedOrderKeys = savedOrderKeys,
                     disabledKeys = disabledKeys.toSet()
                 )
@@ -173,6 +179,16 @@ class CatalogOrderViewModel @Inject constructor(
 
     private fun CatalogDescriptor.isSearchOnlyCatalog(): Boolean {
         return extra.any { extra -> extra.name.equals("search", ignoreCase = true) && extra.isRequired }
+    }
+
+    private fun isAioManifest(addonBaseUrl: String, aioManifestUrl: String): Boolean {
+        if (aioManifestUrl.isBlank()) return false
+        val canonicalAio = aioManifestUrl
+            .trim()
+            .trimEnd('/')
+            .removeSuffix("/manifest.json")
+            .trimEnd('/')
+        return addonBaseUrl.equals(canonicalAio, ignoreCase = true)
     }
 }
 

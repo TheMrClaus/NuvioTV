@@ -1,4 +1,4 @@
-import { listAddons } from "@/lib/data/addons";
+import { getAioMetadataAddonUrl, isAioManifest, listAddons } from "@/lib/data/addons";
 import AddonsForm from "@/components/forms/AddonsForm";
 
 interface Props {
@@ -8,7 +8,23 @@ interface Props {
 export default async function AddonsPage({ params }: Props) {
   const { profileId } = await params;
   const id = Number.parseInt(profileId, 10);
-  const addons = await listAddons(id);
+  const [addons, aioBaseUrl] = await Promise.all([
+    listAddons(id),
+    getAioMetadataAddonUrl(id),
+  ]);
+
+  // Split AIOMetadata's row out so it doesn't render in the UI list. The form
+  // re-appends it on save so sync_push_addons doesn't drop it from Supabase
+  // (which would unmount AIO on the TV's next remote pull).
+  const visible = [];
+  let aioRow: { id: string; url: string; name: string | null; enabled: boolean; sort_order: number } | null = null;
+  for (const a of addons) {
+    if (isAioManifest(a.url, aioBaseUrl)) {
+      aioRow = { id: a.id, url: a.url, name: a.name, enabled: a.enabled, sort_order: a.sort_order };
+    } else {
+      visible.push(a);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -23,12 +39,13 @@ export default async function AddonsPage({ params }: Props) {
 
       <AddonsForm
         profileId={id}
-        initial={addons.map((a) => ({
+        initial={visible.map((a) => ({
           id: a.id,
           url: a.url,
           name: a.name,
           enabled: a.enabled,
         }))}
+        hiddenAioAddon={aioRow ? { url: aioRow.url, enabled: aioRow.enabled } : null}
       />
     </div>
   );

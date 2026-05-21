@@ -13,6 +13,7 @@ import com.omnio.tv.data.local.LayoutPreferenceDataStore
 import com.omnio.tv.domain.model.Addon
 import com.omnio.tv.domain.model.CatalogDescriptor
 import com.omnio.tv.domain.repository.AddonRepository
+import com.omnio.tv.domain.repository.AioMetadataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -30,6 +32,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AddonManagerViewModel @Inject constructor(
     private val addonRepository: AddonRepository,
+    private val aioMetadataRepository: AioMetadataRepository,
     private val layoutPreferenceDataStore: LayoutPreferenceDataStore,
     private val profileManager: ProfileManager,
     @ApplicationContext private val context: Context
@@ -460,7 +463,15 @@ class AddonManagerViewModel @Inject constructor(
             if (_uiState.value.installedAddons.isEmpty()) {
                 _uiState.update { it.copy(isLoading = true) }
             }
-            addonRepository.getInstalledAddons()
+            combine(
+                addonRepository.getInstalledAddons(),
+                aioMetadataRepository.settings
+            ) { addons, aio ->
+                // AIOMetadata is a built-in managed only from Settings > AIOMetadata;
+                // hide its manifest from the user-facing addon list. The manifest
+                // stays in the underlying repo so the meta pipeline still finds it.
+                addons.filterNot { isAioManifest(it.baseUrl, aio.manifestUrl) }
+            }
                 .catch { error ->
                     _uiState.update { it.copy(isLoading = false, error = error.message) }
                 }
@@ -474,6 +485,16 @@ class AddonManagerViewModel @Inject constructor(
                     }
                 }
         }
+    }
+
+    private fun isAioManifest(addonBaseUrl: String, aioManifestUrl: String): Boolean {
+        if (aioManifestUrl.isBlank()) return false
+        val canonicalAio = aioManifestUrl
+            .trim()
+            .trimEnd('/')
+            .removeSuffix("/manifest.json")
+            .trimEnd('/')
+        return addonBaseUrl.equals(canonicalAio, ignoreCase = true)
     }
 
     override fun onCleared() {

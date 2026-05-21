@@ -15,9 +15,18 @@ interface AddonRow {
   enabled: boolean;
 }
 
+interface HiddenAioAddon {
+  url: string;
+  enabled: boolean;
+}
+
 interface Props {
   profileId: number;
   initial: AddonRow[];
+  // AIOMetadata is managed only from Integrations > AIO Metadata. Its row is
+  // kept out of the UI list but re-appended on save so the sync_push_addons
+  // RPC doesn't drop it (which would unmount AIO on the TV's next pull).
+  hiddenAioAddon?: HiddenAioAddon | null;
 }
 
 function newId(): string {
@@ -41,7 +50,7 @@ function signature(rows: AddonRow[]): string {
   return rows.map((a) => `${a.url}|${a.enabled ? "1" : "0"}`).join("//");
 }
 
-export default function AddonsForm({ profileId, initial }: Props) {
+export default function AddonsForm({ profileId, initial, hiddenAioAddon = null }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<AddonRow[]>(initial);
   const [draftUrl, setDraftUrl] = useState("");
@@ -76,9 +85,16 @@ export default function AddonsForm({ profileId, initial }: Props) {
   const handleSave = () => {
     setState({ kind: "saving" });
     startTransition(async () => {
+      // Preserve AIOMetadata's row: append it after the user-managed list so
+      // sync_push_addons doesn't delete it. Position doesn't matter for AIO
+      // since it's a meta addon (no home catalog ordering implications).
+      const payload = items.map((a) => ({ url: a.url, enabled: a.enabled }));
+      if (hiddenAioAddon) {
+        payload.push({ url: hiddenAioAddon.url, enabled: hiddenAioAddon.enabled });
+      }
       const result = await saveAddons({
         profileId,
-        addons: items.map((a) => ({ url: a.url, enabled: a.enabled })),
+        addons: payload,
         revalidatePath: `/p/${profileId}/addons`,
       });
       if (result.ok) {
