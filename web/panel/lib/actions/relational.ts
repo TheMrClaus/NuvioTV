@@ -4,24 +4,29 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
 import type { ActionResult } from "./result";
 
-// Addons RPC (sync_push_addons) only writes url + sort_order — name and
-// enabled are not part of the contract. Matches AddonSyncService.kt on the
-// TV side. The panel intentionally does not surface enable toggles for
-// addons because the TV would overwrite them on its next push.
+// Addons RPC (sync_push_addons) writes url + enabled + sort_order. The TV
+// side (AddonSyncService.kt) writes the same fields; the `enabled` flag is
+// the single source of truth for whether catalogs/streams from this addon
+// participate in content delivery on either client.
+
+export interface AddonInput {
+  url: string;
+  enabled: boolean;
+}
 
 export async function saveAddons(args: {
   profileId: number;
-  addonUrls: string[];
+  addons: AddonInput[];
   revalidatePath?: string;
 }): Promise<ActionResult> {
   const seen = new Set<string>();
-  const cleaned: { url: string; sort_order: number }[] = [];
-  for (const raw of args.addonUrls) {
-    const url = raw.trim();
+  const cleaned: { url: string; enabled: boolean; sort_order: number }[] = [];
+  for (const a of args.addons) {
+    const url = a.url.trim();
     if (url.length === 0) continue;
     if (seen.has(url)) continue;
     seen.add(url);
-    cleaned.push({ url, sort_order: cleaned.length });
+    cleaned.push({ url, enabled: a.enabled, sort_order: cleaned.length });
   }
 
   const supabase = await createServerSupabase();

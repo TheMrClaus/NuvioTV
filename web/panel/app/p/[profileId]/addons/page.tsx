@@ -23,7 +23,12 @@ export default async function AddonsPage({ params }: Props) {
 
       <AddonsForm
         profileId={id}
-        initial={addons.map((a) => ({ id: a.id, url: a.url, name: a.name }))}
+        initial={addons.map((a) => ({
+          id: a.id,
+          url: a.url,
+          name: a.name,
+          enabled: a.enabled,
+        }))}
       />
     </div>
   );

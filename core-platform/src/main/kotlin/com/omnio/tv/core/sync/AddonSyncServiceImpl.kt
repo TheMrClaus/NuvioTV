@@ -3,6 +3,7 @@ package com.omnio.tv.core.sync
 import android.util.Log
 import com.omnio.tv.domain.auth.AuthManager
 import com.omnio.tv.domain.sync.AddonSyncService
+import com.omnio.tv.domain.sync.RemoteAddon
 import com.omnio.tv.domain.profile.ProfileManager
 import com.omnio.tv.data.local.AddonPreferences
 import com.omnio.tv.data.remote.supabase.SupabaseAddon
@@ -51,13 +52,15 @@ class AddonSyncServiceImpl @Inject constructor(
             }
 
             val localUrls = addonPreferences.installedAddonUrls.first()
-            Log.d(TAG, "pushToRemote: localUrls count=${localUrls.size} for profile $profileId")
+            val disabledUrls = addonPreferences.disabledAddonUrls.first()
+            Log.d(TAG, "pushToRemote: localUrls count=${localUrls.size} disabled=${disabledUrls.size} for profile $profileId")
 
             val params = buildJsonObject {
                 put("p_addons", buildJsonArray {
                     localUrls.forEachIndexed { index, url ->
                         addJsonObject {
                             put("url", url)
+                            put("enabled", url !in disabledUrls)
                             put("sort_order", index)
                         }
                     }
@@ -77,7 +80,10 @@ class AddonSyncServiceImpl @Inject constructor(
         }
     }
 
-    override suspend fun getRemoteAddonUrls(): Result<List<String>> = withContext(Dispatchers.IO) {
+    override suspend fun getRemoteAddonUrls(): Result<List<String>> =
+        getRemoteAddons().map { remote -> remote.map { it.url } }
+
+    override suspend fun getRemoteAddons(): Result<List<RemoteAddon>> = withContext(Dispatchers.IO) {
         try {
             val effectiveUserId = authManager.getEffectiveUserId(fallbackToOwnIdOnFailure = false)
                 ?: return@withContext Result.failure(
@@ -99,11 +105,11 @@ class AddonSyncServiceImpl @Inject constructor(
 
             Result.success(
                 remoteAddons
-                .sortedBy { it.sortOrder }
-                .map { it.url }
+                    .sortedBy { it.sortOrder }
+                    .map { RemoteAddon(url = it.url, enabled = it.enabled, sortOrder = it.sortOrder) }
             )
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to get remote addon URLs", e)
+            Log.e(TAG, "Failed to get remote addons", e)
             Result.failure(e)
         }
     }

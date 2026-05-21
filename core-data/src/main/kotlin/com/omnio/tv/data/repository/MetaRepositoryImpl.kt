@@ -112,7 +112,7 @@ class MetaRepositoryImpl @Inject constructor(
 
         emit(NetworkResult.Loading)
 
-        val addons = addonRepository.getInstalledAddons().first()
+        val addons = addonRepository.getInstalledAddons().first().filter { it.enabled }
 
         val requestedType = type.trim()
         val inferredType = inferCanonicalType(requestedType, id)
@@ -250,7 +250,7 @@ class MetaRepositoryImpl @Inject constructor(
 
         emit(NetworkResult.Loading)
 
-        val addons = addonRepository.getInstalledAddons().first()
+        val addons = addonRepository.getInstalledAddons().first().filter { it.enabled }
         val requestedType = type.trim()
         val inferredType = inferCanonicalType(requestedType, id)
         val candidate = selectPrimaryMetaCandidate(

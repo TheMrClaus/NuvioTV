@@ -102,7 +102,7 @@ internal fun PlayerRuntimeController.loadSourceStreams(forceRefresh: Boolean) {
             )
         }
 
-        val installedAddons = addonRepository.getInstalledAddons().first()
+        val installedAddons = addonRepository.getInstalledAddons().first().filter { it.enabled }
         val installedAddonOrder = installedAddons.map { it.displayName }
         updateSourceChipsForFetchStart(type, installedAddons)
 
@@ -517,7 +517,7 @@ internal fun PlayerRuntimeController.loadStreamsForEpisode(video: Video, forceRe
             )
         }
 
-        val installedAddons = addonRepository.getInstalledAddons().first()
+        val installedAddons = addonRepository.getInstalledAddons().first().filter { it.enabled }
         val installedAddonOrder = installedAddons.map { it.displayName }
 
         streamRepository.getStreamsFromAllAddons(
@@ -742,7 +742,7 @@ internal fun PlayerRuntimeController.playNextEpisode() {
                 )
             }
 
-            val installedAddons = addonRepository.getInstalledAddons().first()
+            val installedAddons = addonRepository.getInstalledAddons().first().filter { it.enabled }
             val installedAddonOrder = installedAddons.map { it.displayName }
             val effectiveMode = if (shouldAutoSelectInManualMode) {
                 StreamAutoPlayMode.FIRST_STREAM

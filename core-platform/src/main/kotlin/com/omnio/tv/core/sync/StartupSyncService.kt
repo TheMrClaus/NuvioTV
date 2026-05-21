@@ -221,12 +221,12 @@ class StartupSyncService @Inject constructor(
 
             addonRepository.isSyncingFromRemote = true
             try {
-                val remoteAddonUrls = addonSyncService.getRemoteAddonUrls().getOrElse { throw it }
-                addonRepository.reconcileWithRemoteAddonUrls(
-                    remoteUrls = remoteAddonUrls,
+                val remoteAddons = addonSyncService.getRemoteAddons().getOrElse { throw it }
+                addonRepository.reconcileWithRemoteAddons(
+                    remoteAddons = remoteAddons,
                     removeMissingLocal = true
                 )
-                Log.d(TAG, "Pulled ${remoteAddonUrls.size} addons from remote for profile $profileId")
+                Log.d(TAG, "Pulled ${remoteAddons.size} addons from remote for profile $profileId")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to pull addons from remote, keeping local cache", e)
             } finally {

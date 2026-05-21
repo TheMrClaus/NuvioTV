@@ -196,7 +196,7 @@ class SearchViewModel @Inject constructor(
             kotlinx.coroutines.delay(SUGGESTION_DEBOUNCE_MS)
 
             val addons = try {
-                addonRepository.getInstalledAddons().first()
+                addonRepository.getInstalledAddons().first().filter { it.enabled }
             } catch (_: Exception) {
                 return@launch
             }
@@ -310,7 +310,7 @@ class SearchViewModel @Inject constructor(
             _uiState.update { it.copy(isSearching = true, error = null, catalogRows = emptyList()) }
 
             val addons = try {
-                addonRepository.getInstalledAddons().first()
+                addonRepository.getInstalledAddons().first().filter { it.enabled }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isSearching = false, error = e.message ?: "Failed to load addons") }
                 return@launch
@@ -504,7 +504,7 @@ class SearchViewModel @Inject constructor(
         if (!_uiState.value.discoverEnabled) return
         _uiState.update { it.copy(discoverLoading = true) }
         val addons = try {
-            addonRepository.getInstalledAddons().first()
+            addonRepository.getInstalledAddons().first().filter { it.enabled }
         } catch (_: Exception) {
             _uiState.update { it.copy(discoverInitialized = true, discoverLoading = false) }
             return

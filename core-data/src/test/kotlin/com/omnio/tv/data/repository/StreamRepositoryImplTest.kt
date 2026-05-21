@@ -97,6 +97,7 @@ class StreamRepositoryImplTest {
         override suspend fun addAddon(url: String) = Unit
         override suspend fun removeAddon(url: String) = Unit
         override suspend fun setAddonOrder(urls: List<String>) = Unit
+        override suspend fun setAddonEnabled(url: String, enabled: Boolean) = Unit
     }
 
     private fun fakePluginManager(): PluginManager = mockk(relaxed = true) {

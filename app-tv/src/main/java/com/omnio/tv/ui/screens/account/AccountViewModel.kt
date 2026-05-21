@@ -597,9 +597,9 @@ class AccountViewModel @Inject constructor(
             pluginManager.isSyncingFromRemote = false
 
             addonRepository.isSyncingFromRemote = true
-            val remoteAddonUrls = addonSyncService.getRemoteAddonUrls().getOrElse { throw it }
-            addonRepository.reconcileWithRemoteAddonUrls(
-                remoteUrls = remoteAddonUrls,
+            val remoteAddons = addonSyncService.getRemoteAddons().getOrElse { throw it }
+            addonRepository.reconcileWithRemoteAddons(
+                remoteAddons = remoteAddons,
                 removeMissingLocal = true
             )
             addonRepository.isSyncingFromRemote = false

@@ -43,7 +43,7 @@ class SubtitleRepositoryImpl @Inject constructor(
         
         // Get installed addons
         val addons = try {
-            addonRepository.getInstalledAddons().first()
+            addonRepository.getInstalledAddons().first().filter { it.enabled }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get installed addons", e)
             return@withContext emptyList()

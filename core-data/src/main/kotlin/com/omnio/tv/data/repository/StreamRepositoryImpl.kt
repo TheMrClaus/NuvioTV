@@ -63,8 +63,8 @@ class StreamRepositoryImpl @Inject constructor(
         emit(NetworkResult.Loading)
 
         try {
-            val addons = addonRepository.getInstalledAddons().first()
-            
+            val addons = addonRepository.getInstalledAddons().first().filter { it.enabled }
+
             // Filter addons that support streams for this type
             val streamAddons = addons.filter { addon ->
                 addon.supportsStreamResource(type)

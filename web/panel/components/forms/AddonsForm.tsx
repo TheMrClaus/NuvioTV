@@ -12,6 +12,7 @@ interface AddonRow {
   id: string;
   url: string;
   name: string | null;
+  enabled: boolean;
 }
 
 interface Props {
@@ -36,6 +37,10 @@ function isProbablyUrl(s: string): boolean {
   }
 }
 
+function signature(rows: AddonRow[]): string {
+  return rows.map((a) => `${a.url}|${a.enabled ? "1" : "0"}`).join("//");
+}
+
 export default function AddonsForm({ profileId, initial }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<AddonRow[]>(initial);
@@ -43,9 +48,9 @@ export default function AddonsForm({ profileId, initial }: Props) {
   const [state, setState] = useState<SaveState>({ kind: "idle" });
   const [isPending, startTransition] = useTransition();
 
-  const initialUrls = useMemo(() => initial.map((a) => a.url).join("|"), [initial]);
-  const currentUrls = useMemo(() => items.map((a) => a.url).join("|"), [items]);
-  const dirty = initialUrls !== currentUrls;
+  const initialSig = useMemo(() => signature(initial), [initial]);
+  const currentSig = useMemo(() => signature(items), [items]);
+  const dirty = initialSig !== currentSig;
 
   useUnsavedWarning(dirty);
 
@@ -56,7 +61,7 @@ export default function AddonsForm({ profileId, initial }: Props) {
   const handleAdd = () => {
     const url = draftUrl.trim();
     if (!isProbablyUrl(url) || draftDuplicate) return;
-    setItems((prev) => [...prev, { id: newId(), url, name: null }]);
+    setItems((prev) => [...prev, { id: newId(), url, name: null, enabled: true }]);
     setDraftUrl("");
   };
 
@@ -64,12 +69,16 @@ export default function AddonsForm({ profileId, initial }: Props) {
     setItems((prev) => prev.filter((a) => a.id !== id));
   };
 
+  const updateItem = (id: string, patch: Partial<AddonRow>) => {
+    setItems((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+  };
+
   const handleSave = () => {
     setState({ kind: "saving" });
     startTransition(async () => {
       const result = await saveAddons({
         profileId,
-        addonUrls: items.map((a) => a.url),
+        addons: items.map((a) => ({ url: a.url, enabled: a.enabled })),
         revalidatePath: `/p/${profileId}/addons`,
       });
       if (result.ok) {
@@ -105,7 +114,11 @@ export default function AddonsForm({ profileId, initial }: Props) {
             items={items}
             onReorder={setItems}
             renderItem={(item, i, dragHandle) => (
-              <div className="flex items-center gap-3 rounded-lg border border-slate-700/40 bg-slate-900/40 p-3">
+              <div
+                className={`flex items-center gap-3 rounded-lg border border-slate-700/40 bg-slate-900/40 p-3 ${
+                  item.enabled ? "" : "opacity-60"
+                }`}
+              >
                 {dragHandle}
                 <span className="w-6 shrink-0 text-xs text-slate-500">
                   {i + 1}
@@ -124,6 +137,15 @@ export default function AddonsForm({ profileId, initial }: Props) {
                     <ExternalLink className="h-3 w-3 shrink-0" />
                   </a>
                 </div>
+                <label className="flex shrink-0 cursor-pointer items-center gap-2 text-xs text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={item.enabled}
+                    onChange={(e) => updateItem(item.id, { enabled: e.target.checked })}
+                    className="h-4 w-4 cursor-pointer accent-primary"
+                  />
+                  <span>Enabled</span>
+                </label>
                 <button
                   type="button"
                   onClick={() => handleRemove(item.id)}

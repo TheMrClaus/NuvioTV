@@ -21,6 +21,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import com.omnio.tv.domain.auth.AuthManager
 import com.omnio.tv.domain.sync.AddonSyncService
+import com.omnio.tv.domain.sync.RemoteAddon
 import javax.inject.Inject
 
 class AddonRepositoryImpl @Inject constructor(
@@ -138,35 +140,39 @@ class AddonRepositoryImpl @Inject constructor(
     }
 
     override fun getInstalledAddons(): Flow<List<Addon>> =
-        preferences.installedAddonUrls.flatMapLatest { urls ->
-            flow {
-                val cached = urls.mapNotNull { manifestCache[canonicalizeUrl(it)] }
-                if (cached.isNotEmpty()) {
-                    emit(applyDisplayNames(cached))
-                }
+        combine(
+            preferences.installedAddonUrls,
+            preferences.disabledAddonUrls
+        ) { urls, disabledRaw -> urls to disabledRaw.map(::canonicalizeUrl).toSet() }
+            .flatMapLatest { (urls, disabled) ->
+                flow {
+                    val cached = urls.mapNotNull { manifestCache[canonicalizeUrl(it)] }
+                    if (cached.isNotEmpty()) {
+                        emit(applyEnabledState(applyDisplayNames(cached), disabled))
+                    }
 
-                val hasCacheMiss = cached.size < urls.size
-                if (hasCacheMiss) {
-                    val fresh = coroutineScope {
-                        urls.map { url ->
-                            async {
-                                val canonical = canonicalizeUrl(url)
-                                manifestCache[canonical] ?: when (val result = fetchAddon(url)) {
-                                    is NetworkResult.Success -> result.data
-                                    else -> null
+                    val hasCacheMiss = cached.size < urls.size
+                    if (hasCacheMiss) {
+                        val fresh = coroutineScope {
+                            urls.map { url ->
+                                async {
+                                    val canonical = canonicalizeUrl(url)
+                                    manifestCache[canonical] ?: when (val result = fetchAddon(url)) {
+                                        is NetworkResult.Success -> result.data
+                                        else -> null
+                                    }
                                 }
-                            }
-                        }.awaitAll().filterNotNull()
-                    }
+                            }.awaitAll().filterNotNull()
+                        }
 
-                    if (fresh != cached) {
-                        emit(applyDisplayNames(fresh))
+                        if (fresh != cached) {
+                            emit(applyEnabledState(applyDisplayNames(fresh), disabled))
+                        }
+                    } else if (isCacheStale() && urls.isNotEmpty()) {
+                        scheduleManifestRefresh(urls)
                     }
-                } else if (isCacheStale() && urls.isNotEmpty()) {
-                    scheduleManifestRefresh(urls)
-                }
-            }.flowOn(Dispatchers.IO)
-        }
+                }.flowOn(Dispatchers.IO)
+            }
 
     override suspend fun fetchAddon(baseUrl: String): NetworkResult<Addon> {
         val cleanBaseUrl = canonicalizeUrl(baseUrl)
@@ -203,6 +209,42 @@ class AddonRepositoryImpl @Inject constructor(
     override suspend fun setAddonOrder(urls: List<String>) {
         preferences.setAddonOrder(urls)
         triggerRemoteSync()
+    }
+
+    override suspend fun setAddonEnabled(url: String, enabled: Boolean) {
+        preferences.setAddonEnabled(canonicalizeUrl(url), enabled)
+        triggerRemoteSync()
+    }
+
+    suspend fun reconcileWithRemoteAddons(
+        remoteAddons: List<RemoteAddon>,
+        removeMissingLocal: Boolean = true
+    ) {
+        reconcileWithRemoteAddonUrls(
+            remoteUrls = remoteAddons.map { it.url },
+            removeMissingLocal = removeMissingLocal
+        )
+        // Apply remote disabled state. Local URLs that aren't in the remote
+        // payload keep their current enabled/disabled state.
+        val remoteDisabledByNormalized = remoteAddons
+            .filterNot { it.enabled }
+            .associate { normalizeUrl(it.url) to canonicalizeUrl(it.url) }
+        if (remoteDisabledByNormalized.isEmpty() && remoteAddons.all { it.enabled }) {
+            // Remote says everything enabled — clear any locally disabled URLs that
+            // appear in the remote list.
+            val remoteSet = remoteAddons.map { normalizeUrl(it.url) }.toSet()
+            val currentDisabled = preferences.disabledAddonUrls.first()
+            val kept = currentDisabled.filter { normalizeUrl(it) !in remoteSet }
+            if (kept.size != currentDisabled.size) {
+                preferences.setDisabledAddonUrls(kept)
+            }
+            return
+        }
+        val currentDisabled = preferences.disabledAddonUrls.first()
+        val remoteUrlSet = remoteAddons.map { normalizeUrl(it.url) }.toSet()
+        val keptDisabled = currentDisabled.filter { normalizeUrl(it) !in remoteUrlSet }
+        val merged = (keptDisabled + remoteDisabledByNormalized.values).toSet()
+        preferences.setDisabledAddonUrls(merged)
     }
 
     suspend fun reconcileWithRemoteAddonUrls(
@@ -256,6 +298,14 @@ class AddonRepositoryImpl @Inject constructor(
         val currentCanonical = initialLocalUrls.map { canonicalizeUrl(it) }
         if (finalList != currentCanonical) {
             preferences.setAddonOrder(finalList)
+        }
+    }
+
+    private fun applyEnabledState(addons: List<Addon>, disabled: Set<String>): List<Addon> {
+        if (disabled.isEmpty()) return addons
+        return addons.map { addon ->
+            val isEnabled = canonicalizeUrl(addon.baseUrl) !in disabled
+            if (addon.enabled == isEnabled) addon else addon.copy(enabled = isEnabled)
         }
     }
 

@@ -19,7 +19,8 @@ data class Addon(
     val stremioAddonsConfig: StremioAddonsConfig? = null,
     val manifestLanguage: String? = null,
     val configVersion: Long? = null,
-    val timestamp: Long? = null
+    val timestamp: Long? = null,
+    val enabled: Boolean = true
 )
 
 data class CatalogDescriptor(

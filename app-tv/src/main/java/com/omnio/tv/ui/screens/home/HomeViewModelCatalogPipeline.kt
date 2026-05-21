@@ -70,7 +70,8 @@ internal fun HomeViewModel.observeInstalledAddonsPipeline() {
     viewModelScope.launch {
         addonRepository.getInstalledAddons()
             .distinctUntilChanged()
-            .collectLatest { addons ->
+            .collectLatest { allAddons ->
+                val addons = allAddons.filter { it.enabled }
                 addonsCache = addons
                 loadAllCatalogsPipeline(addons)
             }

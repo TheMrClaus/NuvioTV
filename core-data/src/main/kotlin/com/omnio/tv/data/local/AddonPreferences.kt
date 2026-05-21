@@ -46,6 +46,7 @@ class AddonPreferences @Inject constructor(
     private val gson = Gson()
     private val orderedUrlsKey = stringPreferencesKey("installed_addon_urls_ordered")
     private val legacyUrlsKey = stringSetPreferencesKey("installed_addon_urls")
+    private val disabledUrlsKey = stringSetPreferencesKey("disabled_addon_urls")
     private val manifestSuffix = "/manifest.json"
 
     private fun canonicalizeUrl(url: String): String {
@@ -66,6 +67,12 @@ class AddonPreferences @Inject constructor(
                 val legacySet = preferences[legacyUrlsKey] ?: getDefaultAddons()
                 legacySet.toList()
             }
+        }
+    }
+
+    val disabledAddonUrls: Flow<Set<String>> = effectiveProfileIdFlow.flatMapLatest { pid ->
+        factory.get(pid, FEATURE).data.map { preferences ->
+            preferences[disabledUrlsKey].orEmpty()
         }
     }
 
@@ -111,6 +118,26 @@ class AddonPreferences @Inject constructor(
         if (profileManager.activeProfile?.usesPrimaryAddons == true) return
         store().edit { preferences ->
             preferences[orderedUrlsKey] = gson.toJson(urls.map(::canonicalizeUrl))
+        }
+    }
+
+    suspend fun setAddonEnabled(url: String, enabled: Boolean) {
+        if (profileManager.activeProfile?.usesPrimaryAddons == true) return
+        val normalizedUrl = canonicalizeUrl(url)
+        store().edit { preferences ->
+            val current = preferences[disabledUrlsKey].orEmpty()
+            preferences[disabledUrlsKey] = if (enabled) {
+                current - normalizedUrl
+            } else {
+                current + normalizedUrl
+            }
+        }
+    }
+
+    suspend fun setDisabledAddonUrls(urls: Collection<String>) {
+        if (profileManager.activeProfile?.usesPrimaryAddons == true) return
+        store().edit { preferences ->
+            preferences[disabledUrlsKey] = urls.map(::canonicalizeUrl).toSet()
         }
     }
 

@@ -948,6 +948,7 @@
     <string name="addon_installed_section">Installed</string>
     <string name="addon_empty">No addons installed. Add one to get started.</string>
     <string name="addon_remove">Remove</string>
+    <string name="addon_disabled_label">Disabled</string>
     <string name="addon_manage_from_phone_title">Manage from phone</string>
     <string name="addon_manage_from_phone_subtitle">Scan a QR code to manage addons and Home catalogs from your phone</string>
     <string name="addon_reorder_title">Reorder home catalogs</string>
@@ -1486,6 +1487,8 @@
     <string name="cd_loading_logo">Loading logo</string>
     <string name="cd_move_up">Move up</string>
     <string name="cd_move_down">Move down</string>
+    <string name="cd_enable_addon">Enable addon</string>
+    <string name="cd_disable_addon">Disable addon</string>
     <string name="cd_qr_code">QR Code</string>
     <string name="cd_add">Add</string>
     <string name="cd_refresh">Refresh</string>

@@ -41,6 +41,9 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Reorder
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.ui.graphics.SolidColor
@@ -370,6 +373,9 @@ fun AddonManagerScreen(
                         canMoveDown = index < uiState.installedAddons.lastIndex,
                         onMoveUp = { viewModel.moveAddonUp(addon.baseUrl) },
                         onMoveDown = { viewModel.moveAddonDown(addon.baseUrl) },
+                        onToggleEnabled = {
+                            viewModel.setAddonEnabled(addon.baseUrl, !addon.enabled)
+                        },
                         onRemove = { viewModel.removeAddon(addon.baseUrl) },
                         isReadOnly = viewModel.isReadOnly
                     )
@@ -949,6 +955,7 @@ private fun AddonCard(
     canMoveDown: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
+    onToggleEnabled: () -> Unit,
     onRemove: () -> Unit,
     isReadOnly: Boolean = false
 ) {
@@ -987,6 +994,7 @@ private fun AddonCard(
                 canMoveDown = canMoveDown,
                 onMoveUp = onMoveUp,
                 onMoveDown = onMoveDown,
+                onToggleEnabled = onToggleEnabled,
                 onRemove = onRemove
             )
         }
@@ -1002,6 +1010,7 @@ private fun AddonCardContent(
     canMoveDown: Boolean = false,
     onMoveUp: () -> Unit = {},
     onMoveDown: () -> Unit = {},
+    onToggleEnabled: () -> Unit = {},
     onRemove: () -> Unit = {}
 ) {
     val homeCatalogCount = remember(addon.catalogs) {
@@ -1017,6 +1026,7 @@ private fun AddonCardContent(
         addon.resources.joinToString(limit = 3) { it.name }.ifBlank { "No resources" }
     }
 
+    val dimAlpha = if (!isReadOnly && !addon.enabled) 0.5f else 1f
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1025,7 +1035,7 @@ private fun AddonCardContent(
         verticalAlignment = Alignment.Top
     ) {
         AddonInfoColumn(
-            modifier = Modifier.weight(1.3f),
+            modifier = Modifier.weight(1.3f).alpha(dimAlpha),
             kicker = "Identity"
         ) {
             Row(
@@ -1043,6 +1053,19 @@ private fun AddonCardContent(
                     com.omnio.tv.ui.components.cinematic.SourceBadge(
                         src = kind,
                         size = com.omnio.tv.ui.components.cinematic.SourceBadgeSize.Sm
+                    )
+                }
+                if (!isReadOnly && !addon.enabled) {
+                    Text(
+                        text = stringResource(R.string.addon_disabled_label),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = OmnioColors.Error,
+                        modifier = Modifier
+                            .background(
+                                color = OmnioColors.Error.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(6.dp)
+                            )
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }
@@ -1063,7 +1086,7 @@ private fun AddonCardContent(
         }
 
         AddonInfoColumn(
-            modifier = Modifier.weight(1.6f),
+            modifier = Modifier.weight(1.6f).alpha(dimAlpha),
             kicker = "Overview"
         ) {
             Text(
@@ -1082,7 +1105,7 @@ private fun AddonCardContent(
         }
 
         AddonInfoColumn(
-            modifier = Modifier.weight(1.45f),
+            modifier = Modifier.weight(1.45f).alpha(dimAlpha),
             kicker = "Source"
         ) {
             Text(
@@ -1103,7 +1126,7 @@ private fun AddonCardContent(
         }
 
         AddonInfoColumn(
-            modifier = Modifier.weight(1.1f),
+            modifier = Modifier.weight(1.1f).alpha(dimAlpha),
             kicker = "Catalogs"
         ) {
             Text(
@@ -1132,56 +1155,87 @@ private fun AddonCardContent(
                     color = OmnioColors.TextTertiary
                 )
             } else {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Button(
-                        onClick = onMoveUp,
-                        enabled = canMoveUp,
-                        colors = ButtonDefaults.colors(
-                            containerColor = Color.White.copy(alpha = 0.05f),
-                            contentColor = OmnioColors.TextSecondary,
-                            focusedContainerColor = OmnioColors.FocusBackground,
-                            focusedContentColor = OmnioColors.Primary,
-                            disabledContainerColor = Color.White.copy(alpha = 0.03f),
-                            disabledContentColor = OmnioColors.TextTertiary.copy(alpha = 0.55f)
-                        ),
-                        shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = stringResource(R.string.cd_move_up))
+                        ActionQuadrantButton(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.ArrowUpward,
+                            contentDescription = stringResource(R.string.cd_move_up),
+                            enabled = canMoveUp,
+                            onClick = onMoveUp
+                        )
+                        ActionQuadrantButton(
+                            modifier = Modifier.weight(1f),
+                            icon = if (addon.enabled) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = stringResource(
+                                if (addon.enabled) R.string.cd_disable_addon else R.string.cd_enable_addon
+                            ),
+                            onClick = onToggleEnabled
+                        )
                     }
-                    Button(
-                        onClick = onMoveDown,
-                        enabled = canMoveDown,
-                        colors = ButtonDefaults.colors(
-                            containerColor = Color.White.copy(alpha = 0.05f),
-                            contentColor = OmnioColors.TextSecondary,
-                            focusedContainerColor = OmnioColors.FocusBackground,
-                            focusedContentColor = OmnioColors.Primary,
-                            disabledContainerColor = Color.White.copy(alpha = 0.03f),
-                            disabledContentColor = OmnioColors.TextTertiary.copy(alpha = 0.55f)
-                        ),
-                        shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = stringResource(R.string.cd_move_down))
+                        ActionQuadrantButton(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.ArrowDownward,
+                            contentDescription = stringResource(R.string.cd_move_down),
+                            enabled = canMoveDown,
+                            onClick = onMoveDown
+                        )
+                        ActionQuadrantButton(
+                            modifier = Modifier.weight(1f),
+                            icon = Icons.Default.Close,
+                            contentDescription = stringResource(R.string.cd_remove),
+                            onClick = onRemove,
+                            destructive = true
+                        )
                     }
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Button(
-                    onClick = onRemove,
-                    colors = ButtonDefaults.colors(
-                        containerColor = Color(0xFF281518),
-                        contentColor = Color(0xFFFFC1C1),
-                        focusedContainerColor = Color(0xFFB3261E),
-                        focusedContentColor = Color.White
-                    ),
-                    shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
-                ) {
-                    Text(text = stringResource(R.string.addon_remove))
                 }
             }
         }
+    }
+}
+
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun ActionQuadrantButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    destructive: Boolean = false
+) {
+    val colors = if (destructive) {
+        ButtonDefaults.colors(
+            containerColor = Color(0xFF281518),
+            contentColor = Color(0xFFFFC1C1),
+            focusedContainerColor = Color(0xFFB3261E),
+            focusedContentColor = Color.White
+        )
+    } else {
+        ButtonDefaults.colors(
+            containerColor = Color.White.copy(alpha = 0.05f),
+            contentColor = OmnioColors.TextSecondary,
+            focusedContainerColor = OmnioColors.FocusBackground,
+            focusedContentColor = OmnioColors.Primary,
+            disabledContainerColor = Color.White.copy(alpha = 0.03f),
+            disabledContentColor = OmnioColors.TextTertiary.copy(alpha = 0.55f)
+        )
+    }
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+        colors = colors,
+        shape = ButtonDefaults.shape(RoundedCornerShape(12.dp))
+    ) {
+        Icon(imageVector = icon, contentDescription = contentDescription)
     }
 }
 

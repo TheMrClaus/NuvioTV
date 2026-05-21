@@ -195,7 +195,7 @@ class FolderDetailViewModel @Inject constructor(
                 return@launch
             }
 
-            val addons = addonRepository.getInstalledAddons().first()
+            val addons = addonRepository.getInstalledAddons().first().filter { it.enabled }
             val homeLayout = layoutPreferenceDataStore.selectedLayout.first()
             val posterLabelsEnabled = layoutPreferenceDataStore.posterLabelsEnabled.first()
             val catalogAddonNameEnabled = layoutPreferenceDataStore.catalogAddonNameEnabled.first()
@@ -396,7 +396,7 @@ class FolderDetailViewModel @Inject constructor(
 
     private fun loadCatalogForTab(tabIndex: Int, source: CollectionCatalogSource) {
         viewModelScope.launch {
-            val addons = addonRepository.getInstalledAddons().first()
+            val addons = addonRepository.getInstalledAddons().first().filter { it.enabled }
             val addon = addons.find { it.id == source.addonId }
 
             if (addon == null) {

@@ -159,6 +159,12 @@ class AddonManagerViewModel @Inject constructor(
         }
     }
 
+    fun setAddonEnabled(baseUrl: String, enabled: Boolean) {
+        viewModelScope.launch {
+            addonRepository.setAddonEnabled(baseUrl, enabled)
+        }
+    }
+
     fun moveAddonUp(baseUrl: String) {
         reorderAddon(baseUrl, -1)
     }

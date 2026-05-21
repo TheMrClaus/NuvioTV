@@ -67,7 +67,7 @@ class CollectionEditorViewModel @Inject constructor(
 
     private fun loadData() {
         viewModelScope.launch {
-            val addons = addonRepository.getInstalledAddons().first()
+            val addons = addonRepository.getInstalledAddons().first().filter { it.enabled }
             val availableCatalogs = addons.flatMap { addon ->
                 addon.catalogs
                     .filter { catalog ->
