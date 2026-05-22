@@ -292,18 +292,11 @@ internal suspend fun HomeViewModel.updateCatalogRowsPipeline() {
 
     val (displayRows, baseHeroItems, baseGridItems, fullRowsFiltered) = withContext(Dispatchers.Default) {
         val rawRows = orderedKeys.mapNotNull { key -> catalogSnapshot[key] }
-        val releasedFilteredRows = if (hideUnreleased) {
+        val orderedRows = if (hideUnreleased) {
             val today = LocalDate.now()
             rawRows.map { it.filterReleasedItems(today) }
         } else {
             rawRows
-        }
-        val orderedRows = if (kidsContentFilter.isActive) {
-            releasedFilteredRows.map { row ->
-                row.copy(items = kidsContentFilter.filterPreviews(row.items))
-            }
-        } else {
-            releasedFilteredRows
         }
         val selectedHeroCatalogSet = heroCatalogKeys.toSet()
         val selectedHeroRows = if (selectedHeroCatalogSet.isNotEmpty()) {

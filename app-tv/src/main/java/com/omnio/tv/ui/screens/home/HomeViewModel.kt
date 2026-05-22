@@ -72,8 +72,7 @@ class HomeViewModel @Inject constructor(
     internal val watchedItemsPreferences: WatchedItemsPreferences,
     internal val watchedSeriesStateHolder: com.omnio.tv.data.local.WatchedSeriesStateHolder,
     internal val cwEnrichmentCache: ContinueWatchingEnrichmentCache,
-    internal val collectionsDataStore: CollectionsDataStore,
-    internal val kidsContentFilter: com.omnio.tv.core.profile.KidsContentFilter
+    internal val collectionsDataStore: CollectionsDataStore
 ) : ViewModel() {
     companion object {
         internal const val TAG = "HomeViewModel"
@@ -117,7 +116,6 @@ class HomeViewModel @Inject constructor(
     internal var disabledHomeCatalogKeys: Set<String> = emptySet()
     internal var currentHeroCatalogKeys: List<String> = emptyList()
     internal var catalogUpdateJob: Job? = null
-    internal var kidsFilterRecheckJob: Job? = null
     internal var hasRenderedFirstCatalog = false
     internal val catalogLoadSemaphore = Semaphore(MAX_CATALOG_LOAD_CONCURRENCY)
     internal var pendingCatalogLoads = 0
@@ -426,18 +424,6 @@ class HomeViewModel @Inject constructor(
                 else -> 50L
             }
             delay(debounceMs)
-            updateCatalogRows()
-        }
-    }
-
-    internal fun scheduleKidsFilterRecheck() {
-        // Coalesce blocked-item enrichments (which can arrive across several
-        // seconds during the initial enrichment storm) into a single pipeline
-        // run. The catalog/hero/grid emit once instead of N times — the user
-        // doesn't see hero shuffle for every TMDB lookup that resolves.
-        kidsFilterRecheckJob?.cancel()
-        kidsFilterRecheckJob = viewModelScope.launch {
-            delay(900L)
             updateCatalogRows()
         }
     }

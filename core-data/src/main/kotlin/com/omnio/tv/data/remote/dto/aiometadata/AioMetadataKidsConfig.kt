@@ -119,8 +119,8 @@ object AioMetadataKidsConfig {
 
         // Only TMDB-sourced discover catalogs carry the params we know how to
         // tune. Non-TMDB catalogs (Trakt addons etc.) are out of scope here —
-        // the client-side KidsContentFilter + detail-screen block remain the
-        // safety net for anything that bypasses our discover params.
+        // the detail-screen block remains the safety net for anything that
+        // bypasses our discover params.
         if (source != "tmdb") return catalog
 
         val params = (discover["params"] as? Map<String, Any?>)?.toMutableMap() ?: mutableMapOf()
