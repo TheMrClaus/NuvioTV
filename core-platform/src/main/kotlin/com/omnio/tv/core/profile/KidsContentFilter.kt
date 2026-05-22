@@ -4,7 +4,6 @@ import android.content.Context
 import com.omnio.tv.core.platform.R
 import com.omnio.tv.domain.model.AgeRatingTier
 import com.omnio.tv.domain.model.Meta
-import com.omnio.tv.domain.model.MetaPreview
 import com.omnio.tv.domain.model.UserProfile
 import com.omnio.tv.domain.profile.ProfileManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -26,15 +25,6 @@ class KidsContentFilter @Inject constructor(
         val ceiling = activeMaxRating ?: return true
         val tier = AgeRatingTier.normalize(meta.ageRating) ?: return false
         return ceiling.allowsUpTo(tier)
-    }
-
-    fun filterPreviews(previews: List<MetaPreview>): List<MetaPreview> {
-        if (!isActive) return previews
-        val ceiling = activeMaxRating ?: return previews
-        return previews.filter { preview ->
-            val tier = AgeRatingTier.normalize(preview.ageRating)
-            tier == null || ceiling.allowsUpTo(tier)
-        }
     }
 
     fun reasonBlocked(profile: UserProfile?): String? {
