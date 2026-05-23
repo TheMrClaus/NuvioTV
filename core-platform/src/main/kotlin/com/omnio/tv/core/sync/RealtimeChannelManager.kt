@@ -54,6 +54,7 @@ class RealtimeChannelManager @Inject constructor(
     private var managerJob: Job? = null
     private val activeChannels = mutableMapOf<String, RealtimeChannel>()
     private var debounceJob: Job? = null
+    @Volatile private var pendingIncludeProfileSettings: Boolean = false
 
     /** Call once from Application.onCreate(). Idempotent. */
     fun start() {
@@ -102,6 +103,12 @@ class RealtimeChannelManager @Inject constructor(
                     filter("profile_id", FilterOperator.EQ, profileId)
                 }
             }
+            registerChannel("profile_settings", profileId, includeProfileSettings = true) {
+                it.postgresChangeFlow<PostgresAction>(schema = "public") {
+                    table = "profile_settings"
+                    filter("profile_id", FilterOperator.EQ, profileId)
+                }
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to subscribe realtime channels", e)
         }
@@ -110,6 +117,7 @@ class RealtimeChannelManager @Inject constructor(
     private suspend fun registerChannel(
         key: String,
         profileId: Int,
+        includeProfileSettings: Boolean = false,
         flowFactory: (RealtimeChannel) -> kotlinx.coroutines.flow.Flow<PostgresAction>,
     ) {
         val channel = supabaseClient.channel("$key:p$profileId")
@@ -117,7 +125,7 @@ class RealtimeChannelManager @Inject constructor(
         scope.launch {
             changes.collect {
                 Log.d(TAG, "Realtime event on $key, scheduling pull")
-                schedulePull()
+                schedulePull(includeProfileSettings)
             }
         }
         channel.subscribe()
@@ -134,11 +142,14 @@ class RealtimeChannelManager @Inject constructor(
         runCatching { supabaseClient.realtime.disconnect() }
     }
 
-    private fun schedulePull() {
+    private fun schedulePull(includeProfileSettings: Boolean) {
+        if (includeProfileSettings) pendingIncludeProfileSettings = true
         debounceJob?.cancel()
         debounceJob = scope.launch {
             delay(PULL_DEBOUNCE_MS)
-            startupSyncService.requestSyncNow(includeProfileSettings = false)
+            val include = pendingIncludeProfileSettings
+            pendingIncludeProfileSettings = false
+            startupSyncService.requestSyncNow(includeProfileSettings = include)
         }
     }
 }
