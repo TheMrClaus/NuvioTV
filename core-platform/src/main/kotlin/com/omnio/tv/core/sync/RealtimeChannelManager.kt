@@ -109,6 +109,16 @@ class RealtimeChannelManager @Inject constructor(
                     filter("profile_id", FilterOperator.EQ, profileId)
                 }
             }
+            // Profiles table is user-scoped (rows keyed by profile_index, not
+            // profile_id) so no row filter — RLS via JWT restricts to the
+            // owner's rows. Active-profile changes still tear down + resubscribe
+            // because the channel name embeds profileId for consistency with
+            // the other channels.
+            registerChannel("profiles", profileId) {
+                it.postgresChangeFlow<PostgresAction>(schema = "public") {
+                    table = "profiles"
+                }
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to subscribe realtime channels", e)
         }
