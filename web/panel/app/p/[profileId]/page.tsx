@@ -60,11 +60,6 @@ export default async function ProfileHome({ params }: Props) {
           href={`${base}/devices`}
         />
       </div>
-
-      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
-        <strong className="font-semibold">Read-only preview.</strong> v1 ships viewing only —
-        editing lands in v2. The values below come straight from your TV&apos;s last sync.
-      </div>
     </div>
   );
 }
