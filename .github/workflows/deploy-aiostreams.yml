@@ -31,6 +31,7 @@ jobs:
           AIOSTREAMS_AUTH_REQUIRED: ${{ secrets.AIOSTREAMS_AUTH_REQUIRED }}
           AIOSTREAMS_AUTH_ADMINS: ${{ secrets.AIOSTREAMS_AUTH_ADMINS }}
           CONFIG_ACCESS_KEY: ${{ secrets.CONFIG_ACCESS_KEY }}
+          MEDIAFUSION_URL: ${{ secrets.MEDIAFUSION_URL }}
           AIOSTREAMS_REDIS_URI: ${{ secrets.AIOSTREAMS_REDIS_URI }}
           AIOSTREAMS_TMDB_ACCESS_TOKEN: ${{ secrets.AIOSTREAMS_TMDB_ACCESS_TOKEN }}
           AIOSTREAMS_TRAKT_CLIENT_ID: ${{ secrets.AIOSTREAMS_TRAKT_CLIENT_ID }}
@@ -59,6 +60,10 @@ jobs:
 
           if [ -n "$AIOSTREAMS_AUTH_ADMINS" ]; then
             args+=("AIOSTREAMS_AUTH_ADMINS=$AIOSTREAMS_AUTH_ADMINS")
+          fi
+
+          if [ -n "$MEDIAFUSION_URL" ]; then
+            args+=("MEDIAFUSION_URL=$MEDIAFUSION_URL")
           fi
 
           if [ -n "$AIOSTREAMS_REDIS_URI" ]; then
