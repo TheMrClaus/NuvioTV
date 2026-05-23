@@ -2,7 +2,7 @@ app = "omnio-aiostreams"
 primary_region = "lhr"
 
 [build]
-image = "docker.io/viren070/aiostreams@sha256:4b0e529664354382d4a496b168ecfbd1973d4dc33e1de3e652adf79f35ec1285"
+image = "docker.io/viren070/aiostreams@sha256:e7755be6a03297af0a15c9b7dfeee8f4eb3a6b64ede92866cc9425f02c4dfc71"
 
 [env]
 ADDON_ID = "com.omnio.source-cloud.aiostreams"
@@ -15,8 +15,8 @@ LOG_LEVEL = "info"
 LOG_SENSITIVE_INFO = "false"
 NODE_ENV = "production"
 PORT = "3000"
-REGEX_FILTER_ACCESS = "trusted"
-SEL_SYNC_ACCESS = "trusted"
+REGEX_FILTER_ACCESS = "all"
+SEL_SYNC_ACCESS = "all"
 STREAM_CACHE_TTL = "-1"
 
 [http_service]
