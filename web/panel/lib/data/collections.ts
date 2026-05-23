@@ -1,8 +1,11 @@
+import { z } from "zod";
 import { createServerSupabase } from "@/lib/supabase/server";
 
-// Mirrors SerializableCollection / SerializableFolder / SerializableCatalogSource
-// in app/src/main/java/com/omnio/tv/data/local/CollectionsDataStore.kt.
-// Gson default = camelCase keys; the sync RPC writes the raw JSON unchanged.
+// Mirrors Collection / CollectionFolder / CollectionCatalogSource in
+// core-domain/.../model/Collection.kt. Gson default = camelCase keys; the
+// sync RPC writes the raw JSON unchanged, and the TV reads it back via Gson
+// with these exact field names + enum values. Drift here corrupts collections
+// silently on the TV.
 export interface CollectionCatalogSource {
   addonId: string;
   type: string;
@@ -28,10 +31,61 @@ export interface Collection {
   backdropImageUrl?: string | null;
   pinToTop?: boolean;
   focusGlowEnabled?: boolean | null;
-  viewMode?: string; // "TABBED_GRID"
+  viewMode?: string; // FolderViewMode enum: "TABBED_GRID" | "ROWS" | "FOLLOW_LAYOUT"
   showAllTab?: boolean;
   folders?: CollectionFolder[];
 }
+
+// Mirrors the Kotlin enum values. POSTER / LANDSCAPE / SQUARE in PosterShape.kt.
+export const TILE_SHAPES = ["POSTER", "LANDSCAPE", "SQUARE"] as const;
+export type TileShape = (typeof TILE_SHAPES)[number];
+
+// Mirrors FolderViewMode.kt. The TV's fromString() also accepts "follow_home"
+// as a legacy alias for FOLLOW_LAYOUT — we never emit that from the panel.
+export const VIEW_MODES = ["TABBED_GRID", "ROWS", "FOLLOW_LAYOUT"] as const;
+export type ViewMode = (typeof VIEW_MODES)[number];
+
+// Runtime validation for collections JSON before push. Mirrors the Kotlin
+// data classes; reject-on-unknown-key keeps schema drift loud instead of
+// letting a malformed entry land in collections_json and silently corrupt
+// the TV's Gson parse.
+const collectionCatalogSourceSchema = z
+  .object({
+    addonId: z.string().min(1),
+    type: z.string().min(1),
+    catalogId: z.string().min(1),
+    genre: z.string().nullable().optional(),
+  })
+  .strict();
+
+const collectionFolderSchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string(),
+    coverImageUrl: z.string().nullable().optional(),
+    focusGifUrl: z.string().nullable().optional(),
+    focusGifEnabled: z.boolean().optional(),
+    coverEmoji: z.string().nullable().optional(),
+    tileShape: z.enum(TILE_SHAPES).optional(),
+    hideTitle: z.boolean().optional(),
+    catalogSources: z.array(collectionCatalogSourceSchema).optional(),
+  })
+  .strict();
+
+export const collectionSchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string(),
+    backdropImageUrl: z.string().nullable().optional(),
+    pinToTop: z.boolean().optional(),
+    focusGlowEnabled: z.boolean().nullable().optional(),
+    viewMode: z.enum(VIEW_MODES).optional(),
+    showAllTab: z.boolean().optional(),
+    folders: z.array(collectionFolderSchema).optional(),
+  })
+  .strict();
+
+export const collectionsArraySchema = z.array(collectionSchema);
 
 export interface CollectionsSnapshot {
   collections: Collection[];

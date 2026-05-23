@@ -1,35 +1,95 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { Pin, Trash2 } from "lucide-react";
+import { Pin, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { saveCollections } from "@/lib/actions/relational";
 import type {
   Collection,
+  CollectionCatalogSource,
   CollectionFolder,
 } from "@/lib/data/collections";
+import { TILE_SHAPES } from "@/lib/data/collections";
 import { SaveBar, type SaveState } from "./SaveBar";
 import { SortableList } from "./SortableList";
 import { useUnsavedWarning } from "./useUnsavedWarning";
+
+// Flat catalog choice produced from each installed addon's manifest. Same
+// fields the TV's CollectionCatalogSource uses, plus display names so the
+// picker UI can show something readable.
+export interface CatalogChoice {
+  addonId: string;
+  addonName: string;
+  type: string;
+  catalogId: string;
+  catalogName: string;
+}
 
 interface Props {
   profileId: number;
   initial: Collection[];
   expectedUpdatedAt: string | null;
+  availableCatalogs: CatalogChoice[];
 }
 
-const TILE_SHAPES = ["POSTER", "LANDSCAPE", "SQUARE"] as const;
+function newId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `tmp-${Math.random().toString(36).slice(2)}`;
+}
 
-export default function CollectionsForm({ profileId, initial, expectedUpdatedAt }: Props) {
+function newFolder(): CollectionFolder {
+  return {
+    id: newId(),
+    title: "New folder",
+    tileShape: "SQUARE",
+    catalogSources: [],
+  };
+}
+
+function newCollection(): Collection {
+  return {
+    id: newId(),
+    title: "New collection",
+    pinToTop: false,
+    focusGlowEnabled: true,
+    showAllTab: true,
+    folders: [],
+  };
+}
+
+export default function CollectionsForm({
+  profileId,
+  initial,
+  expectedUpdatedAt,
+  availableCatalogs,
+}: Props) {
   const router = useRouter();
   const [items, setItems] = useState<Collection[]>(initial);
   const [state, setState] = useState<SaveState>({ kind: "idle" });
   const [isPending, startTransition] = useTransition();
+  const [picker, setPicker] = useState<
+    | { collectionId: string; folderId: string }
+    | null
+  >(null);
 
   const initialSig = useMemo(() => JSON.stringify(initial), [initial]);
   const currentSig = useMemo(() => JSON.stringify(items), [items]);
   const dirty = initialSig !== currentSig;
   useUnsavedWarning(dirty);
+
+  // Resolve addonId+type+catalogId back to a display name from the available
+  // catalogs. Falls back to the raw ids when the source's addon isn't
+  // currently installed (so the row remains visible and removable instead of
+  // silently disappearing).
+  const catalogByKey = useMemo(() => {
+    const map = new Map<string, CatalogChoice>();
+    for (const c of availableCatalogs) {
+      map.set(`${c.addonId}|${c.type}|${c.catalogId}`, c);
+    }
+    return map;
+  }, [availableCatalogs]);
 
   const updateCollection = (id: string, patch: Partial<Collection>) => {
     setItems((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
@@ -39,10 +99,24 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
     setItems((prev) => prev.filter((c) => c.id !== id));
   };
 
+  const addCollection = () => {
+    setItems((prev) => [...prev, newCollection()]);
+  };
+
+  const addFolder = (collectionId: string) => {
+    setItems((prev) =>
+      prev.map((c) =>
+        c.id !== collectionId
+          ? c
+          : { ...c, folders: [...(c.folders ?? []), newFolder()] },
+      ),
+    );
+  };
+
   const updateFolder = (
     collectionId: string,
     folderId: string,
-    patch: Partial<CollectionFolder>
+    patch: Partial<CollectionFolder>,
   ) => {
     setItems((prev) =>
       prev.map((c) =>
@@ -51,10 +125,10 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
           : {
               ...c,
               folders: (c.folders ?? []).map((f) =>
-                f.id === folderId ? { ...f, ...patch } : f
+                f.id === folderId ? { ...f, ...patch } : f,
               ),
-            }
-      )
+            },
+      ),
     );
   };
 
@@ -63,14 +137,66 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
       prev.map((c) =>
         c.id !== collectionId
           ? c
-          : { ...c, folders: (c.folders ?? []).filter((f) => f.id !== folderId) }
-      )
+          : { ...c, folders: (c.folders ?? []).filter((f) => f.id !== folderId) },
+      ),
     );
   };
 
   const reorderFolders = (collectionId: string, next: CollectionFolder[]) => {
     setItems((prev) =>
-      prev.map((c) => (c.id !== collectionId ? c : { ...c, folders: next }))
+      prev.map((c) => (c.id !== collectionId ? c : { ...c, folders: next })),
+    );
+  };
+
+  const addCatalogSource = (
+    collectionId: string,
+    folderId: string,
+    source: CollectionCatalogSource,
+  ) => {
+    setItems((prev) =>
+      prev.map((c) => {
+        if (c.id !== collectionId) return c;
+        return {
+          ...c,
+          folders: (c.folders ?? []).map((f) => {
+            if (f.id !== folderId) return f;
+            const existing = f.catalogSources ?? [];
+            // Dedupe on (addonId, type, catalogId) — genre is allowed to vary
+            // across multiple entries from the same catalog.
+            const dup = existing.some(
+              (s) =>
+                s.addonId === source.addonId &&
+                s.type === source.type &&
+                s.catalogId === source.catalogId &&
+                (s.genre ?? null) === (source.genre ?? null),
+            );
+            if (dup) return f;
+            return { ...f, catalogSources: [...existing, source] };
+          }),
+        };
+      }),
+    );
+  };
+
+  const removeCatalogSource = (
+    collectionId: string,
+    folderId: string,
+    index: number,
+  ) => {
+    setItems((prev) =>
+      prev.map((c) => {
+        if (c.id !== collectionId) return c;
+        return {
+          ...c,
+          folders: (c.folders ?? []).map((f) => {
+            if (f.id !== folderId) return f;
+            return {
+              ...f,
+              catalogSources: (f.catalogSources ?? []).filter((_, i) => i !== index),
+            };
+          }),
+        };
+      }),
     );
   };
 
@@ -98,10 +224,24 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
 
   return (
     <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-slate-500">
+          {items.length} collection{items.length === 1 ? "" : "s"}
+        </p>
+        <button
+          type="button"
+          onClick={addCollection}
+          className="inline-flex items-center gap-1 rounded-lg bg-primary/15 px-3 py-1.5 text-sm font-medium text-primary transition hover:bg-primary/25"
+        >
+          <Plus className="h-4 w-4" /> New collection
+        </button>
+      </div>
+
       {items.length === 0 ? (
         <div className="rounded-2xl border border-slate-700/50 bg-slate-800/40 p-6 text-sm text-slate-400">
-          No collections yet. Create them on a TV — adding new collections from
-          the panel requires the catalog picker, planned for v3.
+          No collections yet. Click <strong>New collection</strong> above to
+          create one, then add folders and pick catalog sources from your
+          installed addons.
         </div>
       ) : (
         <SortableList
@@ -188,12 +328,25 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
                     <h3 className="text-xs uppercase tracking-wide text-slate-400">
                       Folders ({folders.length})
                     </h3>
+                    <button
+                      type="button"
+                      onClick={() => addFolder(c.id)}
+                      className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+                    >
+                      <Plus className="h-3 w-3" /> Add folder
+                    </button>
                   </div>
+                  {folders.length === 0 && (
+                    <div className="rounded-lg border border-dashed border-slate-700 bg-slate-900/20 px-3 py-3 text-xs text-slate-500">
+                      No folders. Add at least one folder, then pick catalog sources for it.
+                    </div>
+                  )}
                   {folders.length > 0 && (
                     <SortableList
                       items={folders as (CollectionFolder & { id: string })[]}
                       onReorder={(next) => reorderFolders(c.id, next)}
                       renderItem={(f, _i, fh) => {
+                        const sources = f.catalogSources ?? [];
                         return (
                           <div className="rounded-lg border border-slate-700/40 bg-slate-900/40 p-3">
                             <div className="flex items-start gap-3">
@@ -254,10 +407,6 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
                                     />
                                     Hide title
                                   </label>
-                                  <span className="text-xs text-slate-500">
-                                    {(f.catalogSources ?? []).length} source
-                                    {(f.catalogSources ?? []).length === 1 ? "" : "s"}
-                                  </span>
                                 </div>
                                 <input
                                   type="url"
@@ -270,6 +419,75 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
                                   }
                                   className="w-full rounded border border-slate-700 bg-slate-950/40 px-2 py-1 font-mono text-xs text-slate-100 outline-none focus:border-primary"
                                 />
+
+                                <div className="space-y-1">
+                                  <div className="flex items-baseline justify-between">
+                                    <span className="text-[10px] uppercase tracking-wide text-slate-500">
+                                      Catalog sources ({sources.length})
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setPicker({ collectionId: c.id, folderId: f.id })
+                                      }
+                                      className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
+                                    >
+                                      <Plus className="h-3 w-3" /> Add source
+                                    </button>
+                                  </div>
+                                  {sources.length === 0 ? (
+                                    <div className="rounded border border-dashed border-slate-700 bg-slate-950/30 px-2 py-2 text-[11px] text-slate-500">
+                                      No catalog sources. Click <strong>Add source</strong> to
+                                      pick one from your installed addons.
+                                    </div>
+                                  ) : (
+                                    <ul className="space-y-1">
+                                      {sources.map((s, idx) => {
+                                        const key = `${s.addonId}|${s.type}|${s.catalogId}`;
+                                        const resolved = catalogByKey.get(key);
+                                        return (
+                                          <li
+                                            key={`${key}|${s.genre ?? ""}|${idx}`}
+                                            className="flex items-center gap-2 rounded border border-slate-700/40 bg-slate-950/40 px-2 py-1 text-xs"
+                                          >
+                                            <span className="min-w-0 flex-1 truncate">
+                                              {resolved ? (
+                                                <>
+                                                  <span className="text-slate-100">
+                                                    {resolved.catalogName}
+                                                  </span>{" "}
+                                                  <span className="text-slate-500">
+                                                    · {resolved.type} · {resolved.addonName}
+                                                  </span>
+                                                </>
+                                              ) : (
+                                                <span className="font-mono text-amber-200">
+                                                  {s.addonId}/{s.type}/{s.catalogId}
+                                                  <span className="ml-1 text-[10px] text-amber-400">
+                                                    (addon not installed)
+                                                  </span>
+                                                </span>
+                                              )}
+                                              {s.genre && (
+                                                <span className="ml-1 rounded bg-slate-800 px-1 text-[10px] text-slate-300">
+                                                  genre: {s.genre}
+                                                </span>
+                                              )}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={() => removeCatalogSource(c.id, f.id, idx)}
+                                              className="text-slate-500 hover:text-rose-300"
+                                              aria-label="Remove source"
+                                            >
+                                              <Trash2 className="h-3 w-3" />
+                                            </button>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  )}
+                                </div>
                               </div>
                               <button
                                 type="button"
@@ -293,9 +511,7 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
       )}
 
       <p className="text-xs text-slate-500">
-        Catalog sources are read-only here. Add or remove sources from the TV
-        (catalog picker comes in v3). Image upload to Supabase Storage is also v3 —
-        paste a URL for now.
+        Image upload to Supabase Storage is still v3 — paste a URL for now.
       </p>
 
       <SaveBar
@@ -307,6 +523,116 @@ export default function CollectionsForm({ profileId, initial, expectedUpdatedAt 
           setState({ kind: "idle" });
         }}
       />
+
+      {picker && (
+        <CatalogPicker
+          available={availableCatalogs}
+          onCancel={() => setPicker(null)}
+          onPick={(source) => {
+            addCatalogSource(picker.collectionId, picker.folderId, source);
+            setPicker(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function CatalogPicker({
+  available,
+  onCancel,
+  onPick,
+}: {
+  available: CatalogChoice[];
+  onCancel: () => void;
+  onPick: (source: CollectionCatalogSource) => void;
+}) {
+  const [filter, setFilter] = useState("");
+  const [genre, setGenre] = useState("");
+  const lowered = filter.trim().toLowerCase();
+  const filtered = lowered.length === 0
+    ? available
+    : available.filter(
+        (c) =>
+          c.catalogName.toLowerCase().includes(lowered) ||
+          c.addonName.toLowerCase().includes(lowered) ||
+          c.type.toLowerCase().includes(lowered) ||
+          c.addonId.toLowerCase().includes(lowered),
+      );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4">
+      <div className="flex max-h-[80vh] w-full max-w-xl flex-col rounded-2xl border border-slate-700/40 bg-slate-900 p-5 shadow-2xl">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="text-lg font-semibold text-slate-100">Pick a catalog source</h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="text-xs text-slate-400 hover:text-slate-200"
+          >
+            Cancel
+          </button>
+        </div>
+        {available.length === 0 ? (
+          <div className="rounded border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-100">
+            No catalogs found in any installed addon. Install an addon with
+            catalogs from the Addons page first, then come back.
+          </div>
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="Filter by catalog, addon, type…"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="mb-3 w-full rounded border border-slate-700 bg-slate-950/40 px-2 py-1 text-sm text-slate-100 outline-none focus:border-primary"
+              autoFocus
+            />
+            <div className="mb-3 flex items-center gap-2 text-xs text-slate-400">
+              <span>Optional genre filter</span>
+              <input
+                type="text"
+                placeholder="(blank = no filter)"
+                value={genre}
+                onChange={(e) => setGenre(e.target.value)}
+                className="flex-1 rounded border border-slate-700 bg-slate-950/40 px-2 py-1 text-xs text-slate-100 outline-none focus:border-primary"
+              />
+            </div>
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
+              {filtered.map((c) => {
+                const k = `${c.addonId}|${c.type}|${c.catalogId}`;
+                return (
+                  <li key={k}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onPick({
+                          addonId: c.addonId,
+                          type: c.type,
+                          catalogId: c.catalogId,
+                          genre: genre.trim() === "" ? null : genre.trim(),
+                        })
+                      }
+                      className="block w-full rounded border border-slate-700/40 bg-slate-950/40 px-3 py-2 text-left text-xs hover:border-primary hover:bg-primary/10"
+                    >
+                      <div className="text-sm font-medium text-slate-100">
+                        {c.catalogName}{" "}
+                        <span className="text-xs text-slate-500">({c.type})</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">{c.addonName}</div>
+                    </button>
+                  </li>
+                );
+              })}
+              {filtered.length === 0 && (
+                <li className="rounded border border-dashed border-slate-700 px-3 py-3 text-center text-xs text-slate-500">
+                  No matches.
+                </li>
+              )}
+            </ul>
+          </>
+        )}
+      </div>
     </div>
   );
 }

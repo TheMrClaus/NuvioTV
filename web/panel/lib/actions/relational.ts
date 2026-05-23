@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { collectionsArraySchema } from "@/lib/data/collections";
 import { mapPostgrestError } from "./conflict";
 import type { ActionResult } from "./result";
 
@@ -103,10 +104,21 @@ export async function saveCollections(args: {
   expectedUpdatedAt?: string | null;
   revalidatePath?: string;
 }): Promise<ActionResult> {
+  // Strict-shape Zod check before push. Mirrors the Kotlin data classes so the
+  // panel can no longer write a malformed collection that the TV would silently
+  // drop on Gson decode (CollectionsDataStore.validateCollectionsJson).
+  const parsed = collectionsArraySchema.safeParse(args.collectionsJson);
+  if (!parsed.success) {
+    const issues = parsed.error.issues
+      .map((i) => `${i.path.join(".")}: ${i.message}`)
+      .join("; ");
+    return { ok: false, error: `validation: ${issues}` };
+  }
+
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.rpc("sync_push_collections", {
     p_profile_id: args.profileId,
-    p_collections_json: args.collectionsJson,
+    p_collections_json: parsed.data,
     p_expected_updated_at: args.expectedUpdatedAt ?? null,
   });
   if (error) return mapPostgrestError(error, "collections_conflict");
