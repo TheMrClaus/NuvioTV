@@ -7,6 +7,7 @@ import {
   Boxes,
   Folder,
   Home,
+  LayoutGrid,
   Library,
   Plug,
   Settings,
@@ -29,6 +30,7 @@ export default function SidebarNav({ profileIndex }: { profileIndex: number }) {
 
   const items: NavItem[] = [
     { href: base, label: "Overview", icon: Home },
+    { href: `${base}/home`, label: "Home layout", icon: LayoutGrid },
     { href: `${base}/addons`, label: "Addons", icon: Boxes },
     { href: `${base}/plugins`, label: "Plugins", icon: Plug },
     { href: `${base}/integrations`, label: "Integrations", icon: Sparkles },
