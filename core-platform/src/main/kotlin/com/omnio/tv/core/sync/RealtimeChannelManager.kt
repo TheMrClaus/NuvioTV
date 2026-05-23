@@ -90,6 +90,12 @@ class RealtimeChannelManager @Inject constructor(
                     filter("profile_id", FilterOperator.EQ, profileId)
                 }
             }
+            registerChannel("plugins", profileId) {
+                it.postgresChangeFlow<PostgresAction>(schema = "public") {
+                    table = "plugins"
+                    filter("profile_id", FilterOperator.EQ, profileId)
+                }
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to subscribe realtime channels", e)
         }
