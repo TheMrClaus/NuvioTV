@@ -137,6 +137,11 @@ export interface ProfileInput {
   uses_primary_addons: boolean;
   uses_primary_plugins: boolean;
   avatar_id: string | null;
+  is_kids: boolean;
+  // null clears the column. Coerced to one of the six AgeRatingTier
+  // labels (G/PG/PG-13/TV-14/R/NC-17) — see core-domain AgeRatingTier
+  // and supabase/_shared/aio_metadata.ts::ageRatingFromString.
+  max_age_rating: string | null;
 }
 
 export async function saveProfiles(args: {

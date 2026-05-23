@@ -154,6 +154,47 @@ export async function setAioMetadataEnabled(
   return { ok: true };
 }
 
+export interface ProvisionAioMetadataResult {
+  ok: boolean;
+  aioUuid?: string | null;
+  manifestUrl?: string | null;
+  reused?: boolean;
+  error?: string;
+}
+
+/**
+ * Provision a fresh AIOMetadata config for a non-primary profile. Mirrors
+ * the TV-side `AioMetadataRepositoryImpl.provisionForNewProfile`. Kids
+ * profiles always inherit Main's API keys (forced server-side); non-kids
+ * profiles honour `copyKeysFromMain`. Provide `maxAgeRating` to seed
+ * `settings.ageRating` on the kids template.
+ */
+export async function provisionAioMetadataForProfile(input: {
+  profileId: number;
+  kids: boolean;
+  copyKeysFromMain: boolean;
+  maxAgeRating?: string | null;
+}): Promise<ProvisionAioMetadataResult> {
+  const res = await callEdge<{
+    aioUuid?: string;
+    manifestUrl?: string | null;
+    reused?: boolean;
+  }>("aio-metadata-provision-profile", {
+    profileId: input.profileId,
+    kids: input.kids,
+    copyKeysFromMain: input.copyKeysFromMain,
+    maxAgeRating: input.maxAgeRating ?? null,
+  });
+  if (!res) return { ok: false, error: "Couldn't reach AIOMetadata" };
+  await refreshIntegrationsPath(input.profileId);
+  return {
+    ok: true,
+    aioUuid: res.aioUuid ?? null,
+    manifestUrl: res.manifestUrl ?? null,
+    reused: res.reused ?? false,
+  };
+}
+
 export async function resetAioMetadataFromMain(
   profileId: number,
 ): Promise<UpdateAioMetadataConfigResult> {

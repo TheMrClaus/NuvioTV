@@ -287,6 +287,46 @@ export async function resetSourceCloudConfig(profileId: number): Promise<Connect
   return { ok: true, status };
 }
 
+export interface ProvisionSourceCloudResult {
+  ok: boolean;
+  aiostreamsConfigId?: string | null;
+  reused?: boolean;
+  error?: string;
+}
+
+/**
+ * Provision a fresh AIOStreams config for a non-primary profile. Mirrors
+ * the TV-side `sourceCloudRepository.provisionProfile` so the panel can
+ * fan out provisioning after creating a profile row.
+ *
+ * Kids profiles always inherit Main's API keys (forced server-side); for
+ * non-kids the `copyKeysFromMain` toggle is honoured.
+ */
+export async function provisionSourceCloudForProfile(input: {
+  profileId: number;
+  kids: boolean;
+  copyKeysFromMain: boolean;
+}): Promise<ProvisionSourceCloudResult> {
+  const res = await callEdge<{
+    config?: { status?: string; message?: string | null };
+    aiostreamsConfigId?: string;
+    reused?: boolean;
+  }>("source-cloud-provision-profile", {
+    profileId: input.profileId,
+    kids: input.kids,
+    copyKeysFromMain: input.copyKeysFromMain,
+  });
+  if (!res) return { ok: false, error: "Couldn't reach Source Cloud" };
+  const failed = res.config?.status === "provisioning_failed";
+  await refreshIntegrationsPath(input.profileId);
+  return {
+    ok: !failed,
+    aiostreamsConfigId: res.aiostreamsConfigId ?? null,
+    reused: res.reused ?? false,
+    error: failed ? res.config?.message ?? "Provisioning failed" : undefined,
+  };
+}
+
 export async function requestSourceCloudAdvancedSession(
   profileId: number,
 ): Promise<SourceCloudAdvancedSessionResponse | null> {

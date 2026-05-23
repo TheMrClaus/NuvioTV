@@ -10,6 +10,8 @@ export interface Profile {
   uses_primary_plugins: boolean;
   avatar_id: string | null;
   pin_hash: string | null;
+  is_kids: boolean;
+  max_age_rating: string | null;
   created_at: string;
   updated_at: string;
 }
