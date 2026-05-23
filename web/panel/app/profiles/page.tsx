@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Lock, User } from "lucide-react";
+import { Lock, Plus, User } from "lucide-react";
 import { listAvatarCatalog, listProfiles } from "@/lib/data/profiles";
 import SignOutButton from "@/components/SignOutButton";
 
@@ -65,6 +65,18 @@ export default async function ProfilesPage() {
             </Link>
             );
           })}
+          <Link
+            href="/p/1/profiles"
+            className="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-600 bg-transparent p-6 text-slate-400 transition hover:border-primary hover:text-primary"
+          >
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-slate-600 group-hover:border-primary">
+              <Plus className="h-8 w-8" />
+            </div>
+            <div className="text-center">
+              <div className="font-medium">Add profile</div>
+              <div className="mt-1 text-xs text-slate-500">Opens profile manager</div>
+            </div>
+          </Link>
         </div>
       )}
     </main>
