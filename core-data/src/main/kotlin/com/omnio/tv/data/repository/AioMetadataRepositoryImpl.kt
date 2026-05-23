@@ -1,5 +1,6 @@
 package com.omnio.tv.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.omnio.tv.data.BuildConfig
 import com.omnio.tv.domain.auth.AuthManager
@@ -11,12 +12,13 @@ import com.omnio.tv.domain.model.AioConfigInnerDto
 import com.omnio.tv.data.remote.dto.aiometadata.AioConfigLoadRequestDto
 import com.omnio.tv.data.remote.dto.aiometadata.AioConfigSaveRequestDto
 import com.omnio.tv.data.remote.dto.aiometadata.AioConfigUpdateRequestDto
-import com.omnio.tv.data.remote.dto.aiometadata.AioMetadataKidsConfig
+import com.omnio.tv.data.remote.dto.aiometadata.AioMetadataDefaultConfig
 import com.omnio.tv.domain.model.AgeRatingTier
 import com.omnio.tv.domain.model.AioMetadataSettings
 import com.omnio.tv.domain.model.AioSharingMode
 import com.omnio.tv.domain.repository.AddonRepository
 import com.omnio.tv.domain.repository.AioMetadataRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.postgrest.Postgrest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.SerialName
@@ -41,6 +43,7 @@ private const val TABLE = "aio_metadata_links"
  */
 @Singleton
 class AioMetadataRepositoryImpl @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val api: AioMetadataApi,
     private val postgrest: Postgrest,
     private val dataStore: AioMetadataSettingsDataStore,
@@ -176,9 +179,15 @@ class AioMetadataRepositoryImpl @Inject constructor(
                 val targetConfig = when (sibling.aioSharing) {
                     AioSharingMode.FULL_MIRROR -> if (sibling.isKids) {
                         // Kids profile in FULL_MIRROR is degenerate (Kids should
-                        // not adopt Main's catalogs verbatim). Re-derive the
-                        // kid-tuned shape from Main and just ensure keys match.
-                        AioMetadataKidsConfig.build(mainConfig, sibling.maxAgeRating)
+                        // not adopt Main's catalogs verbatim). Rebake the kids
+                        // template with Main's just-updated keys + the chosen
+                        // age tier.
+                        val rebuilt = AioMetadataDefaultConfig.buildKids(appContext, mainKeys)
+                        rebuilt.copy(
+                            settings = rebuilt.settings + mapOf(
+                                "ageRating" to (sibling.maxAgeRating?.label ?: "None"),
+                            )
+                        )
                     } else {
                         mainConfig
                     }
@@ -211,33 +220,52 @@ class AioMetadataRepositoryImpl @Inject constructor(
 
     override suspend fun getConfigPassword(): String? = dataStore.getConfigPassword()
 
-    override suspend fun provisionFromMain(
+    override suspend fun provisionForNewProfile(
         targetProfileId: Int,
+        isKids: Boolean,
+        copyKeysFromMain: Boolean,
         kidsMaxAgeRating: AgeRatingTier?,
     ): Result<AioMetadataRepository.CreateConfigResult> = runCatching {
         if (targetProfileId == 1) error("Cannot provision a per-profile AIO for the primary profile")
 
-        // Load Main's existing config so we can copy API keys and use it as
-        // the basis. If Main hasn't set up AIOMetadata yet there's nothing to
-        // fork from — bail and let the caller decide how to recover.
-        val mainLink = fetchLink(profileId = 1)
-            ?: error("Main profile has no AIOMetadata config to copy from")
-        val mainPassword = mainLink.configPassword?.takeIf { it.isNotBlank() }
-            ?: error("Main profile AIOMetadata link missing password — open Main's AIOMetadata settings once to back-fill")
-
-        val mainLoad = api.loadConfig(mainLink.aioUuid, AioConfigLoadRequestDto(password = mainPassword))
-        if (!mainLoad.isSuccessful) {
-            error("loadConfig (main) failed: HTTP ${mainLoad.code()}")
-        }
-        val mainConfig = mainLoad.body()?.config
-            ?: error("loadConfig (main) empty body")
-
-        // Kids profiles get the cert-filtered catalog overlay; everything else
-        // gets a verbatim copy of Main's config (keys + catalogs + settings).
-        val initialConfig = if (kidsMaxAgeRating != null) {
-            AioMetadataKidsConfig.build(mainConfig, kidsMaxAgeRating)
+        // Kids profiles always inherit Main's keys; non-kids inherit only when
+        // the caller asked. Loading Main's config is the only way to get them
+        // — we tolerate a missing/failed Main config for non-kids since they
+        // can run on the default template's RPDB-free baseline.
+        val wantsMainKeys = isKids || copyKeysFromMain
+        val mainLink = if (wantsMainKeys) fetchLink(profileId = 1) else null
+        val mainKeys: Map<String, String> = if (wantsMainKeys && mainLink != null) {
+            val mainPassword = mainLink.configPassword?.takeIf { it.isNotBlank() }
+            if (mainPassword == null) {
+                if (isKids) error("Main profile AIOMetadata link missing password — open Main's AIOMetadata settings once to back-fill")
+                emptyMap()
+            } else {
+                val mainLoad = api.loadConfig(mainLink.aioUuid, AioConfigLoadRequestDto(password = mainPassword))
+                if (!mainLoad.isSuccessful) {
+                    if (isKids) error("loadConfig (main) failed: HTTP ${mainLoad.code()}")
+                    emptyMap()
+                } else {
+                    mainLoad.body()?.config?.apiKeys.orEmpty()
+                }
+            }
+        } else if (isKids) {
+            error("Main profile has no AIOMetadata config to copy keys from")
         } else {
-            mainConfig
+            emptyMap()
+        }
+
+        val initialConfig = if (isKids) {
+            val kidsBase = AioMetadataDefaultConfig.buildKids(appContext, mainKeys)
+            // The kids template encodes a default `ageRating` setting; sync it
+            // to the profile-chosen tier when supplied so the upstream filter
+            // agrees with the template's baked-in catalog filters.
+            if (kidsMaxAgeRating != null) {
+                kidsBase.copy(
+                    settings = kidsBase.settings + mapOf("ageRating" to kidsMaxAgeRating.label)
+                )
+            } else kidsBase
+        } else {
+            AioMetadataDefaultConfig.build(appContext, mainKeys)
         }
 
         val targetPassword = generatePassword()
@@ -274,7 +302,7 @@ class AioMetadataRepositoryImpl @Inject constructor(
         // add the new per-profile manifest. Without this, the Kids profile
         // would carry both manifests and Main's un-filtered catalogs would
         // shadow the kid-tuned ones.
-        val mainManifestUrl = mainLink.manifestUrl?.takeIf { it.isNotBlank() }
+        val mainManifestUrl = mainLink?.manifestUrl?.takeIf { it.isNotBlank() }
         if (mainManifestUrl != null) {
             addonPreferences.removeAddonFromProfile(targetProfileId, mainManifestUrl)
         }
@@ -283,7 +311,7 @@ class AioMetadataRepositoryImpl @Inject constructor(
         }
 
         AioMetadataRepository.CreateConfigResult(uuid = saveBody.userUUID, manifestUrl = manifestUrl)
-    }.onFailure { Log.w(TAG, "provisionFromMain failed", it) }
+    }.onFailure { Log.w(TAG, "provisionForNewProfile failed", it) }
 
     override suspend fun reapplyKidsOverlay(
         profileId: Int,
@@ -296,20 +324,19 @@ class AioMetadataRepositoryImpl @Inject constructor(
         val password = link.configPassword?.takeIf { it.isNotBlank() }
             ?: error("Profile $profileId AIOMetadata link missing password")
 
-        val loadResp = api.loadConfig(link.aioUuid, AioConfigLoadRequestDto(password = password))
-        if (!loadResp.isSuccessful) {
-            error("loadConfig failed: HTTP ${loadResp.code()}")
-        }
-        val current = loadResp.body()?.config
-            ?: error("loadConfig empty body")
+        // Pull Main's keys so the kids template re-bake doesn't lose them.
+        val mainLink = fetchLink(profileId = 1)
+        val mainKeys: Map<String, String> = if (mainLink != null) {
+            val mainPassword = mainLink.configPassword?.takeIf { it.isNotBlank() }
+            if (mainPassword != null) {
+                val mainLoad = api.loadConfig(mainLink.aioUuid, AioConfigLoadRequestDto(password = mainPassword))
+                if (mainLoad.isSuccessful) mainLoad.body()?.config?.apiKeys.orEmpty() else emptyMap()
+            } else emptyMap()
+        } else emptyMap()
 
-        // Re-apply the Kids overlay across catalogs, then sync the upstream
-        // `ageRating` flat setting to whatever the panel/profile chose. Both
-        // must move together so the upstream age filter stops contradicting
-        // the per-catalog clamps.
-        val overlaid = AioMetadataKidsConfig.build(current, maxAgeRating)
-        val withAgeRating = overlaid.copy(
-            settings = overlaid.settings + mapOf(
+        val rebuilt = AioMetadataDefaultConfig.buildKids(appContext, mainKeys)
+        val withAgeRating = rebuilt.copy(
+            settings = rebuilt.settings + mapOf(
                 "ageRating" to (maxAgeRating?.label ?: "None"),
             )
         )

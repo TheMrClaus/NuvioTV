@@ -24,29 +24,37 @@ interface AioMetadataRepository {
     suspend fun getConfigPassword(): String?
 
     /**
-     * Provisions a fresh AIOMetadata config for [targetProfileId] derived from
-     * the Main profile's existing config. Copies API keys (TMDB, TVDB, Fanart,
-     * MAL, etc.); applies Kids-tuned catalog filters when [kidsMaxAgeRating]
-     * is non-null. Saves to upstream, persists the bridge row, and adds the
-     * resulting manifest URL to [targetProfileId]'s addon list.
+     * Provisions a fresh AIOMetadata config for [targetProfileId] from one of
+     * the bundled templates and saves it upstream. Persists the bridge row in
+     * `aio_metadata_links`, seeds the local DataStore, and swaps Main's
+     * manifest URL out of the profile's addon list (if present) for the new
+     * per-profile manifest.
      *
-     * The [sharingMode] is recorded by the caller on the profile itself; this
-     * function only handles the initial provisioning step. Future Main updates
-     * are propagated automatically through [updateConfig]'s fan-out based on
-     * each profile's stored sharing mode.
+     * Template selection:
+     *  - [isKids] = true → kids template (R.raw.aiometadata_kids_config). Main's
+     *    API keys are always copied in, regardless of [copyKeysFromMain].
+     *  - [isKids] = false → default template (R.raw.aiometadata_default_config).
+     *    Main's API keys are copied only when [copyKeysFromMain] is true.
+     *
+     * The profile's `aioSharing` mode is recorded by the caller; this function
+     * handles only the initial provisioning step. Future Main updates are
+     * propagated through [updateConfig]'s fan-out per each profile's stored
+     * sharing mode.
      */
-    suspend fun provisionFromMain(
+    suspend fun provisionForNewProfile(
         targetProfileId: Int,
+        isKids: Boolean,
+        copyKeysFromMain: Boolean,
         kidsMaxAgeRating: AgeRatingTier? = null,
     ): Result<CreateConfigResult>
 
     /**
-     * Re-applies the Kids overlay (TMDB cert + genre clamps) to the existing
-     * upstream AIOMetadata config for [profileId]. Also updates the
-     * [AioConfigInnerDto.settings] `ageRating` field so the upstream's
-     * built-in age filter matches the chosen tier. Preserves UUID, password,
-     * manifest URL, and the profile's addon list — meant for in-place
-     * rating changes on an already-provisioned Kids profile.
+     * Re-applies the Kids template to the existing upstream AIOMetadata config
+     * for [profileId] while preserving its UUID, password, manifest URL, and
+     * place in the profile's addon list. Also writes `ageRating` to the chosen
+     * tier label so the upstream's built-in age filter agrees with the
+     * template-baked catalog filters. Intended for in-place rating changes on
+     * an already-provisioned Kids profile.
      *
      * No-op for the primary profile (id=1). For non-Kids profiles, prefer
      * [updateConfig] with a plain `ageRating` change — that doesn't touch

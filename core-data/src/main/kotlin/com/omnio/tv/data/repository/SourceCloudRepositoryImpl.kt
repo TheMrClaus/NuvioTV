@@ -8,6 +8,7 @@ import com.omnio.tv.data.remote.api.SourceCloudApi
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudConnectRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudDisconnectRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProfileScopedRequestDto
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProvisionProfileRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.toDomain
 import com.omnio.tv.data.remote.dto.sourcecloud.toDto
 import com.omnio.tv.domain.model.AddonStreams
@@ -179,6 +180,39 @@ class SourceCloudRepositoryImpl private constructor(
             }
             is NetworkResult.Error -> {
                 Log.w(TAG, "connect failed: ${result.message}")
+                result
+            }
+            NetworkResult.Loading -> NetworkResult.Loading
+        }
+    }
+
+    override suspend fun provisionProfile(
+        profileId: Int,
+        isKids: Boolean,
+        copyKeysFromMain: Boolean,
+    ): NetworkResult<SourceCloudStatus> {
+        if (!baseUrlConfigured) return NetworkResult.Error("Source Cloud backend is not configured.")
+
+        val local = settings.first()
+        val body = SourceCloudProvisionProfileRequestDto(
+            profileId = profileId,
+            kids = isKids,
+            copyKeysFromMain = copyKeysFromMain,
+        )
+
+        return when (val result = safeApiCall { api.provisionProfile(body) }) {
+            is NetworkResult.Success -> {
+                val configDomain = result.data.config?.toDomain() ?: com.omnio.tv.domain.model.SourceCloudConfigState()
+                val domain = SourceCloudStatus(
+                    enabled = local.enabled,
+                    baseUrlConfigured = true,
+                    config = configDomain,
+                    services = emptyList(),
+                )
+                NetworkResult.Success(domain)
+            }
+            is NetworkResult.Error -> {
+                Log.w(TAG, "provisionProfile failed: ${result.message}")
                 result
             }
             NetworkResult.Loading -> NetworkResult.Loading

@@ -448,7 +448,7 @@ fun ProfileSelectionScreen(
                 avatarCatalog = avatarCatalog,
                 isCreating = isCreating,
                 onDismiss = { showCreateProfile = false },
-                onCreateProfile = { name, colorHex, avatarId, addonInitMode, isKids, maxAgeRating, aioSharing ->
+                onCreateProfile = { name, colorHex, avatarId, addonInitMode, isKids, maxAgeRating, aioSharing, copyApiKeysFromMain ->
                     viewModel.createProfile(
                         name = name,
                         avatarColorHex = colorHex,
@@ -456,7 +456,8 @@ fun ProfileSelectionScreen(
                         addonInitMode = addonInitMode,
                         isKids = isKids,
                         maxAgeRating = maxAgeRating,
-                        aioSharing = aioSharing
+                        aioSharing = aioSharing,
+                        copyApiKeysFromMain = copyApiKeysFromMain,
                     )
                     showCreateProfile = false
                 }
@@ -1164,7 +1165,8 @@ private fun CreateProfileOverlay(
         addonInitMode: ProfileAddonInitMode,
         isKids: Boolean,
         maxAgeRating: AgeRatingTier?,
-        aioSharing: AioSharingMode
+        aioSharing: AioSharingMode,
+        copyApiKeysFromMain: Boolean,
     ) -> Unit
 ) {
     BackHandler(onBack = onDismiss)
@@ -1176,6 +1178,7 @@ private fun CreateProfileOverlay(
     var isKids by remember { mutableStateOf(false) }
     var maxAgeRating by remember { mutableStateOf<AgeRatingTier?>(AgeRatingTier.PG) }
     var aioSharing by remember { mutableStateOf(AioSharingMode.INDEPENDENT) }
+    var copyApiKeysFromMain by remember { mutableStateOf(true) }
     var focusedAvatarName by remember { mutableStateOf<String?>(null) }
     val selectedAvatar = remember(avatarCatalog, selectedAvatarId) {
         avatarCatalog.find { it.id == selectedAvatarId }
@@ -1251,7 +1254,8 @@ private fun CreateProfileOverlay(
                             addonInitMode,
                             isKids,
                             if (isKids) maxAgeRating else null,
-                            aioSharing
+                            aioSharing,
+                            copyApiKeysFromMain,
                         )
                     }
                 )
@@ -1381,7 +1385,10 @@ private fun CreateProfileOverlay(
                         maxAgeRating = maxAgeRating,
                         onMaxAgeRatingChange = { maxAgeRating = it },
                         aioSharing = aioSharing,
-                        onAioSharingChange = { aioSharing = it }
+                        onAioSharingChange = { aioSharing = it },
+                        showCopyApiKeysToggle = true,
+                        copyApiKeysFromMain = copyApiKeysFromMain,
+                        onCopyApiKeysFromMainChange = { copyApiKeysFromMain = it },
                     )
                 }
             }

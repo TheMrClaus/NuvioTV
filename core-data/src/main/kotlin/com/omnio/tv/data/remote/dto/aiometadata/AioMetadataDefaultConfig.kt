@@ -29,13 +29,38 @@ object AioMetadataDefaultConfig {
         config.settings[TEMPLATE_VERSION_KEY] != null
 
     fun build(context: Context, userApiKeys: Map<String, String>): AioConfigInnerDto {
-        val rawJson = context.resources
-            .openRawResource(R.raw.aiometadata_default_config)
-            .bufferedReader()
-            .use { it.readText() }
+        val json = readTemplateJson(context, R.raw.aiometadata_default_config)
+        return buildFromTemplate(json, userApiKeys, applyDefaultProviderToggles = true)
+    }
 
-        val json = JSONObject(rawJson)
+    /**
+     * Builds a Kids profile AIOMetadata config from the bundled kids template
+     * ([R.raw.aiometadata_kids_config]). The kids template is exported from the
+     * upstream `/configure` UI and wraps the config payload under a top-level
+     * `config` key — we unwrap it here so the rest of the pipeline sees the
+     * same shape as the default template.
+     *
+     * Kids profiles always inherit Main's API keys (TMDB / TVDB / etc.); the
+     * caller is responsible for handing them in via [userApiKeys].
+     */
+    fun buildKids(context: Context, userApiKeys: Map<String, String>): AioConfigInnerDto {
+        val raw = readTemplateJson(context, R.raw.aiometadata_kids_config)
+        // Kids template is shaped { version, exportedAt, config: { ... }, metadata: {...} }.
+        // Unwrap to match the default template's flat shape.
+        val inner = raw.optJSONObject("config") ?: raw
+        return buildFromTemplate(inner, userApiKeys, applyDefaultProviderToggles = false)
+    }
 
+    private fun readTemplateJson(context: Context, rawResId: Int): JSONObject {
+        val text = context.resources.openRawResource(rawResId).bufferedReader().use { it.readText() }
+        return JSONObject(text)
+    }
+
+    private fun buildFromTemplate(
+        json: JSONObject,
+        userApiKeys: Map<String, String>,
+        applyDefaultProviderToggles: Boolean,
+    ): AioConfigInnerDto {
         // Routing providers (e.g. "movie" → "tmdb"). Keep this pure routing config —
         // NuvioTV toggle states go into settings under nuvio_provider_* keys.
         val providers: Map<String, Any?> = jsonObjectToMap(json.optJSONObject("providers") ?: JSONObject())
@@ -54,26 +79,31 @@ object AioMetadataDefaultConfig {
         // User-supplied keys override defaults (TMDB / TVDB come from the user).
         val finalApiKeys = (defaultApiKeys + userApiKeys).filterValues { it.isNotBlank() }
 
-        // Catalogs are inside the config object.
         val catalogs = jsonArrayToList(json.optJSONArray("catalogs") ?: JSONArray())
             .filterIsInstance<Map<String, Any?>>()
 
         // Everything else becomes the settings catch-all (language, search config, etc.).
         val excludedKeys = setOf("providers", "apiKeys", "catalogs")
-        val settings = json.keys().asSequence()
+        val baseSettings = json.keys().asSequence()
             .filter { it !in excludedKeys }
             .associate { key -> key to jsonToKotlin(json.get(key)) }
+
+        val extraSettings = mutableMapOf<String, Any?>(
+            TEMPLATE_VERSION_KEY to TEMPLATE_VERSION,
+        )
+        if (applyDefaultProviderToggles) {
+            // The default template ships without these markers; the kids template
+            // already encodes its own provider-toggle preferences in baseSettings,
+            // so we only force them on for the default template.
+            extraSettings["nuvio_provider_tmdb"] = true
+            extraSettings["nuvio_provider_tvdb"] = true
+        }
 
         return AioConfigInnerDto(
             providers = providers,
             apiKeys = finalApiKeys,
             catalogs = catalogs,
-            settings = settings + mapOf(
-                TEMPLATE_VERSION_KEY to TEMPLATE_VERSION,
-                // Store initial provider enabled states here, not in providers (routing config).
-                "nuvio_provider_tmdb" to true,
-                "nuvio_provider_tvdb" to true,
-            ),
+            settings = baseSettings + extraSettings,
         )
     }
 

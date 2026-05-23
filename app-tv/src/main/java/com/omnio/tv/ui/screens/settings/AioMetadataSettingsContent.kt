@@ -93,7 +93,7 @@ fun AioMetadataSettingsContent(
             StatusBanner(message = message, onDismiss = { viewModel.consumeStatus() })
         }
 
-        // For non-Main profiles whose initial provisionFromMain failed (or was
+        // For non-Main profiles whose initial provisionForNewProfile failed (or was
         // never run), the URL/QR section would otherwise stay hidden. Surface
         // an explicit empty state with a manual retry so the user isn't stuck
         // on a screen that looks broken.

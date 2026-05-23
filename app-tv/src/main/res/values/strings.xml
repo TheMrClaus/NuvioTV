@@ -1641,6 +1641,11 @@
     <string name="profile_aio_keys_only_subtitle">This profile keeps its own catalogs and settings. When you rotate a key on Main, it updates here too.</string>
     <string name="profile_aio_keys_only_subtitle_kids">Kid-friendly catalogs, but TMDB/TVDB keys are kept in sync with Main.</string>
 
+    <!-- Copy API keys from Main on profile creation -->
+    <string name="profile_copy_api_keys_title">Copy API keys from Main</string>
+    <string name="profile_copy_api_keys_subtitle">Reuse Main\'s TMDB / TVDB / RPDB keys for this profile\'s metadata + streams. Catalogs and filters still come from the default templates.</string>
+    <string name="profile_copy_api_keys_subtitle_kids">Kids profiles always reuse Main\'s API keys.</string>
+
     <!-- Stream picker / Available Sources section -->
     <string name="available_sources_title">Available Sources</string>
     <string name="available_sources_subtitle">· %1$d streams · %2$d addons · sorted by quality</string>

@@ -107,9 +107,10 @@ class AioMetadataSettingsViewModel @Inject constructor(
     }
 
     /**
-     * Manual retry for [AioMetadataRepository.provisionFromMain] on the active
-     * profile. Triggered from the settings screen when create/edit fired but
-     * provisioning silently failed (e.g. Main hadn't set up AIOMetadata yet).
+     * Manual retry for [AioMetadataRepository.provisionForNewProfile] on the
+     * active profile. Triggered from the settings screen when create/edit
+     * fired but provisioning silently failed (e.g. Main hadn't set up
+     * AIOMetadata yet).
      */
     fun onProvisionFromMainClick() {
         val current = _uiState.value
@@ -137,8 +138,12 @@ class AioMetadataSettingsViewModel @Inject constructor(
             _uiState.update {
                 it.copy(isProvisioning = true, errorMessage = null, statusMessage = null)
             }
-            val result = repository.provisionFromMain(
+            val result = repository.provisionForNewProfile(
                 targetProfileId = profile.id,
+                isKids = profile.isKids,
+                // Manual retry from settings: always pull Main's keys — the
+                // user clicked "provision from Main" deliberately.
+                copyKeysFromMain = true,
                 kidsMaxAgeRating = if (profile.isKids) profile.maxAgeRating else null,
             )
             result

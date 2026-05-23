@@ -153,5 +153,11 @@ class StreamRepositoryImplTest {
             error("connectService should not be called")
 
         override suspend fun resetConfig(): SourceCloudStatus = error("resetConfig should not be called")
+
+        override suspend fun provisionProfile(
+            profileId: Int,
+            isKids: Boolean,
+            copyKeysFromMain: Boolean,
+        ): NetworkResult<SourceCloudStatus> = error("provisionProfile should not be called")
     }
 }

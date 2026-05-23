@@ -259,5 +259,14 @@ class SourceCloudSettingsViewModelTest {
             events += "resetConfig"
             return resetStatus ?: statusValue
         }
+
+        override suspend fun provisionProfile(
+            profileId: Int,
+            isKids: Boolean,
+            copyKeysFromMain: Boolean,
+        ): NetworkResult<SourceCloudStatus> {
+            events += "provisionProfile:$profileId:kids=$isKids:copyKeys=$copyKeysFromMain"
+            return NetworkResult.Success(statusValue)
+        }
     }
 }

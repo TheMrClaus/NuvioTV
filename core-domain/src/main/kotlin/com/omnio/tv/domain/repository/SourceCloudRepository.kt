@@ -20,4 +20,19 @@ interface SourceCloudRepository {
     suspend fun disconnectService(service: SourceCloudService): NetworkResult<SourceCloudStatus>
     suspend fun connectService(service: SourceCloudService, apiKey: String): NetworkResult<SourceCloudStatus>
     suspend fun resetConfig(): SourceCloudStatus
+
+    /**
+     * Provision a starter AIOStreams config for [profileId] using the
+     * appropriate template. Idempotent on the server side: a no-op if the
+     * profile already has a config.
+     *
+     * Returns a [SourceCloudStatus]-shaped value for the freshly minted (or
+     * pre-existing) config, scoped to this profile. `services` will be empty
+     * until the user connects a debrid backend through [connectService].
+     */
+    suspend fun provisionProfile(
+        profileId: Int,
+        isKids: Boolean,
+        copyKeysFromMain: Boolean,
+    ): NetworkResult<SourceCloudStatus>
 }

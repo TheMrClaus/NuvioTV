@@ -58,7 +58,10 @@ internal fun ProfileAccountOptionsSection(
     onMaxAgeRatingChange: (AgeRatingTier) -> Unit,
     aioSharing: AioSharingMode,
     onAioSharingChange: (AioSharingMode) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showCopyApiKeysToggle: Boolean = false,
+    copyApiKeysFromMain: Boolean = true,
+    onCopyApiKeysFromMainChange: (Boolean) -> Unit = {},
 ) {
     if (!showAddonOptions && !showKidsOptions) return
 
@@ -128,6 +131,25 @@ internal fun ProfileAccountOptionsSection(
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }
+        }
+
+        // "Copy API keys from Main" toggle. Surfaced only at profile create
+        // time (it only affects the initial AIOMetadata + AIOStreams config
+        // provisioning step). Kids profiles always copy keys from Main, so we
+        // render a read-only row in that case.
+        if (showCopyApiKeysToggle) {
+            ProfileToggleRow(
+                title = stringResource(R.string.profile_copy_api_keys_title),
+                subtitle = if (isKids) {
+                    stringResource(R.string.profile_copy_api_keys_subtitle_kids)
+                } else {
+                    stringResource(R.string.profile_copy_api_keys_subtitle)
+                },
+                checked = isKids || copyApiKeysFromMain,
+                onCheckedChange = { picked ->
+                    if (!isKids) onCopyApiKeysFromMainChange(picked)
+                }
+            )
         }
 
         // AIOMetadata sharing — applies to non-primary profiles. Determines

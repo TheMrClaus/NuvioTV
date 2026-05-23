@@ -14,6 +14,8 @@ import com.omnio.tv.domain.model.AioSharingMode
 import com.omnio.tv.domain.model.TraktSharingMode
 import com.omnio.tv.domain.model.UserProfile
 import com.omnio.tv.domain.repository.AioMetadataRepository
+import com.omnio.tv.domain.repository.SourceCloudRepository
+import com.omnio.tv.domain.result.NetworkResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +39,8 @@ class ProfileSelectionViewModel @Inject constructor(
     private val profileSyncService: ProfileSyncService,
     private val avatarRepository: AvatarRepository,
     private val addonPreferences: AddonPreferences,
-    private val aioMetadataRepository: AioMetadataRepository
+    private val aioMetadataRepository: AioMetadataRepository,
+    private val sourceCloudRepository: SourceCloudRepository
 ) : ViewModel() {
     private var isAvatarCatalogLoading = false
 
@@ -109,7 +112,8 @@ class ProfileSelectionViewModel @Inject constructor(
         isKids: Boolean = false,
         maxAgeRating: AgeRatingTier? = null,
         traktSharing: TraktSharingMode = TraktSharingMode.OWN,
-        aioSharing: AioSharingMode = AioSharingMode.INDEPENDENT
+        aioSharing: AioSharingMode = AioSharingMode.INDEPENDENT,
+        copyApiKeysFromMain: Boolean = true,
     ) {
         if (_isCreating.value) return
         viewModelScope.launch {
@@ -138,22 +142,39 @@ class ProfileSelectionViewModel @Inject constructor(
                 if (effectiveAddonInitMode == ProfileAddonInitMode.COPY_FROM_MAIN) {
                     addonPreferences.copyAddonsToProfile(newId)
                 }
-                // Spawn a per-profile AIO config when this profile needs its
-                // own (Kids always; or whenever the user picked any sharing
-                // mode other than INDEPENDENT for a regular profile). The
-                // provisioning step also swaps Main's AIO manifest out of
-                // the addon list and inserts the new per-profile one.
-                if (isKids || aioSharing != AioSharingMode.INDEPENDENT) {
-                    aioMetadataRepository.provisionFromMain(
-                        targetProfileId = newId,
-                        kidsMaxAgeRating = if (isKids) maxAgeRating else null,
-                    ).onFailure { error ->
-                        _provisionMessage.value = ProvisionMessage.Failure(
-                            profileName = name,
-                            reason = error.message
-                        )
-                    }
+                // Always mint a per-profile AIOMetadata config from the
+                // bundled templates. Kids force the kids template + Main's
+                // API keys; non-kids use the default template and honour the
+                // copyApiKeysFromMain toggle. The provisioning step also
+                // swaps Main's AIO manifest out of the new profile's addon
+                // list and inserts the per-profile one.
+                aioMetadataRepository.provisionForNewProfile(
+                    targetProfileId = newId,
+                    isKids = isKids,
+                    copyKeysFromMain = copyApiKeysFromMain,
+                    kidsMaxAgeRating = if (isKids) maxAgeRating else null,
+                ).onFailure { error ->
+                    _provisionMessage.value = ProvisionMessage.Failure(
+                        profileName = name,
+                        reason = error.message
+                    )
                 }
+
+                // Always mint an AIOStreams (SourceCloud) config too. The new
+                // endpoint is idempotent server-side so a retry from a
+                // half-failed create won't duplicate upstream users.
+                val aioStreamsResult = sourceCloudRepository.provisionProfile(
+                    profileId = newId,
+                    isKids = isKids,
+                    copyKeysFromMain = copyApiKeysFromMain,
+                )
+                if (aioStreamsResult is NetworkResult.Error) {
+                    _provisionMessage.value = ProvisionMessage.Failure(
+                        profileName = name,
+                        reason = aioStreamsResult.message
+                    )
+                }
+
                 profileSyncService.pushToRemote()
                 refreshProfilePinStates()
             }
@@ -172,7 +193,7 @@ class ProfileSelectionViewModel @Inject constructor(
             // forced usesPrimaryAddons=false. If the profile was previously
             // live-mirroring Main, its own addon list is likely empty —
             // snapshot Main's addons now so the profile keeps its stream
-            // providers (Torrentio, RD, etc.). The next provisionFromMain
+            // providers (Torrentio, RD, etc.). The next provisionForNewProfile
             // step will swap Main's AIO manifest out of that list.
             if (becameKids && previous?.usesPrimaryAddons == true) {
                 addonPreferences.copyAddonsToProfile(profile.id)
@@ -199,8 +220,13 @@ class ProfileSelectionViewModel @Inject constructor(
                 previous?.isKids == true &&
                 previous.maxAgeRating != profile.maxAgeRating
             if (needsProvision) {
-                aioMetadataRepository.provisionFromMain(
+                aioMetadataRepository.provisionForNewProfile(
                     targetProfileId = profile.id,
+                    isKids = profile.isKids,
+                    // Edit-time provision happens when a profile becomes Kids
+                    // or opts into a sharing mode — both imply the user wants
+                    // Main's keys carried over.
+                    copyKeysFromMain = true,
                     kidsMaxAgeRating = if (profile.isKids) profile.maxAgeRating else null,
                 ).onFailure { error ->
                     _provisionMessage.value = ProvisionMessage.Failure(

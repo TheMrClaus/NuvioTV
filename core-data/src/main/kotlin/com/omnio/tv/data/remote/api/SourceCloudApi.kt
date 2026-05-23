@@ -1,6 +1,8 @@
 package com.omnio.tv.data.remote.api
 
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProfileScopedRequestDto
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProvisionProfileRequestDto
+import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudProvisionProfileResponseDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudSearchRequestDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudSearchResponseDto
 import com.omnio.tv.data.remote.dto.sourcecloud.SourceCloudAdvancedConfigSessionResponseDto
@@ -39,4 +41,9 @@ interface SourceCloudApi {
     suspend fun connectService(
         @Body request: SourceCloudConnectRequestDto
     ): Response<SourceCloudStatusResponseDto>
+
+    @POST("source-cloud-provision-profile")
+    suspend fun provisionProfile(
+        @Body request: SourceCloudProvisionProfileRequestDto
+    ): Response<SourceCloudProvisionProfileResponseDto>
 }

@@ -46,6 +46,20 @@ data class SourceCloudConnectRequestDto(
 )
 
 @JsonClass(generateAdapter = true)
+data class SourceCloudProvisionProfileRequestDto(
+    @param:Json(name = "profileId") val profileId: Int,
+    @param:Json(name = "kids") val kids: Boolean,
+    @param:Json(name = "copyKeysFromMain") val copyKeysFromMain: Boolean
+)
+
+@JsonClass(generateAdapter = true)
+data class SourceCloudProvisionProfileResponseDto(
+    @param:Json(name = "config") val config: SourceCloudConfigStateDto? = null,
+    @param:Json(name = "aiostreamsConfigId") val aiostreamsConfigId: String? = null,
+    @param:Json(name = "reused") val reused: Boolean? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class SourceCloudSearchResponseDto(
     @param:Json(name = "streams") val streams: List<SourceCloudStreamDto>? = null
 )
