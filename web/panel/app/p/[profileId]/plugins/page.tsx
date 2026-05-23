@@ -10,6 +10,11 @@ export default async function PluginsPage({ params }: Props) {
   const id = Number.parseInt(profileId, 10);
   const plugins = await listPlugins(id);
 
+  const expectedUpdatedAt = plugins.reduce<string | null>(
+    (max, p) => (max === null || p.updated_at > max ? p.updated_at : max),
+    null,
+  );
+
   return (
     <div className="space-y-6">
       <header>
@@ -28,6 +33,7 @@ export default async function PluginsPage({ params }: Props) {
           name: p.name,
           enabled: p.enabled,
         }))}
+        expectedUpdatedAt={expectedUpdatedAt}
       />
     </div>
   );

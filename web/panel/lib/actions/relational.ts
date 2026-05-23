@@ -56,6 +56,7 @@ export interface PluginInput {
 export async function savePlugins(args: {
   profileId: number;
   plugins: PluginInput[];
+  expectedUpdatedAt?: string | null;
   revalidatePath?: string;
 }): Promise<ActionResult> {
   const seen = new Set<string>();
@@ -79,14 +80,15 @@ export async function savePlugins(args: {
   }
 
   const supabase = await createServerSupabase();
-  const { error } = await supabase.rpc("sync_push_plugins", {
+  const { data, error } = await supabase.rpc("sync_push_plugins", {
     p_plugins: payload,
     p_profile_id: args.profileId,
+    p_expected_updated_at: args.expectedUpdatedAt ?? null,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return mapPostgrestError(error, "plugins_conflict");
 
   if (args.revalidatePath) revalidatePath(args.revalidatePath);
-  return { ok: true, updatedAt: null };
+  return { ok: true, updatedAt: (data as string | null) ?? null };
 }
 
 // Collections RPC (sync_push_collections) overwrites the full list as a JSONB

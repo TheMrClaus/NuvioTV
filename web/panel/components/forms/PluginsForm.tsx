@@ -18,6 +18,7 @@ interface PluginRow {
 interface Props {
   profileId: number;
   initial: PluginRow[];
+  expectedUpdatedAt: string | null;
 }
 
 function signature(rows: PluginRow[]): string {
@@ -26,7 +27,7 @@ function signature(rows: PluginRow[]): string {
     .join("//");
 }
 
-export default function PluginsForm({ profileId, initial }: Props) {
+export default function PluginsForm({ profileId, initial, expectedUpdatedAt }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<PluginRow[]>(initial);
   const [state, setState] = useState<SaveState>({ kind: "idle" });
@@ -56,6 +57,7 @@ export default function PluginsForm({ profileId, initial }: Props) {
           name: p.name?.trim() || null,
           enabled: p.enabled,
         })),
+        expectedUpdatedAt,
         revalidatePath: `/p/${profileId}/plugins`,
       });
       if (result.ok) {
