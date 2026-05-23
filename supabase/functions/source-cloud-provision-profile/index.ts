@@ -3,6 +3,7 @@ import {
   aioBasicAuth,
   applyConfigAccessKey,
   createServiceClient,
+  stripDisallowedPresets,
   decryptAesGcm,
   encryptAesGcm,
   errorResponse,
@@ -184,6 +185,7 @@ async function aioCreateUser(
   const merged: Record<string, unknown> = { ...config, services };
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
+  stripDisallowedPresets(merged);
   applyConfigAccessKey(merged);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",

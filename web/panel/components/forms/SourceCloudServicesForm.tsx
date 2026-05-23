@@ -44,8 +44,7 @@ export default function SourceCloudServicesForm({ profileId, services }: Props) 
       <h2 className="mb-1 text-lg font-medium">Debrid services</h2>
       <p className="mb-4 text-xs text-slate-400">
         Connecting a service provisions your private AIOStreams config and applies the
-        Debrid Starter template (Torrentio, Comet, MediaFusion, AnimeTosho, Knaben,
-        StremThru Torz).
+        Debrid Starter template (Torrentio, Comet, AnimeTosho, Knaben, StremThru Torz).
       </p>
       <div className="space-y-4">
         {SERVICES.map((meta) => {

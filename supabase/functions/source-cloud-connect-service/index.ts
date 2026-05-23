@@ -5,6 +5,7 @@ import {
   aioBasicAuth,
   applyConfigAccessKey,
   createServiceClient,
+  stripDisallowedPresets,
   decryptAesGcm,
   encryptAesGcm,
   errorResponse,
@@ -48,10 +49,12 @@ function randomHex(byteLength: number): string {
 
 // Pull AIOStreams' built-in "Debrid Starter" template (the equivalent of
 // the Stremio Perfect Setup guide) so new users start with the curated
-// preset list — Torrentio, Comet, StremThru Torz, AnimeTosho, Knaben,
-// MediaFusion — plus filters, sort, dedup, etc. Fetched at provision
-// time so a template update on AIOStreams' side is picked up
-// automatically. Falls back to a minimal config if the fetch fails.
+// preset list — Torrentio, Comet, StremThru Torz, AnimeTosho, Knaben —
+// plus filters, sort, dedup, etc. Fetched at provision time so a
+// template update on AIOStreams' side is picked up automatically.
+// Falls back to a minimal config if the fetch fails. (MediaFusion is
+// in the upstream template but stripped at runtime via
+// stripDisallowedPresets — see _shared/source_cloud.ts.)
 const STARTER_TEMPLATE_ID = "builtin.debrid-starter";
 
 async function fetchStarterConfig(baseUrl: string): Promise<Record<string, unknown> | null> {
@@ -108,6 +111,7 @@ async function aioCreateUser(
       };
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
+  stripDisallowedPresets(config);
   applyConfigAccessKey(config);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
@@ -149,6 +153,7 @@ async function aioUpdateUser(
   password: string,
   config: Record<string, unknown>,
 ): Promise<{ ok: boolean; error?: string }> {
+  stripDisallowedPresets(config);
   applyConfigAccessKey(config);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",

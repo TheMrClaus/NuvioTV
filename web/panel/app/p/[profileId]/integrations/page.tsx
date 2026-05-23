@@ -66,7 +66,7 @@ function sourceCloudRow(
         : undefined;
   return {
     name: "Omnio Source Cloud",
-    blurb: "Curated AIOStreams config with Torrentio, Comet, MediaFusion, etc.",
+    blurb: "Curated AIOStreams config with Torrentio, Comet, AnimeTosho, Knaben, etc.",
     state,
     detail,
     manageHref: `/p/${profileId}/integrations/source-cloud`,

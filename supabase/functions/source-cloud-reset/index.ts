@@ -5,6 +5,7 @@ import {
   aioBasicAuth,
   applyConfigAccessKey,
   createServiceClient,
+  stripDisallowedPresets,
   decryptAesGcm,
   errorResponse,
   handleCors,
@@ -219,6 +220,7 @@ Deno.serve(async (request) => {
       };
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
+  stripDisallowedPresets(merged);
   applyConfigAccessKey(merged);
 
   // PUT the merged config onto the existing AIOStreams user.

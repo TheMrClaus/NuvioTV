@@ -140,6 +140,33 @@ export function applyConfigAccessKey(config: Record<string, unknown>): void {
   }
 }
 
+/**
+ * Preset types we never want in a SourceCloud-provisioned AIOStreams
+ * config. MediaFusion is incompatible with the server-side provisioning
+ * model two different ways depending on the instance:
+ *   - ElfHosted MediaFusion IP-locks playback (`/stream/` IP must match
+ *     `/playback/` IP) — fails at play time because SourceCloud calls
+ *     `/stream/` from Supabase egress and the TV plays from a different
+ *     IP.
+ *   - Midnight (and similar URL-encoded-config forks) require the full
+ *     encrypted config in the URL path; AIOStreams sends a sha256 hash
+ *     in the path with the config in an `encoded_user_data` header.
+ *     Manifest fetch 400s at provision time.
+ * Strip MediaFusion from every config we POST/PUT until either the
+ * preset gains a compatible instance or we self-host.
+ */
+const DISALLOWED_PRESET_TYPES = new Set<string>(["mediafusion"]);
+
+export function stripDisallowedPresets(config: Record<string, unknown>): void {
+  const presets = config.presets;
+  if (!Array.isArray(presets)) return;
+  config.presets = presets.filter((preset) => {
+    if (!preset || typeof preset !== "object") return true;
+    const type = (preset as Record<string, unknown>).type;
+    return typeof type !== "string" || !DISALLOWED_PRESET_TYPES.has(type);
+  });
+}
+
 function base64ToUint8Array(b64: string): Uint8Array {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
