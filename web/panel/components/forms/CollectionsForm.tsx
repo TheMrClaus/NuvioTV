@@ -15,11 +15,12 @@ import { useUnsavedWarning } from "./useUnsavedWarning";
 interface Props {
   profileId: number;
   initial: Collection[];
+  expectedUpdatedAt: string | null;
 }
 
 const TILE_SHAPES = ["POSTER", "LANDSCAPE", "SQUARE"] as const;
 
-export default function CollectionsForm({ profileId, initial }: Props) {
+export default function CollectionsForm({ profileId, initial, expectedUpdatedAt }: Props) {
   const router = useRouter();
   const [items, setItems] = useState<Collection[]>(initial);
   const [state, setState] = useState<SaveState>({ kind: "idle" });
@@ -79,6 +80,7 @@ export default function CollectionsForm({ profileId, initial }: Props) {
       const result = await saveCollections({
         profileId,
         collectionsJson: items,
+        expectedUpdatedAt,
         revalidatePath: `/p/${profileId}/collections`,
       });
       if (result.ok) {

@@ -100,17 +100,19 @@ export async function savePlugins(args: {
 export async function saveCollections(args: {
   profileId: number;
   collectionsJson: unknown[];
+  expectedUpdatedAt?: string | null;
   revalidatePath?: string;
 }): Promise<ActionResult> {
   const supabase = await createServerSupabase();
-  const { error } = await supabase.rpc("sync_push_collections", {
+  const { data, error } = await supabase.rpc("sync_push_collections", {
     p_profile_id: args.profileId,
     p_collections_json: args.collectionsJson,
+    p_expected_updated_at: args.expectedUpdatedAt ?? null,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return mapPostgrestError(error, "collections_conflict");
 
   if (args.revalidatePath) revalidatePath(args.revalidatePath);
-  return { ok: true, updatedAt: null };
+  return { ok: true, updatedAt: (data as string | null) ?? null };
 }
 
 // Profile push — full array overwrite via sync_push_profiles. PIN management

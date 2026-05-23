@@ -33,14 +33,19 @@ export interface Collection {
   folders?: CollectionFolder[];
 }
 
-export async function listCollections(profileId: number): Promise<Collection[]> {
+export interface CollectionsSnapshot {
+  collections: Collection[];
+  updatedAt: string | null;
+}
+
+export async function listCollections(profileId: number): Promise<CollectionsSnapshot> {
   const supabase = await createServerSupabase();
   const { data, error } = await supabase.rpc("sync_pull_collections", {
     p_profile_id: profileId,
   });
   if (error) throw error;
-  const row = (data as Array<{ collections_json: unknown }> | null)?.[0];
-  if (!row) return [];
+  const row = (data as Array<{ collections_json: unknown; updated_at: string }> | null)?.[0];
+  if (!row) return { collections: [], updatedAt: null };
   const arr = Array.isArray(row.collections_json) ? row.collections_json : [];
-  return arr as Collection[];
+  return { collections: arr as Collection[], updatedAt: row.updated_at ?? null };
 }

@@ -8,7 +8,7 @@ interface Props {
 export default async function CollectionsPage({ params }: Props) {
   const { profileId } = await params;
   const id = Number.parseInt(profileId, 10);
-  const collections = await listCollections(id);
+  const { collections, updatedAt } = await listCollections(id);
 
   return (
     <div className="space-y-6">
@@ -20,7 +20,11 @@ export default async function CollectionsPage({ params }: Props) {
         </p>
       </header>
 
-      <CollectionsForm profileId={id} initial={collections} />
+      <CollectionsForm
+        profileId={id}
+        initial={collections}
+        expectedUpdatedAt={updatedAt}
+      />
     </div>
   );
 }
