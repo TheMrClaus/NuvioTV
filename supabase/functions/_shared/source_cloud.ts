@@ -178,6 +178,10 @@ export async function encryptAesGcm(plaintext: string): Promise<{
   };
 }
 
+export function aioBasicAuth(uuid: string, password: string): string {
+  return `Basic ${btoa(`${uuid}:${password}`)}`;
+}
+
 export async function decryptAesGcm(
   ciphertextB64: string,
   nonceB64: string,

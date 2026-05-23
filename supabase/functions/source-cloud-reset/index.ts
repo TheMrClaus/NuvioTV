@@ -2,6 +2,7 @@ import {
   CONFIG_STATUS_LABELS,
   SERVICE_LABELS,
   SUPPORTED_SERVICES,
+  aioBasicAuth,
   createServiceClient,
   decryptAesGcm,
   errorResponse,
@@ -114,7 +115,6 @@ Deno.serve(async (request) => {
   if (profileId === null) return errorResponse(400, "Invalid profileId");
 
   const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
-  const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
 
   const client = createServiceClient();
   const ownerId = await resolveOwnerId(client, userId);
@@ -218,13 +218,15 @@ Deno.serve(async (request) => {
       };
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
-  if (addonPassword) merged.addonPassword = addonPassword;
 
   // PUT the merged config onto the existing AIOStreams user.
   const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ uuid: aioConfigId, password: aiostreamsPassword, config: merged }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: aioBasicAuth(aioConfigId, aiostreamsPassword),
+    },
+    body: JSON.stringify({ config: merged }),
   });
 
   let configStatus: string = "ready";

@@ -2,6 +2,7 @@ import {
   CONFIG_STATUS_LABELS,
   SERVICE_LABELS,
   SUPPORTED_SERVICES,
+  aioBasicAuth,
   createServiceClient,
   decryptAesGcm,
   errorResponse,
@@ -629,7 +630,6 @@ Deno.serve(async (request) => {
   }
 
   const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
-  const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
   if (!baseUrl) return errorResponse(500, "AIOSTREAMS_BASE_URL not configured");
 
   const client = createServiceClient();
@@ -659,10 +659,11 @@ Deno.serve(async (request) => {
 
   // Fetch current config so we mutate-in-place and don't drop other fields.
   const fetchUrl = new URL(`${baseUrl}/api/v1/user`);
-  fetchUrl.searchParams.set("uuid", aioConfigId);
-  fetchUrl.searchParams.set("password", aiostreamsPassword);
   fetchUrl.searchParams.set("raw", "true");
-  const fetchResponse = await fetch(fetchUrl.toString(), { method: "GET" });
+  const fetchResponse = await fetch(fetchUrl.toString(), {
+    method: "GET",
+    headers: { Authorization: aioBasicAuth(aioConfigId, aiostreamsPassword) },
+  });
   if (!fetchResponse.ok) {
     return errorResponse(502, `Failed to fetch existing AIOStreams config: HTTP ${fetchResponse.status}`);
   }
@@ -700,12 +701,14 @@ Deno.serve(async (request) => {
 
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
-  if (addonPassword) config.addonPassword = addonPassword;
 
   const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ uuid: aioConfigId, password: aiostreamsPassword, config }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: aioBasicAuth(aioConfigId, aiostreamsPassword),
+    },
+    body: JSON.stringify({ config }),
   });
 
   let configStatus = "ready";

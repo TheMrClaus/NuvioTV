@@ -2,6 +2,7 @@ import {
   SERVICE_LABELS,
   SUPPORTED_SERVICES,
   CONFIG_STATUS_LABELS,
+  aioBasicAuth,
   createServiceClient,
   decryptAesGcm,
   encryptAesGcm,
@@ -94,7 +95,6 @@ async function aioCreateUser(
   baseUrl: string,
   services: ServiceEntry[],
   password: string,
-  addonPassword: string,
 ): Promise<{ uuid: string; encryptedPassword?: string; error?: string }> {
   const starter = await fetchStarterConfig(baseUrl);
   const config: Record<string, unknown> = starter
@@ -107,7 +107,6 @@ async function aioCreateUser(
       };
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
-  if (addonPassword) config.addonPassword = addonPassword;
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -130,10 +129,11 @@ async function aioFetchConfig(
   password: string,
 ): Promise<Record<string, unknown> | null> {
   const url = new URL(`${baseUrl}/api/v1/user`);
-  url.searchParams.set("uuid", uuid);
-  url.searchParams.set("password", password);
   url.searchParams.set("raw", "true");
-  const response = await fetch(url.toString(), { method: "GET" });
+  const response = await fetch(url.toString(), {
+    method: "GET",
+    headers: { Authorization: aioBasicAuth(uuid, password) },
+  });
   if (!response.ok) return null;
   // AIOStreams returns {data: {userData, encryptedPassword}}; the actual
   // config we want to merge into lives under data.userData.
@@ -149,8 +149,11 @@ async function aioUpdateUser(
 ): Promise<{ ok: boolean; error?: string }> {
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ uuid, password, config }),
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: aioBasicAuth(uuid, password),
+    },
+    body: JSON.stringify({ config }),
   });
   if (response.ok) return { ok: true };
   const text = await response.text().catch(() => "");
@@ -214,7 +217,6 @@ Deno.serve(async (request) => {
 
   const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
   if (!baseUrl) return errorResponse(500, "AIOSTREAMS_BASE_URL not configured");
-  const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
 
   const client = createServiceClient();
   const ownerId = await resolveOwnerId(client, userId);
@@ -291,7 +293,6 @@ Deno.serve(async (request) => {
       const merged: Record<string, unknown> = { ...current, services };
       applyTmdbPolicy(merged);
       bumpTorrentioTimeout(merged);
-      if (addonPassword) merged.addonPassword = addonPassword;
       const updateResult = await aioUpdateUser(baseUrl, aiostreamsConfigId, aiostreamsPassword, merged);
       if (!updateResult.ok) {
         provisioningError = `Failed to update AIOStreams config${updateResult.error ? `: ${updateResult.error}` : ""}`;
@@ -301,7 +302,7 @@ Deno.serve(async (request) => {
   } else {
     // First-time provision.
     const newPassword = randomHex(32);
-    const created = await aioCreateUser(baseUrl, services, newPassword, addonPassword);
+    const created = await aioCreateUser(baseUrl, services, newPassword);
     if (!created.uuid) {
       provisioningError = `Failed to create AIOStreams user${created.error ? `: ${created.error}` : ""}`;
       configStatus = "provisioning_failed";

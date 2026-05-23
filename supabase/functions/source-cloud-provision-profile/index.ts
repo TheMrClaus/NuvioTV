@@ -1,5 +1,6 @@
 import {
   CONFIG_STATUS_LABELS,
+  aioBasicAuth,
   createServiceClient,
   decryptAesGcm,
   encryptAesGcm,
@@ -150,11 +151,12 @@ async function readMainApiKeys(
   if (!password) return {};
 
   const url = new URL(`${baseUrl}/api/v1/user`);
-  url.searchParams.set("uuid", configId);
-  url.searchParams.set("password", password);
   url.searchParams.set("raw", "true");
   try {
-    const response = await fetch(url.toString(), { method: "GET" });
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Authorization: aioBasicAuth(configId, password) },
+    });
     if (!response.ok) return {};
     const json = await response.json() as { data?: { userData?: Record<string, unknown> } };
     const userData = json.data?.userData;
@@ -176,13 +178,11 @@ async function aioCreateUser(
   baseUrl: string,
   services: ServiceEntry[],
   password: string,
-  addonPassword: string,
   config: Record<string, unknown>,
 ): Promise<{ uuid: string; encryptedPassword?: string; error?: string }> {
   const merged: Record<string, unknown> = { ...config, services };
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
-  if (addonPassword) merged.addonPassword = addonPassword;
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -232,7 +232,6 @@ Deno.serve(async (request) => {
 
   const baseUrl = (Deno.env.get("AIOSTREAMS_BASE_URL") ?? "").replace(/\/+$/, "");
   if (!baseUrl) return errorResponse(500, "AIOSTREAMS_BASE_URL not configured");
-  const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
 
   const client = createServiceClient();
   const ownerId = await resolveOwnerId(client, userId);
@@ -281,7 +280,7 @@ Deno.serve(async (request) => {
   }
 
   const newPassword = randomHex(32);
-  const created = await aioCreateUser(baseUrl, [], newPassword, addonPassword, config);
+  const created = await aioCreateUser(baseUrl, [], newPassword, config);
   if (!created.uuid) {
     await client
       .from("source_cloud_configs")

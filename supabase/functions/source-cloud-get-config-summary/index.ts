@@ -1,4 +1,5 @@
 import {
+  aioBasicAuth,
   createServiceClient,
   decryptAesGcm,
   errorResponse,
@@ -306,10 +307,11 @@ Deno.serve(async (request) => {
   if (!aiostreamsPassword) return jsonResponse(200, empty);
 
   const url = new URL(`${baseUrl}/api/v1/user`);
-  url.searchParams.set("uuid", aioConfigId);
-  url.searchParams.set("password", aiostreamsPassword);
   url.searchParams.set("raw", "true");
-  const fetchResponse = await fetch(url.toString(), { method: "GET" });
+  const fetchResponse = await fetch(url.toString(), {
+    method: "GET",
+    headers: { Authorization: aioBasicAuth(aioConfigId, aiostreamsPassword) },
+  });
   if (!fetchResponse.ok) return jsonResponse(200, empty);
 
   const fetchJson = await fetchResponse.json() as { data?: { userData?: Record<string, unknown> } };

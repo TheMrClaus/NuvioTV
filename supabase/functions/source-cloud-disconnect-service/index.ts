@@ -2,6 +2,7 @@ import {
   SERVICE_LABELS,
   SUPPORTED_SERVICES,
   CONFIG_STATUS_LABELS,
+  aioBasicAuth,
   createServiceClient,
   decryptAesGcm,
   errorResponse,
@@ -157,10 +158,11 @@ Deno.serve(async (request) => {
 
       // Fetch current config so we don't wipe other settings, then splice services.
       const fetchUrl = new URL(`${baseUrl}/api/v1/user`);
-      fetchUrl.searchParams.set("uuid", uuid);
-      fetchUrl.searchParams.set("password", aiostreamsPassword);
       fetchUrl.searchParams.set("raw", "true");
-      const fetchResponse = await fetch(fetchUrl.toString(), { method: "GET" });
+      const fetchResponse = await fetch(fetchUrl.toString(), {
+        method: "GET",
+        headers: { Authorization: aioBasicAuth(uuid, aiostreamsPassword) },
+      });
       if (!fetchResponse.ok) {
         provisioningError = "Failed to fetch existing AIOStreams config";
         configStatus = "provisioning_failed";
@@ -174,12 +176,13 @@ Deno.serve(async (request) => {
           const merged: Record<string, unknown> = { ...current, services };
           applyTmdbPolicy(merged);
           bumpTorrentioTimeout(merged);
-          const addonPassword = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
-          if (addonPassword) merged.addonPassword = addonPassword;
           const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ uuid, password: aiostreamsPassword, config: merged }),
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: aioBasicAuth(uuid, aiostreamsPassword),
+            },
+            body: JSON.stringify({ config: merged }),
           });
           if (!putResponse.ok) {
             provisioningError = "Failed to update AIOStreams config";
