@@ -3,6 +3,7 @@ import {
   SUPPORTED_SERVICES,
   CONFIG_STATUS_LABELS,
   aioBasicAuth,
+  applyConfigAccessKey,
   createServiceClient,
   decryptAesGcm,
   encryptAesGcm,
@@ -107,6 +108,7 @@ async function aioCreateUser(
       };
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
+  applyConfigAccessKey(config);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -147,6 +149,7 @@ async function aioUpdateUser(
   password: string,
   config: Record<string, unknown>,
 ): Promise<{ ok: boolean; error?: string }> {
+  applyConfigAccessKey(config);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",
     headers: {

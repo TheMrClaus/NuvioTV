@@ -3,6 +3,7 @@ import {
   SERVICE_LABELS,
   SUPPORTED_SERVICES,
   aioBasicAuth,
+  applyConfigAccessKey,
   createServiceClient,
   decryptAesGcm,
   errorResponse,
@@ -701,6 +702,7 @@ Deno.serve(async (request) => {
 
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
+  applyConfigAccessKey(config);
 
   const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",

@@ -1,6 +1,7 @@
 import {
   CONFIG_STATUS_LABELS,
   aioBasicAuth,
+  applyConfigAccessKey,
   createServiceClient,
   decryptAesGcm,
   encryptAesGcm,
@@ -183,6 +184,7 @@ async function aioCreateUser(
   const merged: Record<string, unknown> = { ...config, services };
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
+  applyConfigAccessKey(merged);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

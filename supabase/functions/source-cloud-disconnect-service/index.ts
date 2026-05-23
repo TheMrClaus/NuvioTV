@@ -3,6 +3,7 @@ import {
   SUPPORTED_SERVICES,
   CONFIG_STATUS_LABELS,
   aioBasicAuth,
+  applyConfigAccessKey,
   createServiceClient,
   decryptAesGcm,
   errorResponse,
@@ -176,6 +177,7 @@ Deno.serve(async (request) => {
           const merged: Record<string, unknown> = { ...current, services };
           applyTmdbPolicy(merged);
           bumpTorrentioTimeout(merged);
+          applyConfigAccessKey(merged);
           const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
             method: "PUT",
             headers: {

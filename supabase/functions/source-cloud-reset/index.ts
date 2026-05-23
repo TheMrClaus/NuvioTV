@@ -3,6 +3,7 @@ import {
   SERVICE_LABELS,
   SUPPORTED_SERVICES,
   aioBasicAuth,
+  applyConfigAccessKey,
   createServiceClient,
   decryptAesGcm,
   errorResponse,
@@ -218,6 +219,7 @@ Deno.serve(async (request) => {
       };
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
+  applyConfigAccessKey(merged);
 
   // PUT the merged config onto the existing AIOStreams user.
   const putResponse = await fetch(`${baseUrl}/api/v1/user`, {

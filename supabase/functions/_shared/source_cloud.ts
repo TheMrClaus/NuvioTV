@@ -124,6 +124,21 @@ export const ADVANCED_SESSION_TOKEN_BYTES = 32;
 
 const AIOSTREAMS_BASE_URL = Deno.env.get("AIOSTREAMS_BASE_URL") ?? "";
 const AIOSTREAMS_ADDON_PASSWORD = Deno.env.get("AIOSTREAMS_ADDON_PASSWORD") ?? "";
+const AIOSTREAMS_CONFIG_ACCESS_KEY = Deno.env.get("AIOSTREAMS_CONFIG_ACCESS_KEY") ?? "";
+
+/**
+ * v2.30 config-write gate: every POST/PUT against /api/v1/user must
+ * include `config.accessKey` matching the server's persisted key.
+ * Server source: appConfig.api.configAccessKey, sourced from the
+ * CONFIG_ACCESS_KEY env on AIOStreams. Mirror it here as
+ * AIOSTREAMS_CONFIG_ACCESS_KEY and stamp it onto every outbound
+ * config payload.
+ */
+export function applyConfigAccessKey(config: Record<string, unknown>): void {
+  if (AIOSTREAMS_CONFIG_ACCESS_KEY) {
+    config.accessKey = AIOSTREAMS_CONFIG_ACCESS_KEY;
+  }
+}
 
 function base64ToUint8Array(b64: string): Uint8Array {
   const binary = atob(b64);
