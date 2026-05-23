@@ -26,6 +26,14 @@ export default async function AddonsPage({ params }: Props) {
     }
   }
 
+  // Snapshot the max updated_at across ALL addon rows for this profile (including
+  // the hidden AIO row) — the concurrency check in sync_push_addons compares
+  // against the whole set, not just the visible subset.
+  const expectedUpdatedAt = addons.reduce<string | null>(
+    (max, a) => (max === null || a.updated_at > max ? a.updated_at : max),
+    null,
+  );
+
   return (
     <div className="space-y-6">
       <header>
@@ -46,6 +54,7 @@ export default async function AddonsPage({ params }: Props) {
           enabled: a.enabled,
         }))}
         hiddenAioAddon={aioRow ? { url: aioRow.url, enabled: aioRow.enabled } : null}
+        expectedUpdatedAt={expectedUpdatedAt}
       />
     </div>
   );

@@ -27,6 +27,7 @@ interface Props {
   // kept out of the UI list but re-appended on save so the sync_push_addons
   // RPC doesn't drop it (which would unmount AIO on the TV's next pull).
   hiddenAioAddon?: HiddenAioAddon | null;
+  expectedUpdatedAt: string | null;
 }
 
 function newId(): string {
@@ -50,7 +51,12 @@ function signature(rows: AddonRow[]): string {
   return rows.map((a) => `${a.url}|${a.enabled ? "1" : "0"}`).join("//");
 }
 
-export default function AddonsForm({ profileId, initial, hiddenAioAddon = null }: Props) {
+export default function AddonsForm({
+  profileId,
+  initial,
+  hiddenAioAddon = null,
+  expectedUpdatedAt,
+}: Props) {
   const router = useRouter();
   const [items, setItems] = useState<AddonRow[]>(initial);
   const [draftUrl, setDraftUrl] = useState("");
@@ -95,6 +101,7 @@ export default function AddonsForm({ profileId, initial, hiddenAioAddon = null }
       const result = await saveAddons({
         profileId,
         addons: payload,
+        expectedUpdatedAt,
         revalidatePath: `/p/${profileId}/addons`,
       });
       if (result.ok) {

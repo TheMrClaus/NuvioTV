@@ -18,6 +18,7 @@ export interface AddonInput {
 export async function saveAddons(args: {
   profileId: number;
   addons: AddonInput[];
+  expectedUpdatedAt?: string | null;
   revalidatePath?: string;
 }): Promise<ActionResult> {
   const seen = new Set<string>();
@@ -31,14 +32,15 @@ export async function saveAddons(args: {
   }
 
   const supabase = await createServerSupabase();
-  const { error } = await supabase.rpc("sync_push_addons", {
+  const { data, error } = await supabase.rpc("sync_push_addons", {
     p_addons: cleaned,
     p_profile_id: args.profileId,
+    p_expected_updated_at: args.expectedUpdatedAt ?? null,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return mapPostgrestError(error, "addons_conflict");
 
   if (args.revalidatePath) revalidatePath(args.revalidatePath);
-  return { ok: true, updatedAt: null };
+  return { ok: true, updatedAt: (data as string | null) ?? null };
 }
 
 // Plugins RPC (sync_push_plugins) writes url + name + enabled + sort_order.
