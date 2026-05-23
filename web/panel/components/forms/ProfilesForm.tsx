@@ -60,6 +60,15 @@ export default function ProfilesForm({
   const dirty = initialSig !== currentSig;
   useUnsavedWarning(dirty);
 
+  const expectedUpdatedAt = useMemo(
+    () =>
+      profiles.reduce<string | null>(
+        (max, p) => (max === null || p.updated_at > max ? p.updated_at : max),
+        null,
+      ),
+    [profiles],
+  );
+
   const avatarById = useMemo(
     () => Object.fromEntries(avatarCatalog.map((a) => [a.id, a])),
     [avatarCatalog],
@@ -83,6 +92,7 @@ export default function ProfilesForm({
           uses_primary_plugins: p.uses_primary_plugins,
           avatar_id: p.avatar_id,
         })),
+        expectedUpdatedAt,
         revalidatePath: `/profiles`,
       });
       if (result.ok) {

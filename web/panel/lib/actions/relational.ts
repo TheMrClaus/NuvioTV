@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { mapPostgrestError } from "./conflict";
 import type { ActionResult } from "./result";
 
 // Addons RPC (sync_push_addons) writes url + enabled + sort_order. The TV
@@ -122,16 +123,18 @@ export interface ProfileInput {
 
 export async function saveProfiles(args: {
   profiles: ProfileInput[];
+  expectedUpdatedAt?: string | null;
   revalidatePath?: string;
 }): Promise<ActionResult> {
   const supabase = await createServerSupabase();
-  const { error } = await supabase.rpc("sync_push_profiles", {
+  const { data, error } = await supabase.rpc("sync_push_profiles", {
     p_profiles: args.profiles,
+    p_expected_updated_at: args.expectedUpdatedAt ?? null,
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return mapPostgrestError(error, "profiles_conflict");
 
   if (args.revalidatePath) revalidatePath(args.revalidatePath);
-  return { ok: true, updatedAt: null };
+  return { ok: true, updatedAt: (data as string | null) ?? null };
 }
 
 // Wipes per-profile sync data (addons, plugins, library, watch progress, watched,
