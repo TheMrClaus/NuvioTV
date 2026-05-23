@@ -5,6 +5,7 @@ import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
+import com.omnio.tv.core.sync.RealtimeChannelManager
 import com.omnio.tv.core.sync.StartupSyncService
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
@@ -14,9 +15,11 @@ import javax.inject.Inject
 class OmnioApplication : Application(), ImageLoaderFactory {
 
     @Inject lateinit var startupSyncService: StartupSyncService
+    @Inject lateinit var realtimeChannelManager: RealtimeChannelManager
 
     override fun onCreate() {
         super.onCreate()
+        realtimeChannelManager.start()
     }
 
     override fun newImageLoader(): ImageLoader {

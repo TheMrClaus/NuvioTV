@@ -146,6 +146,7 @@ dependencies {
     api(platform(libs.supabase.bom))
     api(libs.supabase.auth)
     api(libs.supabase.postgrest)
+    api(libs.supabase.realtime)
     implementation(libs.ktor.client.okhttp)
 
     // Kotlinx Serialization (Supabase + DTOs in core-domain)

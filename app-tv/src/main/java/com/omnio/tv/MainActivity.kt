@@ -184,6 +184,9 @@ class MainActivity : ComponentActivity() {
     lateinit var startupSyncService: StartupSyncService
 
     @Inject
+    lateinit var realtimeChannelManager: com.omnio.tv.core.sync.RealtimeChannelManager
+
+    @Inject
     lateinit var profileSettingsSyncService: ProfileSettingsSyncService
 
     @Inject
@@ -560,6 +563,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = true
         startupSyncService.requestSyncNow(includeProfileSettings = false)
+        realtimeChannelManager.setForegrounded(true)
         lifecycleScope.launch {
             traktProgressService.refreshNow()
         }
@@ -568,6 +572,7 @@ class MainActivity : ComponentActivity() {
     override fun onPause() {
         super.onPause()
         if (::jankStats.isInitialized) jankStats.isTrackingEnabled = false
+        realtimeChannelManager.setForegrounded(false)
     }
 
     override fun onStart() {
