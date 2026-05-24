@@ -359,6 +359,34 @@ Deno.serve(async (request) => {
     inheritedTokens = mainCopy.tokens;
   }
 
+  // Guard: kids profiles ship a curated template with enabled presets that
+  // require at least one connected service. If Main has no debrid yet, the
+  // POST to AIOStreams would be rejected with a cryptic USER_INVALID_CONFIG.
+  // Short-circuit with a user-friendly message instead — the user needs to
+  // connect a debrid service on Main before kids provisioning can proceed.
+  // Row is left without aiostreams_config_id so a delete-and-recreate (or
+  // future explicit retry) re-runs provisioning end-to-end.
+  if (kids && inheritedServices.length === 0) {
+    await client
+      .from("source_cloud_configs")
+      .upsert(
+        {
+          user_id: ownerId,
+          profile_id: profileId,
+          config_status: "provisioning_failed",
+          last_provisioned_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,profile_id" },
+      );
+    return jsonResponse(200, {
+      config: {
+        status: "provisioning_failed",
+        label: CONFIG_STATUS_LABELS.provisioning_failed.label,
+        message: "Connect a debrid service (Real-Debrid or TorBox) on your Main profile first — kids profiles inherit Main's subscription.",
+      },
+    });
+  }
+
   const newPassword = randomHex(32);
   const created = await aioCreateUser(baseUrl, inheritedServices, newPassword, config);
   if (!created.uuid) {
