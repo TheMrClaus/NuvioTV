@@ -1,4 +1,4 @@
-import { listCollections } from "@/lib/data/collections";
+import { listCollections } from "@/lib/data/collections.server";
 import { listAddons } from "@/lib/data/addons";
 import { fetchManifest } from "@/lib/data/manifest";
 import CollectionsForm, {
