@@ -126,7 +126,7 @@ export default function ProfilesForm({
         avatar_id: null,
         is_kids: false,
         max_age_rating: null,
-        copy_keys_from_main: false,
+        copy_keys_from_main: true,
         isNew: true,
       };
       return [...prev, newItem];
