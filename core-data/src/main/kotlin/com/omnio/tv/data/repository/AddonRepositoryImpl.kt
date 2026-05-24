@@ -146,6 +146,16 @@ class AddonRepositoryImpl @Inject constructor(
         ) { urls, disabledRaw -> urls to disabledRaw.map(::canonicalizeUrl).toSet() }
             .flatMapLatest { (urls, disabled) ->
                 flow {
+                    // Always emit at least once per upstream change, including when
+                    // the active profile has no installed addons. Otherwise Home
+                    // never receives the empty list and stays in its initial
+                    // isLoading=true state, showing a spinner forever instead of
+                    // falling through to the home_error_no_addons branch.
+                    if (urls.isEmpty()) {
+                        emit(applyEnabledState(emptyList(), disabled))
+                        return@flow
+                    }
+
                     val cached = urls.mapNotNull { manifestCache[canonicalizeUrl(it)] }
                     if (cached.isNotEmpty()) {
                         emit(applyEnabledState(applyDisplayNames(cached), disabled))
