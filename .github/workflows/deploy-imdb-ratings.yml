@@ -49,4 +49,7 @@ jobs:
             --app omnio-imdb-ratings --stage
 
       - name: Deploy
-        run: flyctl deploy --config infra/imdb-ratings/fly.toml --app omnio-imdb-ratings
+        # Positional working directory is the build context so the Dockerfile
+        # and its COPY paths resolve correctly. aiometadata/aiostreams don't
+        # need this because they deploy prebuilt upstream images.
+        run: flyctl deploy infra/imdb-ratings --config infra/imdb-ratings/fly.toml --app omnio-imdb-ratings
