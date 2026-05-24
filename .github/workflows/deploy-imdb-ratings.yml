@@ -1,0 +1,52 @@
+name: Deploy IMDB Ratings
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - 'infra/imdb-ratings/**'
+      - '.github/workflows/deploy-imdb-ratings.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-imdb-ratings-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Sync secrets to Fly
+        env:
+          # Reuses existing repo secrets:
+          #   AIOSTREAMS_DATABASE_URI — same Supavisor pooler URI used by aiostreams;
+          #     the service auto-creates its own imdb_season_cache table.
+          #   TMDB_API_KEY — same key used by the Android release build.
+          AIOSTREAMS_DATABASE_URI: ${{ secrets.AIOSTREAMS_DATABASE_URI }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          if [ -z "$AIOSTREAMS_DATABASE_URI" ]; then
+            echo 'Missing required GitHub secret: AIOSTREAMS_DATABASE_URI'
+            exit 1
+          fi
+
+          args=(
+            "DATABASE_URI=$AIOSTREAMS_DATABASE_URI"
+          )
+
+          if [ -n "$TMDB_API_KEY" ]; then
+            args+=("TMDB_API_KEY=$TMDB_API_KEY")
+          fi
+
+          flyctl secrets set \
+            "${args[@]}" \
+            --app omnio-imdb-ratings --stage
+
+      - name: Deploy
+        run: flyctl deploy --config infra/imdb-ratings/fly.toml --app omnio-imdb-ratings
