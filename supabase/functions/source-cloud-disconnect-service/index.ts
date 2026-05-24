@@ -5,6 +5,7 @@ import {
   aioBasicAuth,
   applyConfigAccessKey,
   createServiceClient,
+  stripParentConfig,
   decryptAesGcm,
   errorResponse,
   handleCors,
@@ -177,6 +178,7 @@ Deno.serve(async (request) => {
           const merged: Record<string, unknown> = { ...current, services };
           applyTmdbPolicy(merged);
           bumpTorrentioTimeout(merged);
+          stripParentConfig(merged);
           applyConfigAccessKey(merged);
           const putResponse = await fetch(`${baseUrl}/api/v1/user`, {
             method: "PUT",

@@ -6,6 +6,7 @@ import {
   applyConfigAccessKey,
   createServiceClient,
   stripDisallowedPresets,
+  stripParentConfig,
   decryptAesGcm,
   encryptAesGcm,
   errorResponse,
@@ -112,6 +113,7 @@ async function aioCreateUser(
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
   stripDisallowedPresets(config);
+  stripParentConfig(config);
   applyConfigAccessKey(config);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
@@ -154,6 +156,7 @@ async function aioUpdateUser(
   config: Record<string, unknown>,
 ): Promise<{ ok: boolean; error?: string }> {
   stripDisallowedPresets(config);
+  stripParentConfig(config);
   applyConfigAccessKey(config);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "PUT",

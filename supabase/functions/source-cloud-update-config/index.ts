@@ -5,6 +5,7 @@ import {
   aioBasicAuth,
   applyConfigAccessKey,
   createServiceClient,
+  stripParentConfig,
   decryptAesGcm,
   errorResponse,
   handleCors,
@@ -702,6 +703,7 @@ Deno.serve(async (request) => {
 
   applyTmdbPolicy(config);
   bumpTorrentioTimeout(config);
+  stripParentConfig(config);
   applyConfigAccessKey(config);
 
   const putResponse = await fetch(`${baseUrl}/api/v1/user`, {

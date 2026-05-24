@@ -273,7 +273,7 @@
       {
         "type": "animetosho",
         "instanceId": "137",
-        "enabled": true,
+        "enabled": false,
         "options": {
           "name": "AnimeTosho",
           "timeout": 7000,

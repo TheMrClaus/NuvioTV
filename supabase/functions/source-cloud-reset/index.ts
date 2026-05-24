@@ -6,6 +6,7 @@ import {
   applyConfigAccessKey,
   createServiceClient,
   stripDisallowedPresets,
+  stripParentConfig,
   decryptAesGcm,
   errorResponse,
   handleCors,
@@ -221,6 +222,7 @@ Deno.serve(async (request) => {
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
   stripDisallowedPresets(merged);
+  stripParentConfig(merged);
   applyConfigAccessKey(merged);
 
   // PUT the merged config onto the existing AIOStreams user.

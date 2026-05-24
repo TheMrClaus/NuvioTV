@@ -1,9 +1,12 @@
 import {
   CONFIG_STATUS_LABELS,
+  SERVICE_LABELS,
+  SUPPORTED_SERVICES,
   aioBasicAuth,
   applyConfigAccessKey,
   createServiceClient,
   stripDisallowedPresets,
+  stripParentConfig,
   decryptAesGcm,
   encryptAesGcm,
   errorResponse,
@@ -12,6 +15,7 @@ import {
   parseProfileId,
   resolveOwnerId,
   requireAuth,
+  type SupportedService,
 } from "../_shared/source_cloud.ts";
 
 import kidsTemplateSetup from "../_shared/templates/aiostreams_kids_template.json" with { type: "json" };
@@ -46,6 +50,20 @@ interface ServiceEntry {
   id: string;
   enabled: boolean;
   credentials: Record<string, string>;
+}
+
+// OmnioTV service key -> AIOStreams service id. Mirrors the map in
+// source-cloud-connect-service; kept local to avoid a shared-module
+// rename ripple. Update both sites when a new debrid service is added.
+const SERVICE_ID_MAP: Record<SupportedService, string> = {
+  real_debrid: "realdebrid",
+  torbox: "torbox",
+};
+
+interface CopiedServiceToken {
+  service: SupportedService;
+  ciphertext: string;
+  nonce: string;
 }
 
 function randomHex(byteLength: number): string {
@@ -176,6 +194,49 @@ async function readMainApiKeys(
   }
 }
 
+/**
+ * Pull Main profile's connected debrid services so a kids profile
+ * inherits them at provision time. Kids profiles don't have their own
+ * debrid-management UI on the panel — they share Main's subscription —
+ * so without this copy the kids AIOStreams config would provision with
+ * `services: []` and AIOStreams' validator would reject the kids
+ * template's enabled presets (Knaben, Torrentio, etc. all require a
+ * usable service).
+ *
+ * Returns both the `services` array (for the AIOStreams config POST)
+ * and the raw ciphertext+nonce of each token so we can mirror them
+ * into `source_cloud_service_tokens` under the new profile_id —
+ * keeping connect/disconnect/status flows coherent across profiles.
+ */
+async function readMainServices(
+  client: ReturnType<typeof createServiceClient>,
+  ownerId: string,
+): Promise<{ services: ServiceEntry[]; tokens: CopiedServiceToken[] }> {
+  const { data: rows } = await client
+    .from("source_cloud_service_tokens")
+    .select("service, access_token_ciphertext, token_nonce, status")
+    .eq("user_id", ownerId)
+    .eq("profile_id", 1);
+  if (!rows || rows.length === 0) return { services: [], tokens: [] };
+  const services: ServiceEntry[] = [];
+  const tokens: CopiedServiceToken[] = [];
+  for (const row of rows) {
+    const rowService = row.service as SupportedService | null;
+    if (!rowService || !SUPPORTED_SERVICES.includes(rowService)) continue;
+    if (row.status !== "connected") continue;
+    const ciphertext = row.access_token_ciphertext;
+    const nonce = row.token_nonce;
+    if (typeof ciphertext !== "string" || typeof nonce !== "string") continue;
+    const apiKey = await decryptAesGcm(ciphertext, nonce);
+    if (!apiKey) continue;
+    const aioId = SERVICE_ID_MAP[rowService];
+    if (!aioId) continue;
+    services.push({ id: aioId, enabled: true, credentials: { apiKey } });
+    tokens.push({ service: rowService, ciphertext, nonce });
+  }
+  return { services, tokens };
+}
+
 async function aioCreateUser(
   baseUrl: string,
   services: ServiceEntry[],
@@ -186,6 +247,7 @@ async function aioCreateUser(
   applyTmdbPolicy(merged);
   bumpTorrentioTimeout(merged);
   stripDisallowedPresets(merged);
+  stripParentConfig(merged);
   applyConfigAccessKey(merged);
   const response = await fetch(`${baseUrl}/api/v1/user`, {
     method: "POST",
@@ -283,8 +345,22 @@ Deno.serve(async (request) => {
     }
   }
 
+  // Inherit Main's connected debrid services whenever copyKeysFromMain is
+  // on (always true for kids; opt-in toggle for non-kids). Mirrors the
+  // API-key copy above so a profile created with the toggle is fully
+  // functional out of the box without re-entering debrid credentials.
+  // Also bypasses the AIOStreams write-validator failure that hits when
+  // the template has enabled presets but services would be empty.
+  let inheritedServices: ServiceEntry[] = [];
+  let inheritedTokens: CopiedServiceToken[] = [];
+  if (copyKeysFromMain) {
+    const mainCopy = await readMainServices(client, ownerId);
+    inheritedServices = mainCopy.services;
+    inheritedTokens = mainCopy.tokens;
+  }
+
   const newPassword = randomHex(32);
-  const created = await aioCreateUser(baseUrl, [], newPassword, config);
+  const created = await aioCreateUser(baseUrl, inheritedServices, newPassword, config);
   if (!created.uuid) {
     await client
       .from("source_cloud_configs")
@@ -327,6 +403,28 @@ Deno.serve(async (request) => {
       },
       { onConflict: "user_id,profile_id" },
     );
+
+  // Mirror Main's debrid tokens into this profile so source-cloud-status,
+  // -disconnect, and -update-config see a coherent picture. The ciphertext
+  // is encrypted with the same SOURCE_CLOUD_ENCRYPTION_KEY so we can copy
+  // it verbatim — no re-encryption needed.
+  for (const token of inheritedTokens) {
+    await client
+      .from("source_cloud_service_tokens")
+      .upsert(
+        {
+          user_id: ownerId,
+          profile_id: profileId,
+          service: token.service,
+          access_token_ciphertext: token.ciphertext,
+          token_nonce: token.nonce,
+          status: "connected",
+          label: SERVICE_LABELS[token.service],
+          last_checked_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,profile_id,service" },
+      );
+  }
 
   const statusInfo = CONFIG_STATUS_LABELS.ready;
   return jsonResponse(200, {

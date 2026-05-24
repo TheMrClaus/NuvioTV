@@ -377,12 +377,12 @@ export default function ProfilesForm({
                       }
                       className="h-4 w-4 rounded border-slate-600 bg-slate-900 text-primary focus:ring-primary"
                     />
-                    Copy TMDB / TVDB / RPDB keys from Main on first provision
+                    Copy TMDB / TVDB / RPDB keys and debrid services from Main on first provision
                   </label>
                 )}
                 {p.isNew && p.is_kids && (
                   <p className="ml-6 text-xs text-slate-500">
-                    Kids profiles always inherit Main&apos;s API keys.
+                    Kids profiles always inherit Main&apos;s API keys and debrid services.
                   </p>
                 )}
 

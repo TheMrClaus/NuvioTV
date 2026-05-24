@@ -167,6 +167,21 @@ export function stripDisallowedPresets(config: Record<string, unknown>): void {
   });
 }
 
+/**
+ * AIOStreams supports a `parentConfig` field that makes the new config
+ * inherit from a separately-stored "parent" config (looked up by uuid +
+ * password). When the parent UUID is missing on the server or its
+ * credentials can't be decrypted, AIOStreams rejects the whole
+ * POST/PUT with `PARENT_CONFIG_UNAVAILABLE`. SourceCloud always
+ * materialises a profile's full presets/services/filters inline, so
+ * parent inheritance is never needed — drop the field on every write
+ * so a stale ref baked into a bundled template (or carried over from
+ * a previously-stored config) can't take the whole flow down.
+ */
+export function stripParentConfig(config: Record<string, unknown>): void {
+  if ("parentConfig" in config) delete config.parentConfig;
+}
+
 function base64ToUint8Array(b64: string): Uint8Array {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
