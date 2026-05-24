@@ -1,41 +1,41 @@
 {
   "app_module": "app-tv",
   "app_name": "OmnioTV",
-  "version_name": "0.5.61-beta",
-  "release_tag": "0.5.61-beta-app-tv",
-  "release_title": "OmnioTV 0.5.61-beta",
-  "release_notes": "### Improvements & Fixes\n- drop stale \"Read-only preview\" banner on overview\n- Add optimistic-concurrency overload for sync_push_profiles\n- wire optimistic concurrency for saveProfiles\n- Add optimistic-concurrency overload for sync_push_addons\n- wire optimistic concurrency for saveAddons\n- Add optimistic-concurrency overload for sync_push_plugins\n- wire optimistic concurrency for savePlugins\n- Add optimistic-concurrency overload for sync_push_collections\n- wire optimistic concurrency for saveCollections\n- provision AIOMetadata + AIOStreams on every new profile",
-  "release_url": "https://github.com/TheMrClaus/OmnioTV/releases/tag/0.5.61-beta-app-tv",
-  "published_at_utc": "2026-05-23T15:33:31Z",
+  "version_name": "0.5.62-beta",
+  "release_tag": "0.5.62-beta-app-tv",
+  "release_title": "OmnioTV 0.5.62-beta",
+  "release_notes": "### Improvements & Fixes\n- pipe MEDIAFUSION_URL through deploy workflow\n- drop MediaFusion from provisioned AIOStreams configs\n- Create profiles from panel with kids + provisioning parity\n- add \"Add profile\" tile to profile picker\n- split server-only listCollections into its own file\n- unblock kids profile provisioning + inherit Main debrid\n- Default copy-keys-from-main to on for new non-kids profiles\n- guard kids provisioning when Main has no debrid yet\n- Emit empty addon list so home no longer spins forever\n- Blocking sign-in dialog when signed out with no addons",
+  "release_url": "https://github.com/TheMrClaus/OmnioTV/releases/tag/0.5.62-beta-app-tv",
+  "published_at_utc": "2026-05-24T15:47:23Z",
   "assets": [
     {
       "name": "app-tv-arm64-v8a-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.61-beta-app-tv/app-tv-arm64-v8a-release.apk",
-      "size_bytes": 76254742,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.62-beta-app-tv/app-tv-arm64-v8a-release.apk",
+      "size_bytes": 76322399,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-armeabi-v7a-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.61-beta-app-tv/app-tv-armeabi-v7a-release.apk",
-      "size_bytes": 68526716,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.62-beta-app-tv/app-tv-armeabi-v7a-release.apk",
+      "size_bytes": 68594373,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-x86_64-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.61-beta-app-tv/app-tv-x86_64-release.apk",
-      "size_bytes": 84614671,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.62-beta-app-tv/app-tv-x86_64-release.apk",
+      "size_bytes": 84682328,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-x86-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.61-beta-app-tv/app-tv-x86-release.apk",
-      "size_bytes": 79123316,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.62-beta-app-tv/app-tv-x86-release.apk",
+      "size_bytes": 79190973,
       "content_type": "application/vnd.android.package-archive"
     },
     {
       "name": "app-tv-universal-release.apk",
-      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.61-beta-app-tv/app-tv-universal-release.apk",
-      "size_bytes": 262434834,
+      "download_url": "https://github.com/TheMrClaus/OmnioTV/releases/download/0.5.62-beta-app-tv/app-tv-universal-release.apk",
+      "size_bytes": 262502491,
       "content_type": "application/vnd.android.package-archive"
     }
   ]
