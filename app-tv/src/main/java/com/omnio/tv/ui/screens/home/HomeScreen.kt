@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import com.omnio.tv.R
 import com.omnio.tv.data.local.StartupAuthNotice
 import com.omnio.tv.core.uishared.OmnioColors
+import com.omnio.tv.ui.screens.auth.SignInRequiredDialog
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
 
@@ -82,7 +83,9 @@ fun HomeScreen(
     onContinueWatchingStartFromBeginning: (ContinueWatchingItem) -> Unit = onContinueWatchingClick,
     onContinueWatchingPlayManually: (ContinueWatchingItem) -> Unit = onContinueWatchingClick,
     onNavigateToCatalogSeeAll: (String, String, String) -> Unit = { _, _, _ -> },
-    onNavigateToFolderDetail: (String, String) -> Unit = { _, _ -> }
+    onNavigateToFolderDetail: (String, String) -> Unit = { _, _ -> },
+    onNavigateToAuthQrSignIn: () -> Unit = {},
+    onNavigateToAuthSignIn: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val effectiveAutoplayEnabled by viewModel.effectiveAutoplayEnabled.collectAsStateWithLifecycle(
@@ -298,6 +301,19 @@ fun HomeScreen(
                     color = OmnioColors.TextPrimary
                 )
             }
+        }
+
+        // When the active profile has no addons and the user is signed out,
+        // surface a blocking dialog instead of leaving them on a black screen
+        // with only the localized "No addons installed" message.
+        val showSignInPrompt = !uiState.isLoading &&
+            uiState.catalogRows.isEmpty() &&
+            uiState.installedAddonsCount == 0
+        if (showSignInPrompt) {
+            SignInRequiredDialog(
+                onSignInWithQr = onNavigateToAuthQrSignIn,
+                onSignInWithEmail = onNavigateToAuthSignIn
+            )
         }
     }
 

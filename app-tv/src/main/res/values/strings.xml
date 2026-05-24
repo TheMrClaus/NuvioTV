@@ -47,6 +47,10 @@
     <string name="home_no_catalog_addons">No catalog addons installed. Install a catalog addon to see content.</string>
     <string name="auth_notice_omnio_logged_out">You have been signed out of Omnio. Please sign in again.</string>
     <string name="auth_notice_trakt_logged_out">You have been signed out of Trakt. Please reconnect.</string>
+    <string name="sign_in_required_title">Sign in to load your catalogs</string>
+    <string name="sign_in_required_subtitle">Your Omnio session ended, so we can\'t fetch your addons. Sign in to restore them.</string>
+    <string name="sign_in_required_button_qr">Show QR code</string>
+    <string name="sign_in_required_button_email">Sign in with email</string>
     <string name="error_generic">An error occurred</string>
 
     <!-- ErrorState -->

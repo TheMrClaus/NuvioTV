@@ -203,7 +203,9 @@ fun OmnioNavHost(
                 },
                 onNavigateToFolderDetail = { collectionId, folderId ->
                     navController.navigate(Screen.FolderDetail.createRoute(collectionId, folderId))
-                }
+                },
+                onNavigateToAuthQrSignIn = { navController.navigate(Screen.AuthQrSignIn.route) },
+                onNavigateToAuthSignIn = { navController.navigate(Screen.AuthSignIn.route) }
             )
         }
 
